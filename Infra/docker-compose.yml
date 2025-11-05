@@ -1,0 +1,46 @@
+version: '3.9'
+
+services:
+  db: #Integrando o database PostgreSQL
+    image: postgis/postgis:15-3.5
+    container_name: postgis_container
+    environment:
+      POSTGRES_DB: ImobiliariaDB
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: gp-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@local
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+  minio:
+    image: minio/minio:RELEASE.2024-04-18T19-09-19Z
+    container_name: gp-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: gpminio
+      MINIO_ROOT_PASSWORD: gpminio123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio:/data
+
+volumes:
+  pgdata:
+  minio:
+
+
+    

@@ -93,8 +93,10 @@ def collect_sentinel2_indices(
                         [item],
                         assets=["B04", "B08", "B11"],
                         bounds_latlon=bbox,
+                        epsg=32723,
                         resolution=20,
-                        dtype="float32",
+                        dtype="float64",
+                        rescale=False,
                     ).squeeze("time")
 
                     b04 = da.sel(band="B04").values
@@ -158,20 +160,28 @@ def collect_for_grid(
     settings=None,
 ) -> SatelliteCollectResult:
     """Fetch H3 IDs from PostGIS and collect Sentinel-2 indices for the full grid."""
-    from .config import Settings
-    from .db import engine
+    from sqlalchemy import text
+
+    from .config import load_settings
+    from .db import make_engine
 
     if settings is None:
-        settings = Settings()
+        settings = load_settings()
+
     if end_date is None:
         end_date = datetime.date.today().isoformat()
+
     if start_date is None:
         start_date = (datetime.date.today() - datetime.timedelta(days=180)).isoformat()
 
-    eng = engine(settings)
-    with eng.connect() as conn:
-        result = conn.execute("SELECT h3_id FROM geo.grid_h3")
-        h3_ids = [row[0] for row in result]
+    eng = make_engine(settings)
+
+    try:
+        with eng.connect() as conn:
+            result = conn.execute(text("SELECT h3_id FROM geo.grid_h3"))
+            h3_ids = [row[0] for row in result]
+    finally:
+        eng.dispose()
 
     log.info("Coletando Sentinel-2 para %d celulas H3 (%s a %s).", len(h3_ids), start_date, end_date)
     return collect_sentinel2_indices(h3_ids, start_date, end_date, output_csv, max_cloud_pct)

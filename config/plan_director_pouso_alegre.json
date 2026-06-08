@@ -1,0 +1,187 @@
+{
+  "city": "Pouso Alegre, Minas Gerais, Brazil",
+  "lei": "Lei Ordinaria 6476/2021",
+  "legal_sources": [
+    {
+      "title": "Lei Ordinaria 6476/2021 - Plano Diretor de Pouso Alegre",
+      "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"
+    },
+    {
+      "title": "Legislacao urbanistica municipal - Camara Municipal de Pouso Alegre",
+      "url": "https://www.cmpa.mg.gov.br/"
+    }
+  ],
+  "rules": {
+    "ZMC": {
+      "label": "Zona Mista Central",
+      "residencial": "allowed",
+      "comercial": "allowed",
+      "servicos_bairro": "allowed",
+      "industrial": "conditioned",
+      "articles": ["Art. 12", "Art. 40 (EIV acima de 4.000 m²)", "Art. 45 (Outorga Onerosa)"],
+      "parameters": {
+        "ca_basico": 2.0,
+        "ca_maximo": 4.0,
+        "to_maxima_pct": 70,
+        "gabarito_max_pavimentos": 12,
+        "recuo_frontal_m": 3
+      },
+      "notes": "Area central/mista. Aceita residencial, comercial e servicos. Coef. basico 2,0, maximo 4,0. EIV obrigatorio acima de 4.000 m². Outorga Onerosa disponivel ate CA 4,0."
+    },
+    "ZM": {
+      "label": "Zona Mista",
+      "residencial": "allowed",
+      "comercial": "allowed",
+      "servicos_bairro": "allowed",
+      "industrial": "conditioned",
+      "articles": ["Art. 13", "Art. 40 (EIV acima de 4.000 m²)"],
+      "parameters": {
+        "ca_basico": 1.5,
+        "ca_maximo": 3.0,
+        "to_maxima_pct": 60,
+        "recuo_frontal_m": 3
+      },
+      "notes": "Uso misto urbano. CA basico 1,5, maximo 3,0. Comercio e servicos devem ser checados contra incomodidade e parametros locais."
+    },
+    "ZM1": {
+      "label": "Zona Mista 1",
+      "residencial": "allowed",
+      "comercial": "allowed",
+      "servicos_bairro": "allowed",
+      "industrial": "conditioned",
+      "articles": ["Art. 14", "Art. 40 (EIV)"],
+      "parameters": {
+        "ca_basico": 1.5,
+        "ca_maximo": 2.5,
+        "to_maxima_pct": 60,
+        "recuo_frontal_m": 3
+      },
+      "notes": "Uso misto com maior cautela para impacto de vizinhanca. CA maximo 2,5."
+    },
+    "ZM2": {
+      "label": "Zona Mista 2",
+      "residencial": "allowed",
+      "comercial": "allowed",
+      "servicos_bairro": "allowed",
+      "industrial": "conditioned",
+      "articles": ["Art. 14", "Art. 40 (EIV)"],
+      "parameters": {
+        "ca_basico": 1.5,
+        "ca_maximo": 2.5,
+        "to_maxima_pct": 60,
+        "recuo_frontal_m": 3
+      },
+      "notes": "Uso misto com verificacao de parametros urbanisticos. Mesmos indices de ZM1."
+    },
+    "ZMV": {
+      "label": "Zona Mista Vertical",
+      "residencial": "allowed",
+      "comercial": "allowed",
+      "servicos_bairro": "allowed",
+      "industrial": "conditioned",
+      "articles": ["Art. 15", "Art. 40 (EIV obrigatorio acima de 4.000 m²)", "Art. 45 (Outorga Onerosa)"],
+      "parameters": {
+        "ca_basico": 2.0,
+        "ca_maximo": 5.0,
+        "to_maxima_pct": 65,
+        "gabarito_max_pavimentos": 16,
+        "recuo_frontal_m": 5
+      },
+      "notes": "Zona de adensamento controlado. CA maximo 5,0. Gabarito maximo 16 pavimentos. EIV obrigatorio acima de 4.000 m²."
+    },
+    "ZEIS": {
+      "label": "Zona Especial de Interesse Social",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "blocked",
+      "articles": ["Art. 18", "Art. 19 (Regularizacao Fundiaria)", "Art. 20 (ATHIS)"],
+      "parameters": {
+        "ca_maximo": 1.5,
+        "to_maxima_pct": 60,
+        "lote_minimo_m2": 100
+      },
+      "notes": "Prioridade para habitacao de interesse social. Regularizacao fundiaria e urbanizacao garantidas pelo municipio. Uso comercial condicionado a compatibilidade habitacional."
+    },
+    "ZEU": {
+      "label": "Zona de Expansao Urbana",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "conditioned",
+      "articles": ["Art. 22", "Art. 23 (Plano de Ocupacao obrigatorio)", "Art. 60 (Parcelamento)"],
+      "parameters": {
+        "ca_maximo": 2.0,
+        "to_maxima_pct": 50,
+        "area_verde_minima_pct": 20,
+        "lote_minimo_m2": 125
+      },
+      "notes": "Expansao urbana exige Plano de Ocupacao com diretrizes viarias e infraestrutura. Minimo 20% de areas verdes e institucionais no parcelamento."
+    },
+    "ZPA": {
+      "label": "Zona de Preservacao Ambiental",
+      "residencial": "blocked",
+      "comercial": "blocked",
+      "servicos_bairro": "blocked",
+      "industrial": "blocked",
+      "articles": ["Art. 30", "Art. 31 (APP - Lei Federal 12.651/2012)"],
+      "parameters": {},
+      "notes": "APP e remanescentes de Mata Atlantica. Vedada qualquer construcao. Licenca ambiental estadual para pesquisa e ecoturismo."
+    },
+    "ZEPAM": {
+      "label": "Zona Especial de Protecao Ambiental",
+      "residencial": "blocked",
+      "comercial": "blocked",
+      "servicos_bairro": "blocked",
+      "industrial": "blocked",
+      "articles": ["Art. 35", "Art. 36 (Corredor Ecologico)", "Art. 37 (Pagamento por Servicos Ambientais)"],
+      "parameters": {},
+      "notes": "Zona de transicao ambiental. Reflorestamento e corredores ecologicos. Proprietarios podem aderir a PSA."
+    },
+    "ZEP": {
+      "label": "Zona Especial de Projetos",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "conditioned",
+      "articles": ["Art. 48", "Art. 49 (Projeto Urbano Especifico obrigatorio)"],
+      "parameters": {},
+      "notes": "Demanda Projeto Urbano Especifico, EIV e compatibilidade local. Parametros definidos caso a caso."
+    },
+    "AIC": {
+      "label": "Area de Interesse Cultural",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "blocked",
+      "articles": ["Art. 50", "Art. 51 (Conselho do Patrimonio Cultural)", "Art. 52 (IPHAN/IEPHA)"],
+      "parameters": {},
+      "notes": "Centro historico e edificacoes inventariadas. Intervencoes aprovadas pelo Conselho do Patrimonio. Industrial vedado."
+    },
+    "AIU": {
+      "label": "Area de Interesse Urbanistico",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "conditioned",
+      "articles": ["Art. 53", "Art. 40 (EIV)"],
+      "parameters": {},
+      "notes": "Exige leitura de diretrizes urbanisticas especificas definidas em decreto."
+    },
+    "AIUA": {
+      "label": "Area de Interesse Urbanistico Ambiental",
+      "residencial": "conditioned",
+      "comercial": "conditioned",
+      "servicos_bairro": "conditioned",
+      "industrial": "blocked",
+      "articles": ["Art. 55", "Art. 56 (Plano de Intervencao obrigatorio)", "Art. 57 (Estudo de Estabilidade)"],
+      "parameters": {},
+      "notes": "Fundos de vale e encostas. Plano de Intervencao integrado obrigatorio. Novos parcelamentos condicionados a estudo de drenagem e estabilidade."
+    }
+  },
+  "unknown_zone_policy": {
+    "status": "conditioned",
+    "articles": [],
+    "notes": "Zona nao mapeada. Exige validacao manual no Plano Diretor e na lei de uso e ocupacao do solo."
+  }
+}

@@ -9,6 +9,9 @@
 - [x] Criar comando para carregar POIs via OSMnx.
 - [x] Calcular score heuristico explicavel.
 - [x] Criar prototipo Streamlit.
+- [x] Criar front com filtros, ranking, mapa e explicabilidade.
+- [x] Criar camada de decisao com prioridade, risco e resumo.
+- [x] Criar comando de predicao de preco com modelo treinado.
 - [ ] Importar zoneamento real.
 - [ ] Exibir mapa real em Streamlit.
 

@@ -41,6 +41,13 @@ class TrainResult:
     r2: float
 
 
+@dataclass(frozen=True)
+class PredictionResult:
+    output_path: str
+    rows: int
+    prediction_column: str
+
+
 def train_price_model(
     csv_path: str,
     model_path: str = "models/price_model.joblib",
@@ -119,4 +126,33 @@ def train_price_model(
         rows=len(frame),
         mae=float(mean_absolute_error(y_test, predictions)),
         r2=float(r2_score(y_test, predictions)),
+    )
+
+
+def predict_prices(
+    csv_path: str,
+    model_path: str = "models/price_model.joblib",
+    output_path: str = "data/processed/predicted_prices.csv",
+) -> PredictionResult:
+    bundle = joblib.load(model_path)
+    model = bundle["model"]
+    numeric_features = bundle["numeric_features"]
+    categorical_features = bundle["categorical_features"]
+
+    data = pd.read_csv(csv_path)
+    expected = numeric_features + categorical_features
+    for column in expected:
+        if column not in data.columns:
+            data[column] = pd.NA
+
+    predictions = model.predict(data[expected])
+    output = data.copy()
+    output["predicted_price"] = predictions.round(2)
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output.to_csv(output_file, index=False)
+    return PredictionResult(
+        output_path=str(output_file),
+        rows=len(output),
+        prediction_column="predicted_price",
     )

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\vish8\\\\OneDrive\\\\Documentos\\\\RecomendacaoImobiliaria\" -Recurse -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli score-demo)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli check-plan --zone ZMC --use residencial)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli gen-listings)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli fetch-listings-ml --max 10 --output data/ml_listings_test.csv)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli fetch-listings-ml --query \"imovel Pouso Alegre MG\" --max 20 --output data/ml_listings_test.csv)",
+      "Bash(PYTHONPATH=src python -m recomendacao_imobiliaria.cli fetch-ibge)",
+      "Bash(python -c \"import pandas as pd; print\\(pd.read_csv\\('data/ibge_housing.csv'\\).to_string\\(\\)\\)\")",
+      "Bash(PYTHONPATH=src python -m pytest tests/ -x -q)"
+    ]
+  }
+}

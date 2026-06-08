@@ -20,6 +20,11 @@ def sample_areas() -> list[AreaFeatures]:
             dist_min_school_m=1200,
             residential_allowed=True,
             commercial_allowed=True,
+            residential_plan_status="conditioned",
+            commercial_plan_status="conditioned",
+            residential_plan_multiplier=0.65,
+            commercial_plan_multiplier=0.65,
+            legal_notes="Zona de expansao urbana exige validacao de infraestrutura e diretrizes do Plano Diretor.",
         ),
         AreaFeatures(
             h3_id="demo-centro-01",
@@ -36,6 +41,8 @@ def sample_areas() -> list[AreaFeatures]:
             dist_min_school_m=600,
             residential_allowed=True,
             commercial_allowed=True,
+            residential_plan_status="allowed",
+            commercial_plan_status="allowed",
         ),
         AreaFeatures(
             h3_id="demo-sul-01",
@@ -52,5 +59,10 @@ def sample_areas() -> list[AreaFeatures]:
             dist_min_school_m=2600,
             residential_allowed=False,
             commercial_allowed=False,
+            residential_plan_status="blocked",
+            commercial_plan_status="blocked",
+            residential_plan_multiplier=0.0,
+            commercial_plan_multiplier=0.0,
+            legal_notes="Area ambiental ou restritiva deve bloquear recomendacao de construcao.",
         ),
     ]

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 
 import pandas as pd
 from sqlalchemy import text
@@ -9,6 +8,7 @@ from sqlalchemy.engine import Engine
 
 from .config import Settings, load_settings
 from .db import db_engine
+from .plan_director import evaluate_plan_compatibility
 from .scoring import AreaFeatures, score_area
 
 
@@ -282,7 +282,20 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
         LEFT JOIN geo.v_h3_zona z ON z.h3_id = f.h3_id
     """
     frame = pd.read_sql(query, engine)
-    return [AreaFeatures(**_clean_feature_row(row)) for row in frame.to_dict(orient="records")]
+    areas = []
+    for row in frame.to_dict(orient="records"):
+        clean = _clean_feature_row(row)
+        residential = evaluate_plan_compatibility(clean.get("zona"), "residencial")
+        commercial = evaluate_plan_compatibility(clean.get("zona"), "comercial")
+        clean["residential_allowed"] = bool(clean["residential_allowed"]) and residential.allowed
+        clean["commercial_allowed"] = bool(clean["commercial_allowed"]) and commercial.allowed
+        clean["residential_plan_status"] = residential.status
+        clean["commercial_plan_status"] = commercial.status
+        clean["residential_plan_multiplier"] = residential.multiplier
+        clean["commercial_plan_multiplier"] = commercial.multiplier
+        clean["legal_notes"] = commercial.notes if commercial.status != "allowed" else residential.notes
+        areas.append(AreaFeatures(**clean))
+    return areas
 
 
 def _clean_feature_row(row: dict[str, object]) -> dict[str, object]:

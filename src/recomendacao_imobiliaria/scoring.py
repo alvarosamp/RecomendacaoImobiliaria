@@ -36,6 +36,11 @@ class AreaFeatures:
     dist_min_school_m: float | None = None
     residential_allowed: bool = True
     commercial_allowed: bool = True
+    residential_plan_status: str = "allowed"
+    commercial_plan_status: str = "allowed"
+    residential_plan_multiplier: float = 1.0
+    commercial_plan_multiplier: float = 1.0
+    legal_notes: str | None = None
 
 
 @dataclass(frozen=True)
@@ -70,8 +75,16 @@ def score_area(features: AreaFeatures) -> ScoreResult:
     raw_commercial = (0.45 * commercial_gap) + (0.35 * growth) + (0.20 * mixed_access)
     raw_residential = (0.40 * environmental_quality) + (0.35 * mixed_access) + (0.25 * growth)
 
-    score_commercial = 0.0 if not features.commercial_allowed else round(raw_commercial * 100, 2)
-    score_residential = 0.0 if not features.residential_allowed else round(raw_residential * 100, 2)
+    score_commercial = (
+        0.0
+        if not features.commercial_allowed
+        else round(raw_commercial * features.commercial_plan_multiplier * 100, 2)
+    )
+    score_residential = (
+        0.0
+        if not features.residential_allowed
+        else round(raw_residential * features.residential_plan_multiplier * 100, 2)
+    )
 
     explain = {
         "growth_signal": round(growth, 4),
@@ -82,6 +95,9 @@ def score_area(features: AreaFeatures) -> ScoreResult:
             "zona": features.zona,
             "residential_allowed": features.residential_allowed,
             "commercial_allowed": features.commercial_allowed,
+            "residential_plan_status": features.residential_plan_status,
+            "commercial_plan_status": features.commercial_plan_status,
+            "legal_notes": features.legal_notes,
         },
         "main_recommendations": recommend_uses(
             supermarket_gap=supermarket_gap,

@@ -45,7 +45,14 @@ Com Poetry:
 poetry install
 ```
 
-Ou usando ambiente virtual e pip, se preferir gerar um `requirements.txt` depois.
+Ou com `requirements.txt`:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
 ### 2. Configurar variaveis
 
@@ -75,11 +82,78 @@ Servicos:
 poetry run imobiliaria-score-demo
 ```
 
+Com pip/venv:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli score-demo
+```
+
 ### 5. Abrir prototipo Streamlit
 
 ```powershell
 poetry run streamlit run app/streamlit_app.py
 ```
+
+Com pip/venv:
+
+```powershell
+$env:PYTHONPATH='src'
+streamlit run app/streamlit_app.py
+```
+
+## Pipeline MVP com dados reais
+
+Depois de subir o PostGIS, rode os comandos em ordem:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli fetch-boundary
+python -m recomendacao_imobiliaria.cli build-grid
+python -m recomendacao_imobiliaria.cli fetch-pois
+python -m recomendacao_imobiliaria.cli build-features
+python -m recomendacao_imobiliaria.cli score-db
+```
+
+Ou tudo de uma vez:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli run-mvp
+```
+
+Esses comandos fazem:
+
+- buscar o limite municipal via OSMnx;
+- gerar celulas H3 dentro do municipio;
+- buscar POIs do OpenStreetMap;
+- calcular carencia e acessibilidade;
+- salvar scores explicaveis em `geo.scores`.
+
+Observacao: os comandos `fetch-boundary` e `fetch-pois` precisam de internet, pois consultam dados do OpenStreetMap.
+
+## Modelo inicial de preco com ML
+
+Quando houver um CSV de anuncios/imoveis, o projeto ja tem um treinador inicial:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli train-price --csv data/imoveis.csv
+```
+
+Para testar o fluxo com dados artificiais:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli train-price --csv data/sample_properties.csv
+```
+
+O CSV deve ter uma coluna `price`. As colunas abaixo sao usadas quando existirem:
+
+- numericas: `area_m2`, `bedrooms`, `bathrooms`, `parking_spaces`, `latitude`, `longitude`, `score_residencial`, `score_comercial`, `ndvi_mean_90`, `ndbi_mean_90`, distancias a servicos;
+- categoricas: `property_type`, `neighborhood`, `zona`.
+
+O modelo salvo fica, por padrao, em `models/price_model.joblib`.
 
 ## Modelo conceitual
 
@@ -123,13 +197,12 @@ Veja tambem [docs/data_model.md](docs/data_model.md).
 
 ## Roadmap curto
 
-1. Gerar grid H3 real de Pouso Alegre.
-2. Importar limite municipal e zoneamento.
-3. Coletar POIs via OSM/OSMnx.
-4. Transformar o notebook NDVI em pipeline.
-5. Persistir features e scores no PostGIS.
-6. Exibir mapa e ranking real no Streamlit.
-7. Coletar anuncios imobiliarios para treinar ML de preco.
+1. Validar o pipeline OSM/H3 em Pouso Alegre.
+2. Importar zoneamento/plano diretor real.
+3. Transformar o notebook NDVI em pipeline.
+4. Exibir mapa real no Streamlit.
+5. Coletar anuncios imobiliarios para treinar e validar ML de preco.
+6. Implementar RAG sobre Plano Diretor com artigos citados.
 
 ## Observacoes de seguranca
 

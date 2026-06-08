@@ -1,0 +1,13 @@
+price,area_m2,bedrooms,bathrooms,parking_spaces,latitude,longitude,property_type,neighborhood,zona,score_residencial,score_comercial,ndvi_mean_90,ndbi_mean_90,dist_min_supermarket_m,dist_min_pharmacy_m,dist_min_school_m
+320000,62,2,1,1,-22.2271,-45.9384,apartamento,Centro,Zona Central,61.2,34.5,0.18,0.55,300,250,700
+480000,88,3,2,2,-22.2298,-45.9451,apartamento,Centro,Zona Central,63.8,38.2,0.16,0.58,220,180,550
+260000,70,2,1,1,-22.2385,-45.9602,casa,Sao Geraldo,Zona Residencial,57.1,41.3,0.34,0.31,1200,900,850
+390000,110,3,2,2,-22.2412,-45.9648,casa,Sao Geraldo,Zona Residencial,59.8,43.1,0.36,0.29,980,760,700
+610000,145,3,3,2,-22.2182,-45.9312,casa,Jardim Noronha,Zona Residencial,68.4,47.9,0.44,0.26,1500,1200,900
+750000,180,4,3,3,-22.2173,-45.9288,casa,Jardim Noronha,Zona Residencial,70.1,49.2,0.46,0.24,1600,1300,950
+210000,48,1,1,1,-22.2329,-45.9499,apartamento,Centro,Zona Central,55.2,30.8,0.14,0.61,180,160,500
+520000,95,3,2,2,-22.2488,-45.9520,casa,Fatima,Zona Mista,62.0,54.7,0.31,0.38,750,640,980
+680000,130,3,3,2,-22.2501,-45.9567,casa,Fatima,Zona Mista,64.5,56.2,0.29,0.41,680,590,900
+295000,58,2,1,1,-22.2210,-45.9722,apartamento,Arvore Grande,Zona Expansao,58.8,52.6,0.39,0.34,1900,1500,1200
+430000,105,3,2,2,-22.2192,-45.9754,casa,Arvore Grande,Zona Expansao,61.9,55.1,0.37,0.37,1700,1400,1100
+890000,220,4,4,3,-22.2144,-45.9340,casa,Jardim Noronha,Zona Residencial,72.5,48.8,0.48,0.22,1550,1180,920

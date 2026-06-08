@@ -172,6 +172,12 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# Project artifacts
+models/*.joblib
+models/*.pkl
+data/raw/
+data/processed/
+
 # PyPI configuration file
 .pypirc
 

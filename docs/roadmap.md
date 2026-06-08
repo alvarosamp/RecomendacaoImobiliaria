@@ -2,12 +2,15 @@
 
 ## Fase 1 - Base funcional
 
-- Corrigir schemas Postgres/PostGIS.
-- Subir PostGIS via Docker.
-- Criar grid H3 do municipio.
-- Carregar POIs e zoneamento.
-- Calcular score heuristico explicavel.
-- Exibir ranking em Streamlit.
+- [x] Corrigir schemas Postgres/PostGIS.
+- [x] Subir PostGIS via Docker.
+- [x] Criar comando para buscar limite municipal.
+- [x] Criar comando para gerar grid H3 do municipio.
+- [x] Criar comando para carregar POIs via OSMnx.
+- [x] Calcular score heuristico explicavel.
+- [x] Criar prototipo Streamlit.
+- [ ] Importar zoneamento real.
+- [ ] Exibir mapa real em Streamlit.
 
 ## Fase 2 - Sensoriamento remoto
 
@@ -19,7 +22,7 @@
 ## Fase 3 - ML imobiliario
 
 - Coletar anuncios historicos.
-- Treinar modelo de preco atual.
+- Usar `imobiliaria train-price --csv data/imoveis.csv` para treinar o modelo inicial.
 - Treinar modelo de valorizacao temporal.
 - Medir erro por bairro/faixa de preco.
 

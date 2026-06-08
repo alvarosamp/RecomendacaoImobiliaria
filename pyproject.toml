@@ -19,11 +19,14 @@ dependencies = [
     "python-dotenv>=1.2.1,<2.0.0",
     "folium>=0.20.0,<0.21.0",
     "streamlit>=1.51.0,<2.0.0",
-    "osmnx>=2.0.6,<3.0.0"
+    "osmnx>=2.0.6,<3.0.0",
+    "scikit-learn>=1.7.0,<2.0.0",
+    "joblib>=1.5.0,<2.0.0"
 ]
 
 [project.scripts]
 imobiliaria-score-demo = "recomendacao_imobiliaria.cli:score_demo"
+imobiliaria = "recomendacao_imobiliaria.cli:main"
 
 
 [build-system]

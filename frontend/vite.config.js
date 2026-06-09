@@ -12,4 +12,7 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['deck.gl', '@deck.gl/react', '@deck.gl/core', '@deck.gl/layers', '@deck.gl/geo-layers'],
+  },
 })

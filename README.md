@@ -1,56 +1,97 @@
-# Recomendacao Imobiliaria
+# Recomendação Imobiliária — Inteligência Territorial para Pouso Alegre
 
-Ferramenta de inteligencia territorial para apoiar decisoes de investimento imobiliario, crescimento urbano e implantacao de estabelecimentos.
+Plataforma de análise geoespacial para apoiar decisões de investimento imobiliário, crescimento urbano e implantação de estabelecimentos em Pouso Alegre, MG.
 
-O projeto usa dados geoespaciais, sensoriamento remoto, regras urbanisticas e modelos explicaveis para responder perguntas como:
+O sistema usa grade hexagonal H3, dados do OpenStreetMap, sensoriamento remoto Sentinel-2 e modelos de ML para responder:
 
-- Onde existem regioes promissoras para investimento imobiliario?
-- Quais areas tendem a valorizar?
-- Para qual lado a cidade esta crescendo?
-- O Plano Diretor permite ou restringe determinado uso?
-- Qual bairro tem carencia de mercado, farmacia, escola, academia ou outro servico?
+- Onde estão as regiões mais promissoras para investimento?
+- Para qual lado a cidade está crescendo?
+- O Plano Diretor permite o uso que eu quero nessa área?
+- Qual bairro tem carência de mercado, farmácia, escola?
+- Quanto vale este imóvel?
 
-## Visao do produto
+---
 
-A ferramenta deve gerar recomendacoes com justificativa. A saida ideal nao e apenas um score, mas uma explicacao:
+## Arquitetura
 
-> Esta area tem potencial para comercio de bairro porque apresenta crescimento urbano recente, baixa oferta de farmacias, boa acessibilidade e zoneamento compativel.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Docker Stack                         │
+│                                                             │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌────────┐  │
+│  │ Frontend │   │   API    │   │  MLflow  │   │ MinIO  │  │
+│  │React+Vite│──▶│ FastAPI  │──▶│ tracking │   │ artefatos│ │
+│  │  :80     │   │  :8000   │   │  :5000   │   │ :9000  │  │
+│  └──────────┘   └────┬─────┘   └──────────┘   └────────┘  │
+│                      │                                      │
+│              ┌───────▼───────┐   ┌────────────┐            │
+│              │  PostGIS :5433│   │  pgAdmin   │            │
+│              │  ImobiliariaDB│   │   :5050    │            │
+│              └───────────────┘   └────────────┘            │
+└─────────────────────────────────────────────────────────────┘
 
-## Objetivos
+Pipeline CLI (local → banco → modelo → API)
+  OSM → H3 Grid → POIs → Features → Sentinel-2 → Scoring → LightGBM
+```
 
-1. Indicar possiveis locais de investimento imobiliario.
-2. Estimar preco e valorizacao de imoveis com machine learning.
-3. Detectar vetores de crescimento urbano com NDVI/NDBI e outros sinais.
-4. Cruzar recomendacoes com Plano Diretor, zoneamento e restricoes.
-5. Sugerir estabelecimentos por bairro ou celula H3 com explicacao do motivo.
+### Principais tecnologias
 
-## Estado atual
+| Camada | Tecnologia |
+|---|---|
+| Grade espacial | H3 resolução 8 (~711 células cobrindo Pouso Alegre) |
+| Banco de dados | PostgreSQL 15 + PostGIS 3.5 |
+| Sensoriamento remoto | Sentinel-2 L2A via Microsoft Planetary Computer (STAC) |
+| Dados de POIs | OpenStreetMap via osmnx |
+| ML de preços | LightGBM + Optuna (50 trials) + k-fold CV (5 folds) |
+| MLOps | MLflow tracking + Model Registry |
+| API | FastAPI + Pydantic |
+| Frontend | React 18 + Vite + react-leaflet + h3-js |
+| Infraestrutura | Docker Compose |
 
-Este repositorio agora esta organizado como uma base de MVP:
+---
 
-- `Infra/`: PostGIS, pgAdmin, MinIO e scripts SQL de inicializacao.
-- `src/recomendacao_imobiliaria/`: codigo Python do dominio e scoring explicavel.
-- `app/streamlit_app.py`: prototipo Streamlit com dados demonstrativos.
-- `config/.env.example`: exemplo de configuracao local.
-- `docs/`: arquitetura, modelo de dados e roadmap.
-- `AcompanhametoNDVI.ipynb`: notebook exploratorio de NDVI com Google Earth Engine.
+## Pré-requisitos
 
-## Passo a passo para rodar o projeto
-
-### Requisitos
-
-- Python 3.11 ou superior
-- Docker Desktop instalado e rodando
+- Python 3.11+
+- Docker Desktop rodando
 - Git
 
 ---
 
-### Passo 1 — Clonar e instalar dependencias
+## Início rápido — stack Docker completo
 
 ```powershell
 git clone <url-do-repositorio>
 cd RecomendacaoImobiliaria
 
+# Copiar e revisar configurações
+cp .env.example .env
+
+# Subir todos os serviços
+docker compose up -d
+```
+
+Serviços disponíveis:
+
+| Serviço | URL | Credenciais padrão |
+|---|---|---|
+| Frontend (React) | http://localhost:80 | — |
+| API (FastAPI) | http://localhost:8000 | — |
+| API Docs | http://localhost:8000/docs | — |
+| MLflow UI | http://localhost:5000 | — |
+| PgAdmin | http://localhost:5050 | admin@local / admin |
+| MinIO Console | http://localhost:9001 | gpminio / gpminio123 |
+| PostgreSQL (host) | localhost:5433 | admin / admin123 |
+
+> **Nota:** a porta do PostgreSQL no host é `5433` para não conflitar com uma instalação local na `5432`. Dentro da rede Docker, os containers se comunicam via `db:5432`.
+
+---
+
+## Desenvolvimento local (sem Docker)
+
+### 1. Instalar dependências
+
+```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 
@@ -58,369 +99,376 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-> Defina o PYTHONPATH antes de qualquer comando Python:
->
+### 2. Configurar ambiente
+
+```powershell
+cp .env.example .env
+# Edite .env se necessário (banco local, porta, credenciais)
+```
+
+### 3. Definir PYTHONPATH
+
+```powershell
+$env:PYTHONPATH = 'src'
+```
+
+> Adicione ao perfil do PowerShell para não precisar repetir:
 > ```powershell
-> $env:PYTHONPATH = 'src'
+> Add-Content $PROFILE "`n`$env:PYTHONPATH = 'src'"
 > ```
 
----
-
-### Passo 2 — Subir a infraestrutura (Docker)
-
-```powershell
-docker compose -f Infra/docker-compose.yml up -d
-```
-
-Aguarde alguns segundos. Servicos disponiveis:
-
-| Servico | Endereco | Usuario / Senha padroes |
-| ------- | -------- | ----------------------- |
-| PostGIS | `localhost:5432` | `postgres` / `postgres` |
-| pgAdmin | `http://localhost:5050` | `admin@admin.com` / `admin` |
-| MinIO | `http://localhost:9001` | `minioadmin` / `minioadmin` |
-
-Para verificar se o banco subiu:
-
-```powershell
-docker ps
-```
-
----
-
-### Passo 3 — Configurar variaveis de ambiente
-
-```powershell
-Copy-Item config/.env.example config/.env.local
-```
-
-O arquivo padrao ja funciona para o Docker local. So edite se mudar porta, usuario ou quiser usar outra cidade.
-
----
-
-### Passo 4 — Testar sem banco (modo Demo)
-
-Confirme que a instalacao esta correta rodando o scoring local com dados sinteticos:
+### 4. Verificar instalação (sem banco)
 
 ```powershell
 python -m recomendacao_imobiliaria.cli score-demo
 ```
 
-Saida esperada: JSON com scores e explicacoes para tres celulas H3 de exemplo (norte, centro, sul).
+Retorna JSON com scores e explicações para três células H3 de exemplo.
 
 ---
 
-### Passo 5 — Abrir o dashboard Streamlit
-
-```powershell
-streamlit run app/streamlit_app.py
-```
-
-Acesse `http://localhost:8501` no navegador.
-
-- Selecione **Demo** na barra lateral para ver o dashboard sem banco.
-- Explore as abas: **Oportunidades**, **Mapa H3**, **Explicacao**, **Preco ML**, **RAG Juridico**, **Pipeline**.
-
----
-
-### Passo 6 — Rodar o pipeline com dados reais (PostGIS)
+## Pipeline completo com dados reais
 
 Execute em ordem — cada passo depende do anterior:
 
 ```powershell
-# 6.1 Busca o limite do municipio de Pouso Alegre no OpenStreetMap
+$env:PYTHONPATH = 'src'
+
+# 1. Limite do município via OpenStreetMap
 python -m recomendacao_imobiliaria.cli fetch-boundary
 
-# 6.2 Gera o grid de hexagonos H3 dentro do municipio
+# 2. Grade hexagonal H3 (res=8, ~711 células)
 python -m recomendacao_imobiliaria.cli build-grid
 
-# 6.3 Busca mercados, farmacias, escolas etc. no OpenStreetMap
+# 3. POIs: mercados, farmácias, escolas, academias etc.
 python -m recomendacao_imobiliaria.cli fetch-pois
 
-# 6.4 Calcula acessibilidade e carencia para cada celula H3
+# 4. Features de acessibilidade e carência por célula
 python -m recomendacao_imobiliaria.cli build-features
 
-# 6.5 Gera CSV de indices de vegetacao sinteticos (para teste)
+# 5. Índices de vegetação/urbanização via Sentinel-2 (recomendado)
+python -m recomendacao_imobiliaria.cli collect-sentinel2 \
+    --start 2025-06-01 --end 2025-06-07 --max-cloud 20 \
+    --output data/sentinel2_indices.csv
+
+# 5b. Alternativa: índices sintéticos (sem internet)
 python -m recomendacao_imobiliaria.cli write-sample-indices --path data/sample_indices.csv
 
-# 6.6 Importa o CSV de indices para o banco
-python -m recomendacao_imobiliaria.cli import-indices --csv data/sample_indices.csv
-
-# 6.7 Calcula medias e tendencias NDVI/NDBI por celula
-python -m recomendacao_imobiliaria.cli update-index-features
-
-# 6.8 Calcula e salva todos os scores no PostGIS
-python -m recomendacao_imobiliaria.cli score-db
-```
-
-Depois mude a fonte de dados para **PostGIS** no Streamlit para ver os dados reais.
-
-> Atalho — tudo de uma vez:
->
-> ```powershell
-> python -m recomendacao_imobiliaria.cli run-mvp
-> ```
-
----
-
-### Passo 7 — Importar zoneamento oficial
-
-```powershell
-# Gera um GeoJSON de exemplo para testar o fluxo
-python -m recomendacao_imobiliaria.cli gen-sample-zoning
-
-# Importa para o PostGIS e faz o join com as celulas H3
-python -m recomendacao_imobiliaria.cli import-zoning --file data/sample_zoning.geojson
-```
-
-Para usar o zoneamento oficial da prefeitura, substitua o arquivo `.geojson` pelo arquivo real.
-A coluna deve se chamar `zona`, `sigla`, `codigo` ou `cod_zona`.
-
----
-
-### Passo 8 — Verificar compatibilidade com o Plano Diretor
-
-```powershell
-# Consulta uma zona e uso especifico
-python -m recomendacao_imobiliaria.cli check-plan --zone ZMC --use residencial
-python -m recomendacao_imobiliaria.cli check-plan --zone ZEU --use comercial
-python -m recomendacao_imobiliaria.cli check-plan --zone ZPA --use residencial
-```
-
-Retorna: status (allowed/conditioned/blocked), artigos aplicaveis, parametros urbanisticos (CA, TO, gabarito).
-
----
-
-### Passo 9 — Coleta de dados de imoveis
-
-**Opcao A — Gerar dataset sintetico realista (sem internet):**
-
-```powershell
-python -m recomendacao_imobiliaria.cli gen-listings
-# Gera data/pouso_alegre_listings.csv com 500 imoveis
-```
-
-**Opcao B — Buscar dados reais do IBGE (gratuito, sem cadastro):**
-
-```powershell
-python -m recomendacao_imobiliaria.cli fetch-ibge
-# Salva populacao, PIB per capita e dados municipais em data/ibge_housing.csv
-```
-
-**Opcao C — Buscar anuncios do Mercado Livre (requer token OAuth gratuito):**
-
-1. Acesse [developers.mercadolibre.com.br](https://developers.mercadolibre.com.br) e crie um app gratuito.
-2. Obtenha o `access_token`.
-3. Execute:
-
-```powershell
-python -m recomendacao_imobiliaria.cli fetch-listings-ml --token SEU_TOKEN --max 200
-# Ou defina: $env:ML_ACCESS_TOKEN = 'SEU_TOKEN'
-```
-
-**Opcao D — Normalizar CSV de qualquer portal (OLX, ZAP, VivaReal, Imovelweb):**
-
-```powershell
-python -m recomendacao_imobiliaria.cli normalize-listings --csv data/meu_export_portal.csv
-# Detecta automaticamente colunas de preco, area, quartos, bairro etc.
-```
-
----
-
-### Passo 10 — Treinar e usar o modelo de precos
-
-```powershell
-# Treinar com o dataset gerado no passo 9
-python -m recomendacao_imobiliaria.cli train-price --csv data/pouso_alegre_listings.csv
-
-# Prever precos para novos imoveis
-python -m recomendacao_imobiliaria.cli predict-price --csv data/pouso_alegre_listings.csv
-# Resultado salvo em data/processed/predicted_prices.csv
-```
-
----
-
-### Passo 11 — RAG juridico sobre o Plano Diretor (opcional)
-
-Requer uma chave da API da Anthropic (Claude).
-
-```powershell
-# Instalar dependencias extras
-pip install chromadb anthropic
-
-# Configurar chave
-$env:ANTHROPIC_API_KEY = 'sua-chave-aqui'
-
-# Indexar os artigos da Lei 6476/2021
-python -m recomendacao_imobiliaria.cli build-rag-index
-
-# Fazer uma pergunta juridica
-python -m recomendacao_imobiliaria.cli rag-query --question "Posso construir um predio de 10 andares na ZMC?"
-python -m recomendacao_imobiliaria.cli rag-query --question "O que e necessario para parcelar um terreno na ZEU?"
-```
-
-A aba **RAG Juridico** no Streamlit tambem oferece essa funcionalidade com interface grafica.
-
----
-
-### Passo 12 — NDVI/NDBI real via Sentinel-2 (opcional, avancado)
-
-Requer ambiente com mais dependencias (~1 GB):
-
-```powershell
-pip install pystac-client planetary-computer stackstac rioxarray
-
-# Coleta NDVI/NDBI dos ultimos 6 meses para todas as celulas H3 do grid
-python -m recomendacao_imobiliaria.cli collect-sentinel2 --output data/sentinel2_indices.csv
-
-# Depois importa normalmente
+# 6. Importar índices para o banco
 python -m recomendacao_imobiliaria.cli import-indices --csv data/sentinel2_indices.csv
+
+# 7. Calcular médias e tendências NDVI/NDBI por célula
 python -m recomendacao_imobiliaria.cli update-index-features
-```
 
----
+# 8. Importar zoneamento do Plano Diretor
+python -m recomendacao_imobiliaria.cli import-zoning --file data/sample_zoning.geojson
 
-### Resumo do fluxo completo
-
-```text
-Instalar deps → Docker up → score-demo (teste) → Streamlit (Demo)
-     ↓
-fetch-boundary → build-grid → fetch-pois → build-features
-     ↓
-[import-indices ou collect-sentinel2] → update-index-features
-     ↓
-[import-zoning] → score-db → Streamlit (PostGIS)
-     ↓
-gen-listings → train-price → predict-price
-     ↓
-build-rag-index → rag-query
-```
-
----
-
-### Solucao de problemas comuns
-
-| Problema | Solucao |
-| -------- | ------- |
-| `ModuleNotFoundError: recomendacao_imobiliaria` | Execute `$env:PYTHONPATH = 'src'` antes do comando |
-| `connection refused` no PostGIS | Execute `docker compose -f Infra/docker-compose.yml up -d` e aguarde 10s |
-| `403 Forbidden` no Mercado Livre | A API requer token OAuth — veja o Passo 9 Opcao C |
-| `chromadb not found` para RAG | Execute `pip install chromadb anthropic` |
-| `pystac_client not found` para Sentinel | Execute `pip install pystac-client planetary-computer stackstac rioxarray` |
-
----
-
-### Como rodar (versao curta — so o dashboard Demo)
-
-```powershell
-git clone <url>
-cd RecomendacaoImobiliaria
-python -m venv .venv && .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-$env:PYTHONPATH = 'src'
-streamlit run app/streamlit_app.py
-```
-
-Acesse `http://localhost:8501` e selecione **Demo**.
-
----
-
-## Pipeline MVP com dados reais
-
-Depois de subir o PostGIS, rode os comandos em ordem:
-
-```powershell
-$env:PYTHONPATH='src'
-python -m recomendacao_imobiliaria.cli fetch-boundary
-python -m recomendacao_imobiliaria.cli build-grid
-python -m recomendacao_imobiliaria.cli fetch-pois
-python -m recomendacao_imobiliaria.cli build-features
-python -m recomendacao_imobiliaria.cli import-indices --csv data/sample_indices.csv
-python -m recomendacao_imobiliaria.cli update-index-features
+# 9. Calcular e persistir todos os scores
 python -m recomendacao_imobiliaria.cli score-db
 ```
 
-Ou tudo de uma vez:
+Atalho — tudo de uma vez:
 
 ```powershell
-$env:PYTHONPATH='src'
 python -m recomendacao_imobiliaria.cli run-mvp
 ```
 
-## Modelo inicial de preco com ML
+---
 
-Quando houver um CSV de anuncios/imoveis, o projeto ja tem um treinador inicial:
+## Modelo de ML — preço de imóveis
 
+### Coletar dados de imóveis
+
+**Opção A — Gerar dataset sintético realista (sem internet):**
 ```powershell
-$env:PYTHONPATH='src'
 python -m recomendacao_imobiliaria.cli gen-listings
-python -m recomendacao_imobiliaria.cli train-price --csv data/pouso_alegre_listings.csv
-python -m recomendacao_imobiliaria.cli predict-price --csv data/pouso_alegre_listings.csv
+# → data/pouso_alegre_listings.csv (500 imóveis)
 ```
 
-O CSV deve ter uma coluna `price`. As colunas abaixo sao usadas quando existirem:
+**Opção B — Dados do IBGE (gratuito):**
+```powershell
+python -m recomendacao_imobiliaria.cli fetch-ibge
+# → data/ibge_housing.csv
+```
 
-- numericas: `area_m2`, `bedrooms`, `bathrooms`, `parking_spaces`, `latitude`, `longitude`, `score_residencial`, `score_comercial`, `ndvi_mean_90`, `ndbi_mean_90`, distancias a servicos;
-- categoricas: `property_type`, `neighborhood`, `zona`.
+**Opção C — Anúncios do Mercado Livre (requer token OAuth gratuito):**
+```powershell
+# Crie um app em developers.mercadolibre.com.br e obtenha o access_token
+$env:ML_ACCESS_TOKEN = 'SEU_TOKEN'
+python -m recomendacao_imobiliaria.cli fetch-listings-ml --max 200
+```
 
-O modelo salvo fica, por padrao, em `models/price_model.joblib`.
+**Opção D — Normalizar CSV de qualquer portal (OLX, ZAP, VivaReal):**
+```powershell
+python -m recomendacao_imobiliaria.cli normalize-listings --csv data/meu_export.csv
+```
 
-## Documentacao do codigo
+### Treinar e usar o modelo
 
-Veja [docs/codigo.md](docs/codigo.md) para entender modulo por modulo, comandos do CLI, tabelas tocadas e o fluxo interno da ferramenta.
+```powershell
+# Treinar: LightGBM + Optuna (50 trials) + k-fold CV (5 folds)
+# Enriquece automaticamente com features do PostGIS (NDVI, scores, zona)
+python -m recomendacao_imobiliaria.cli train-price --csv data/pouso_alegre_listings.csv
 
-Veja tambem [docs/plano_diretor.md](docs/plano_diretor.md) para entender como a ferramenta considera o Plano Diretor de Pouso Alegre.
+# Prever preços
+python -m recomendacao_imobiliaria.cli predict-price --csv data/pouso_alegre_listings.csv
+# → data/processed/predicted_prices.csv
+```
 
-## Modelo conceitual
+**Features usadas pelo modelo:**
 
-O sistema trabalha com celulas H3 como unidade de analise. Para cada celula, a ferramenta calcula:
+| Tipo | Colunas |
+|---|---|
+| Numéricas | `area_m2`, `bedrooms`, `bathrooms`, `parking_spaces`, `latitude`, `longitude`, `score_residencial`, `score_comercial`, `ndvi_mean_90`, `ndvi_slope_180`, `ndbi_mean_90`, `ndbi_slope_180`, distâncias a serviços |
+| Categóricas | `property_type`, `neighborhood`, `zona` |
 
-- indices ambientais e urbanos: NDVI, NDBI, slopes temporais;
-- acessibilidade: distancia ate mercado, farmacia, escola etc.;
-- carencia comercial: baixa oferta de servicos;
-- conformidade urbanistica: uso permitido, condicionado ou vetado;
-- compatibilidade com Plano Diretor e zoneamento;
-- score residencial e comercial;
-- `explain_json`: justificativa auditavel.
+O modelo salvo fica em `models/price_model.joblib` e é rastreado automaticamente no MLflow.
 
-## IA e ML
+**Resultados obtidos com dataset de Pouso Alegre:**
 
-No MVP, o scoring e heuristico e explicavel. Isso e importante porque permite validar a logica com especialistas antes de treinar modelos mais complexos.
+| Métrica | Valor |
+|---|---|
+| CV MAE (5-fold) | R$ 104.461 ± R$ 7.675 |
+| R² holdout | 0.694 |
 
-Depois, com dados historicos, o projeto pode evoluir para:
+---
 
-- modelo de preco atual de imoveis;
-- modelo de valorizacao futura;
-- deteccao automatica de crescimento urbano;
-- RAG sobre Plano Diretor e leis urbanisticas;
-- explicabilidade com SHAP ou decomposicao de fatores.
+## Plano Diretor e zoneamento
 
-## Banco de dados
+```powershell
+# Verificar compatibilidade de uso por zona
+python -m recomendacao_imobiliaria.cli check-plan --zone ZMC --use residencial
+python -m recomendacao_imobiliaria.cli check-plan --zone ZEU --use comercial
+python -m recomendacao_imobiliaria.cli check-plan --zone ZPA --use residencial
 
-As principais tabelas estao em `Infra/initdb`:
+# Importar zoneamento real da prefeitura
+# A coluna deve se chamar: zona, sigla, codigo ou cod_zona
+python -m recomendacao_imobiliaria.cli import-zoning --file data/zoneamento_oficial.geojson
+```
 
-- `geo.city_boundary`
-- `geo.grid_h3`
-- `geo.osm_pois`
-- `geo.indices`
-- `geo.access`
-- `geo.features`
-- `geo.scores`
-- `geo.zoning`
-- `geo.overlays`
-- `public.regs`
+---
 
-Veja tambem [docs/data_model.md](docs/data_model.md).
+## RAG jurídico sobre o Plano Diretor (opcional)
 
-## Roadmap curto
+Requer chave da API da Anthropic (Claude).
 
-1. Validar o pipeline OSM/H3 em Pouso Alegre.
-2. Importar zoneamento/plano diretor real.
-3. Transformar o notebook NDVI em pipeline.
-4. Exibir mapa real no Streamlit.
-5. Coletar anuncios imobiliarios para treinar e validar ML de preco.
-6. Implementar RAG sobre Plano Diretor com artigos citados.
+```powershell
+pip install chromadb anthropic
 
-## Observacoes de seguranca
+$env:ANTHROPIC_API_KEY = 'sua-chave-aqui'
 
-Nao comite credenciais reais. Use `config/.env.local` ou secrets do ambiente de deploy.
+# Indexar artigos da Lei 6476/2021
+python -m recomendacao_imobiliaria.cli build-rag-index
+
+# Fazer consultas jurídicas
+python -m recomendacao_imobiliaria.cli rag-query --question "Posso construir um prédio de 10 andares na ZMC?"
+```
+
+---
+
+## Sentinel-2 via Planetary Computer
+
+A coleta usa o [Microsoft Planetary Computer](https://planetarycomputer.microsoft.com/) — gratuito, sem cadastro.
+
+O coletor agrupa as ~711 células H3 por tile MGRS (4–6 tiles), faz **uma única busca por tile** e extrai todos os valores via operações vetorizadas com `stackstac`. Isso reduz as chamadas à API de 711 para ~4–6.
+
+**Índices calculados por célula H3:**
+- `ndvi_mean_90` — média NDVI dos últimos 90 dias
+- `ndvi_slope_180` — tendência NDVI dos últimos 180 dias (positivo = revegetação)
+- `ndbi_mean_90` — média NDBI dos últimos 90 dias
+- `ndbi_slope_180` — tendência NDBI (positivo = urbanização)
+
+```powershell
+# Instalar dependências extras (≈1 GB)
+pip install pystac-client planetary-computer stackstac rioxarray
+
+python -m recomendacao_imobiliaria.cli collect-sentinel2 \
+    --start 2025-01-01 --end 2025-06-30 \
+    --max-cloud 20 \
+    --output data/sentinel2_indices.csv
+```
+
+---
+
+## Estrutura do projeto
+
+```
+RecomendacaoImobiliaria/
+├── .env                        # Configurações locais (não versionado)
+├── .env.example                # Template de configuração
+├── docker-compose.yml          # Stack completo (db, api, frontend, mlflow, minio)
+├── Dockerfile                  # Imagem da API Python
+├── mlflow.Dockerfile           # Imagem do MLflow
+│
+├── src/recomendacao_imobiliaria/
+│   ├── cli.py                  # Todos os comandos CLI
+│   ├── config.py               # Settings via .env
+│   ├── db.py                   # Engine SQLAlchemy
+│   ├── geospatial.py           # H3 grid, OSM, POIs
+│   ├── satellite_collector.py  # Sentinel-2 via Planetary Computer
+│   ├── scoring.py              # Scoring heurístico explicável
+│   ├── ml.py                   # LightGBM + Optuna + MLflow
+│   ├── plan_director.py        # Plano Diretor / zoneamento
+│   ├── zoning_import.py        # Importação de GeoJSON de zoneamento
+│   ├── rag_juridico.py         # RAG sobre legislação
+│   ├── api_collector.py        # Coleta Mercado Livre
+│   └── listings_import.py      # Normalização de CSV de imóveis
+│
+├── api/
+│   ├── main.py                 # FastAPI app + CORS
+│   └── routes/
+│       ├── scores.py           # GET /api/scores
+│       ├── predict.py          # POST /api/predict
+│       └── mlops.py            # GET /api/mlops/runs
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx             # 4 abas: Mapa, Oportunidades, Preço, MLOps
+│   │   ├── components/
+│   │   │   ├── H3Map.jsx       # Mapa Leaflet com hexágonos coloridos
+│   │   │   ├── OpportunitiesTable.jsx
+│   │   │   ├── PricePanel.jsx  # Formulário de estimativa de preço
+│   │   │   └── MlopsPanel.jsx  # Tabela de experimentos MLflow
+│   │   └── api.js              # Calls para o backend
+│   ├── nginx.conf              # Proxy /api → FastAPI
+│   └── Dockerfile              # Multi-stage: node builder → nginx
+│
+├── Infra/
+│   └── initdb/                 # Scripts SQL de criação do schema
+│       ├── 001_schemas.sql     # Schemas e tabelas principais
+│       ├── 002_schemas.sql     # Tabelas geo.*
+│       ├── 003_zoning_regs.sql # Regulamentos de zoneamento
+│       └── 010_views.sql       # Views analíticas
+│
+├── data/
+│   ├── sentinel2_indices.csv   # Índices Sentinel-2 coletados
+│   ├── pouso_alegre_listings.csv
+│   └── processed/
+│
+├── models/
+│   └── price_model.joblib      # Modelo treinado (não versionado)
+│
+├── config/
+│   └── plan_director_pouso_alegre.json
+│
+├── docs/
+│   ├── architecture.md
+│   ├── data_model.md
+│   ├── codigo.md
+│   ├── plano_diretor.md
+│   ├── pipeline.md
+│   └── roadmap.md
+│
+├── tests/
+└── app/
+    └── streamlit_app.py        # Dashboard alternativo (Streamlit)
+```
+
+---
+
+## Banco de dados — tabelas principais
+
+Todas as tabelas ficam no schema `geo`:
+
+| Tabela | Conteúdo |
+|---|---|
+| `geo.city_boundary` | Limite do município (PostGIS geometry) |
+| `geo.grid_h3` | ~711 células hexagonais H3 res=8 |
+| `geo.osm_pois` | POIs do OpenStreetMap com categoria |
+| `geo.indices` | Séries temporais NDVI/NDBI por célula |
+| `geo.features` | Features agregadas por célula (NDVI médio, distâncias, zona) |
+| `geo.scores` | Score residencial/comercial + explain_json + risk_level |
+| `geo.zoning` | Zoneamento do Plano Diretor (geometrias) |
+| `public.regs` | Parâmetros urbanísticos (CA, TO, gabarito) por zona |
+
+---
+
+## API — endpoints
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/health` | Status da API |
+| `GET` | `/api/scores` | Scores de todas as células H3 |
+| `POST` | `/api/predict` | Estimar preço de um imóvel |
+| `GET` | `/api/mlops/runs` | Últimas 10 execuções do MLflow |
+
+**Exemplo — estimar preço:**
+
+```bash
+curl -X POST http://localhost:8000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "area_m2": 120,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "parking_spaces": 1,
+    "property_type": "apartamento",
+    "latitude": -22.230278,
+    "longitude": -45.948889
+  }'
+```
+
+Documentação interativa: http://localhost:8000/docs
+
+---
+
+## Configuração via `.env`
+
+```bash
+# PostgreSQL
+PG_HOST=localhost
+PG_PORT=5432
+PG_DB=ImobiliariaDB
+PG_USER=admin
+PG_PASS=admin123
+
+# Cidade
+CITY_NAME=Pouso Alegre, Minas Gerais, Brazil
+CITY_LAT=-22.230278
+CITY_LON=-45.948889
+H3_RES=8
+
+# MLflow
+MLFLOW_TRACKING_URI=http://localhost:5000
+
+# API
+MODEL_PATH=models/price_model.joblib
+
+# MinIO
+MINIO_ROOT_USER=gpminio
+MINIO_ROOT_PASSWORD=gpminio123
+```
+
+> No ambiente Docker, a API usa `PG_HOST=db` automaticamente (sobrescreve o `.env`).
+
+---
+
+## Solução de problemas
+
+| Problema | Solução |
+|---|---|
+| `ModuleNotFoundError: recomendacao_imobiliaria` | `$env:PYTHONPATH = 'src'` |
+| Banco não conecta | `docker compose up -d` e aguarde 10s |
+| `403` no Mercado Livre | API requer token OAuth — veja opção C acima |
+| `chromadb not found` | `pip install chromadb anthropic` |
+| `pystac_client not found` | `pip install pystac-client planetary-computer stackstac rioxarray` |
+| Frontend retorna dados vazios | O banco Docker está vazio — rode o pipeline apontando para ele |
+| `port is already allocated` (5432) | Postgres local já usa a porta; o Docker expõe na 5433 |
+
+---
+
+## Roadmap
+
+- [ ] Popular banco Docker via pipeline automatizado no `docker compose up`
+- [ ] Coletar anúncios reais de imóveis de Pouso Alegre
+- [ ] Importar zoneamento oficial da Prefeitura (shapefile real)
+- [ ] Série temporal Sentinel-2 completa (2 anos) para detectar vetor de crescimento
+- [ ] SHAP values para explicabilidade do modelo de preço
+- [ ] Notificações de alertas de oportunidade por e-mail/webhook
+- [ ] Suporte a outras cidades (parametrizado via `.env`)
+
+---
+
+## Segurança
+
+Nunca versione credenciais reais. O arquivo `.env` está no `.gitignore`. Use `.env.example` como referência e preencha o `.env` local com valores reais.

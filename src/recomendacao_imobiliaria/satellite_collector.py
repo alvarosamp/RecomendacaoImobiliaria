@@ -4,6 +4,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import logging
+import time
 from pathlib import Path
 
 import numpy as np
@@ -30,11 +31,81 @@ def _check_deps() -> None:
             __import__(pkg)
         except ImportError:
             missing.append(pkg.replace("_", "-"))
+
     if missing:
         raise ImportError(
             "Instale as dependencias de sensoriamento remoto real:\n"
             f"  pip install {' '.join(missing)}"
         )
+
+
+def _cells_bbox(h3_ids: list[str], buffer: float = 0.001) -> list[float]:
+    import h3 as h3lib
+
+    all_lons: list[float] = []
+    all_lats: list[float] = []
+    for h3_id in h3_ids:
+        for lat, lon in h3lib.cell_to_boundary(h3_id):
+            all_lats.append(lat)
+            all_lons.append(lon)
+
+    return [
+        min(all_lons) - buffer,
+        min(all_lats) - buffer,
+        max(all_lons) + buffer,
+        max(all_lats) + buffer,
+    ]
+
+
+def _h3_to_bbox(h3_id: str, buffer: float = 0.001) -> list[float]:
+    return _cells_bbox([h3_id], buffer=buffer)
+
+
+def _search_items_with_retry(
+    catalog,
+    label: str,
+    bbox: list[float],
+    start_date: str,
+    end_date: str,
+    max_cloud_pct: float,
+    limit: int = 200,
+    max_retries: int = 3,
+):
+    for attempt in range(1, max_retries + 1):
+        try:
+            search = catalog.search(
+                collections=["sentinel-2-l2a"],
+                bbox=bbox,
+                datetime=f"{start_date}/{end_date}",
+                query={"eo:cloud_cover": {"lt": max_cloud_pct}},
+                limit=limit,
+                max_items=limit,
+            )
+            return list(search.items())
+
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "maximum allowed time" in msg or "timed out" in msg or "timeout" in msg:
+                log.warning("Timeout na busca STAC (%s). Tentativa %d/%d.", label, attempt, max_retries)
+                if attempt < max_retries:
+                    time.sleep(5 * attempt)
+                    continue
+                raise RuntimeError(
+                    f"Timeout na busca STAC para {label} apos {max_retries} tentativas."
+                ) from exc
+            raise
+
+
+def _best_scene_per_tile(items: list) -> dict[str, object]:
+    """Return the lowest-cloud-cover scene for each MGRS tile."""
+    best: dict[str, object] = {}
+    for item in items:
+        tile_id = item.properties.get("s2:mgrs_tile") or item.id[:6]
+        cloud = item.properties.get("eo:cloud_cover", 100.0)
+        current = best.get(tile_id)
+        if current is None or cloud < current.properties.get("eo:cloud_cover", 100.0):
+            best[tile_id] = item
+    return best
 
 
 def collect_sentinel2_indices(
@@ -43,11 +114,15 @@ def collect_sentinel2_indices(
     end_date: str,
     output_csv: str = "data/sentinel2_indices.csv",
     max_cloud_pct: float = 30.0,
+    limit: int = 200,
 ) -> SatelliteCollectResult:
     """Fetch Sentinel-2 L2A NDVI/NDBI for a list of H3 cells.
 
-    Uses Microsoft Planetary Computer STAC (free, anonymous).
-    Bands used:  B04 (Red), B08 (NIR), B11 (SWIR1).
+    Uses Microsoft Planetary Computer STAC. Performs ONE search over the full
+    bounding box, groups results by MGRS tile, then downloads each tile once and
+    extracts all H3 cells from it in memory — instead of one request per cell.
+
+    Bands: B04 Red, B08 NIR, B11 SWIR1.
     NDVI = (NIR - Red) / (NIR + Red)
     NDBI = (SWIR1 - NIR) / (SWIR1 + NIR)
     """
@@ -58,88 +133,153 @@ def collect_sentinel2_indices(
     import pystac_client
     import stackstac
 
-    rows: list[dict] = []
-    errors: list[str] = []
-    scenes_processed = 0
-
     catalog = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1",
         modifier=planetary_computer.sign_inplace,
     )
 
+    best_rows: dict[str, dict] = {}  # h3_id -> best (lowest cloud_pct) row
+    errors: list[str] = []
+    scenes_processed = 0
+
+    # --- Step 1: single search over the full bbox ---
+    overall_bbox = _cells_bbox(h3_ids, buffer=0.01)
+    print(
+        f"Buscando cenas Sentinel-2 para {len(h3_ids)} celulas H3 "
+        f"(bbox: {[round(x, 3) for x in overall_bbox]})..."
+    )
+
+    items = _search_items_with_retry(
+        catalog=catalog,
+        label="grid_completo",
+        bbox=overall_bbox,
+        start_date=start_date,
+        end_date=end_date,
+        max_cloud_pct=max_cloud_pct,
+        limit=limit,
+        max_retries=3,
+    )
+
+    if not items:
+        print("Sem cenas Sentinel-2 no periodo com cobertura de nuvens aceitavel.")
+        Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame().to_csv(output_csv, index=False)
+        return SatelliteCollectResult(
+            h3_cells=len(h3_ids),
+            scenes_processed=0,
+            rows_written=0,
+            output_path=output_csv,
+        )
+
+    # --- Step 2: best scene per MGRS tile ---
+    best_by_tile = _best_scene_per_tile(items)
+    print(f"Encontradas {len(items)} cenas em {len(best_by_tile)} tiles MGRS. Processando...")
+
+    # Precompute centroids for fast containment checks
+    h3_centroids: dict[str, tuple[float, float]] = {}
     for h3_id in h3_ids:
+        lat, lon = h3lib.cell_to_latlng(h3_id)
+        h3_centroids[h3_id] = (lat, lon)
+
+    covered_h3_ids: set[str] = set()
+
+    # --- Step 3: one download per tile, extract all H3 cells in one pass ---
+    for tile_idx, (tile_id, item) in enumerate(best_by_tile.items(), 1):
+        item_bbox = item.bbox or _cells_bbox(
+            [h3_id for h3_id in h3_ids], buffer=0.0
+        )
+
+        # H3 cells whose centroid falls within this tile
+        tile_h3_ids = [
+            h3_id
+            for h3_id, (lat, lon) in h3_centroids.items()
+            if item_bbox[0] <= lon <= item_bbox[2] and item_bbox[1] <= lat <= item_bbox[3]
+        ]
+
+        if not tile_h3_ids:
+            continue
+
+        cloud_pct = float(item.properties.get("eo:cloud_cover", 0.0))
+        date_str = item.datetime.strftime("%Y-%m-%d") if item.datetime else None
+
+        group_bbox = _cells_bbox(tile_h3_ids, buffer=0.002)
+
+        print(
+            f"[{tile_idx}/{len(best_by_tile)}] Tile {tile_id} "
+            f"({date_str}, nuvem {cloud_pct:.0f}%): "
+            f"{len(tile_h3_ids)} celulas H3..."
+        )
+
         try:
-            boundary = h3lib.cell_to_boundary(h3_id)
-            lats = [p[0] for p in boundary]
-            lons = [p[1] for p in boundary]
-            bbox = [min(lons) - 0.001, min(lats) - 0.001, max(lons) + 0.001, max(lats) + 0.001]
+            da = stackstac.stack(
+                [item],
+                assets=["B04", "B08", "B11"],
+                bounds_latlon=group_bbox,
+                epsg=4326,
+                resolution=0.0002,  # ~22 m in degrees at 23°S
+                dtype="float64",
+                rescale=False,
+            ).squeeze("time")
 
-            search = catalog.search(
-                collections=["sentinel-2-l2a"],
-                bbox=bbox,
-                datetime=f"{start_date}/{end_date}",
-                query={"eo:cloud_cover": {"lt": max_cloud_pct}},
-                sortby="+datetime",
-            )
+            b04 = da.sel(band="B04").values / 10000.0
+            b08 = da.sel(band="B08").values / 10000.0
+            b11 = da.sel(band="B11").values / 10000.0
 
-            items = list(search.items())
-            if not items:
-                log.debug("Sem cenas para %s no periodo.", h3_id)
-                continue
+            ndvi_raster = (b08 - b04) / (b08 + b04 + 1e-9)
+            ndbi_raster = (b11 - b08) / (b11 + b08 + 1e-9)
 
-            for item in items:
-                try:
-                    da = stackstac.stack(
-                        [item],
-                        assets=["B04", "B08", "B11"],
-                        bounds_latlon=bbox,
-                        epsg=32723,
-                        resolution=20,
-                        dtype="float64",
-                        rescale=False,
-                    ).squeeze("time")
+            lons = da.coords["x"].values  # shape (nx,)
+            lats = da.coords["y"].values  # shape (ny,), may be descending
 
-                    b04 = da.sel(band="B04").values
-                    b08 = da.sel(band="B08").values
-                    b11 = da.sel(band="B11").values
+            scenes_processed += 1
 
-                    # Scale factor for L2A (DN → reflectance)
-                    b04 = b04 / 10000.0
-                    b08 = b08 / 10000.0
-                    b11 = b11 / 10000.0
+            for h3_id in tile_h3_ids:
+                cell_bbox = _h3_to_bbox(h3_id, buffer=0.0)
 
-                    ndvi = np.nanmedian((b08 - b04) / (b08 + b04 + 1e-9))
-                    ndbi = np.nanmedian((b11 - b08) / (b11 + b08 + 1e-9))
-                    cloud_pct = float(item.properties.get("eo:cloud_cover", 0.0))
-                    date_str = (
-                        item.datetime.strftime("%Y-%m-%d")
-                        if item.datetime
-                        else start_date
-                    )
+                lat_idx = np.where((lats >= cell_bbox[1]) & (lats <= cell_bbox[3]))[0]
+                lon_idx = np.where((lons >= cell_bbox[0]) & (lons <= cell_bbox[2]))[0]
 
-                    rows.append(
-                        {
-                            "h3_id": h3_id,
-                            "date": date_str,
-                            "ndvi": round(float(ndvi), 4),
-                            "ndbi": round(float(ndbi), 4),
-                            "bai": None,
-                            "cloud_pct": round(cloud_pct, 1),
-                        }
-                    )
-                    scenes_processed += 1
+                if lat_idx.size == 0 or lon_idx.size == 0:
+                    errors.append(f"{h3_id}: sem pixels na celula rasterizada.")
+                    continue
 
-                except Exception as exc:
-                    errors.append(f"{h3_id}/{item.id}: {exc}")
-                    log.warning("Erro ao processar cena %s: %s", item.id, exc)
+                ndvi_sub = ndvi_raster[np.ix_(lat_idx, lon_idx)]
+                ndbi_sub = ndbi_raster[np.ix_(lat_idx, lon_idx)]
+
+                ndvi_val = float(np.nanmedian(ndvi_sub))
+                ndbi_val = float(np.nanmedian(ndbi_sub))
+
+                if np.isnan(ndvi_val) or np.isnan(ndbi_val):
+                    errors.append(f"{h3_id}: NDVI ou NDBI invalido.")
+                    continue
+
+                existing = best_rows.get(h3_id)
+                if existing is None or cloud_pct < existing["cloud_pct"]:
+                    best_rows[h3_id] = {
+                        "h3_id": h3_id,
+                        "date": date_str,
+                        "ndvi": round(ndvi_val, 4),
+                        "ndbi": round(ndbi_val, 4),
+                        "bai": None,
+                        "cloud_pct": round(cloud_pct, 1),
+                    }
+                    covered_h3_ids.add(h3_id)
+
+            print(f"  -> {len(tile_h3_ids)} celulas extraidas.")
 
         except Exception as exc:
-            errors.append(f"{h3_id}: {exc}")
-            log.warning("Erro ao buscar cenas para %s: %s", h3_id, exc)
+            msg = f"Tile {tile_id}: {exc}"
+            errors.append(msg)
+            log.warning("Erro ao processar tile %s: %s", tile_id, exc)
 
-    df = pd.DataFrame(rows)
+    uncovered = len(h3_ids) - len(covered_h3_ids)
+    if uncovered:
+        log.info("%d celulas H3 sem cobertura de tiles.", uncovered)
+
+    df = pd.DataFrame(list(best_rows.values()))
     if not df.empty:
         df = df.sort_values(["h3_id", "date"])
+
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_csv, index=False)
 
@@ -183,5 +323,17 @@ def collect_for_grid(
     finally:
         eng.dispose()
 
-    log.info("Coletando Sentinel-2 para %d celulas H3 (%s a %s).", len(h3_ids), start_date, end_date)
-    return collect_sentinel2_indices(h3_ids, start_date, end_date, output_csv, max_cloud_pct)
+    log.info(
+        "Coletando Sentinel-2 para %d celulas H3 (%s a %s).",
+        len(h3_ids),
+        start_date,
+        end_date,
+    )
+
+    return collect_sentinel2_indices(
+        h3_ids=h3_ids,
+        start_date=start_date,
+        end_date=end_date,
+        output_csv=output_csv,
+        max_cloud_pct=max_cloud_pct,
+    )

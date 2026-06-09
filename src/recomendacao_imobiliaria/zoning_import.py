@@ -22,8 +22,10 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
     """
     import geopandas as gpd
 
+    from sqlalchemy import text
+
     from .config import Settings
-    from .db import engine
+    from .db import make_engine
 
     if settings is None:
         settings = Settings()
@@ -46,7 +48,6 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
 
     gdf = gdf.rename(columns={zona_col: "zona"})
 
-    # Keep optional label/description column if present
     label_col = col_map.get("label") or col_map.get("descricao") or col_map.get("nome")
     keep_cols = ["zona", "geometry"]
     if label_col and label_col != "zona":
@@ -56,40 +57,52 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
     gdf = gdf[keep_cols].copy()
     gdf = gdf.to_crs(epsg=4326)
 
-    # Dissolve multipart geometries per zone to avoid duplicates
     gdf = gdf.dissolve(by="zona", as_index=False)
 
-    eng = engine(settings)
+    eng = make_engine(settings)
 
     with eng.begin() as conn:
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS geo.zoning ("
-            "  id SERIAL PRIMARY KEY,"
-            "  zona VARCHAR(32) NOT NULL,"
-            "  label VARCHAR(256),"
-            "  geometry GEOMETRY(GEOMETRY, 4326)"
-            ")"
-        )
-        conn.execute("TRUNCATE geo.zoning")
+        conn.execute(text("TRUNCATE geo.zoning"))
 
-    gdf.to_postgis("zoning", eng, schema="geo", if_exists="append", index=False)
+    import json
 
-    # Spatially join: assign the zone that contains the centroid of each H3 cell
     with eng.begin() as conn:
-        result = conn.execute(
+        for _, row in gdf.iterrows():
+            obs = row.get("label") if "label" in gdf.columns else None
+            conn.execute(
+                text(
+                    "INSERT INTO geo.zoning (zona, observacoes, geom) "
+                    "VALUES (:zona, :obs, ST_SetSRID(ST_GeomFromGeoJSON(:geom), 4326))"
+                ),
+                {
+                    "zona": row["zona"],
+                    "obs": obs,
+                    "geom": json.dumps(row.geometry.__geo_interface__),
+                },
+            )
+
+    with eng.begin() as conn:
+        # Add zona column to geo.features if it doesn't exist yet
+        conn.execute(text(
+            "ALTER TABLE geo.features ADD COLUMN IF NOT EXISTS zona VARCHAR(32)"
+        ))
+
+        result = conn.execute(text(
             """
             UPDATE geo.features f
             SET zona = z.zona
             FROM geo.zoning z
-            JOIN geo.grid_h3 g ON ST_Intersects(ST_Centroid(g.geometry), z.geometry)
+            JOIN geo.grid_h3 g ON ST_Intersects(ST_Centroid(g.geom), z.geom)
             WHERE g.h3_id = f.h3_id
             """
-        )
+        ))
         cells_assigned = result.rowcount
 
         unmatched = conn.execute(
-            "SELECT COUNT(*) FROM geo.features WHERE zona IS NULL"
+            text("SELECT COUNT(*) FROM geo.features WHERE zona IS NULL")
         ).scalar()
+
+    eng.dispose()
 
     return ZoningImportResult(
         zones_imported=len(gdf),

@@ -46,6 +46,8 @@ def main() -> None:
     train_parser = subparsers.add_parser("train-price", help="Treina modelo inicial de preco.")
     train_parser.add_argument("--csv", required=True, help="CSV com anuncios/imoveis.")
     train_parser.add_argument("--model-path", default="models/price_model.joblib")
+    train_parser.add_argument("--trials", type=int, default=50, help="Numero de trials Optuna para tuning.")
+    train_parser.add_argument("--no-enrich", action="store_true", help="Nao enriquecer com PostGIS.")
 
     predict_parser = subparsers.add_parser("predict-price", help="Prediz precos usando modelo treinado.")
     predict_parser.add_argument("--csv", required=True, help="CSV com imoveis para prever.")
@@ -115,7 +117,12 @@ def main() -> None:
             from .ml import train_price_model
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
-        result = train_price_model(args.csv, model_path=args.model_path)
+        result = train_price_model(
+            args.csv,
+            model_path=args.model_path,
+            enrich=not args.no_enrich,
+            n_trials=args.trials,
+        )
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 

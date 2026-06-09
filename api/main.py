@@ -1,0 +1,22 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .routes import scores, predict, mlops
+
+app = FastAPI(title="Recomendacao Imobiliaria API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(scores.router, prefix="/api")
+app.include_router(predict.router, prefix="/api")
+app.include_router(mlops.router, prefix="/api")
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

@@ -141,8 +141,8 @@ def render_kpis(table: pd.DataFrame) -> None:
     cols[0].metric("Areas", len(table))
     cols[1].metric("Top residencial", _metric_max(table, "score_residencial"))
     cols[2].metric("Top comercial", _metric_max(table, "score_comercial"))
-    cols[3].metric("Prioridade alta", int((table.get("priority") == "alta").sum()))
-    cols[4].metric("Risco alto", int((table.get("risk_level") == "alto").sum()))
+    cols[3].metric("Prioridade alta", int((table["priority"] == "alta").sum()) if "priority" in table.columns else 0)
+    cols[4].metric("Risco alto", int((table["risk_level"] == "alto").sum()) if "risk_level" in table.columns else 0)
 
 
 def render_opportunities(table: pd.DataFrame) -> None:

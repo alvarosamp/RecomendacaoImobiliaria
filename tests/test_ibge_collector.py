@@ -14,10 +14,11 @@ class SidraParsingTest(unittest.TestCase):
             {"D1C": "header", "V": "Total"},  # cabeçalho
             {"D1C": "315180005000001", "V": "456"},
             {"D1C": "315180005000002", "V": "789"},
-            {"D1C": "315180005000003", "V": "não informado"},  # invalid value
+            {"D1C": "315180005000003", "V": "nao informado"},  # invalid value
         ]
 
         mock_resp = MagicMock()
+        mock_resp.status_code = 200  # required by the status_code check in the loop
         mock_resp.raise_for_status = lambda: None
         mock_resp.json.return_value = fake_response
 

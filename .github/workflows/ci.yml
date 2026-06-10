@@ -59,9 +59,6 @@ jobs:
           pip install pytest pytest-cov
           pip install -r requirements-api.txt
 
-      - name: Install package (editable)
-        run: pip install -e . --no-deps
-
       - name: Run unit tests
         env:
           PG_HOST: localhost
@@ -69,6 +66,7 @@ jobs:
           PG_DB: test
           PG_USER: test
           PG_PASS: test
+          PYTHONPATH: ${{ github.workspace }}/src:${{ github.workspace }}
         run: |
           pytest tests/ -v --tb=short \
             --cov=src/recomendacao_imobiliaria \

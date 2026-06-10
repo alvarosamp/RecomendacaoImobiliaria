@@ -30,6 +30,10 @@ imobiliaria-score-demo = "recomendacao_imobiliaria.cli:score_demo"
 imobiliaria = "recomendacao_imobiliaria.cli:main"
 
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"

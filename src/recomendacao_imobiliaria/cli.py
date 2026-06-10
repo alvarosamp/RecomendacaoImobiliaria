@@ -202,8 +202,12 @@ def main() -> None:
             from .ibge_collector import estimate_h3_population
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
-        count = estimate_h3_population()
-        print(f"pop_estimated atualizado para {count} celulas H3.")
+        try:
+            count = estimate_h3_population()
+            print(f"pop_estimated atualizado para {count} celulas H3.")
+        except Exception as exc:
+            # Non-fatal: log and continue — pipeline should not abort
+            print(f"AVISO: estimate-population falhou ({exc}). Continuando sem dados populacionais.")
         return
 
     if args.command == "fetch-cnes":

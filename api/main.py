@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import scores, predict, mlops, indices, pipeline
+from .routes import scores, predict, mlops, indices, pipeline, analytics
 
 app = FastAPI(title="Recomendacao Imobiliaria API", version="1.0.0")
 
@@ -16,7 +16,8 @@ app.include_router(scores.router,   prefix="/api")
 app.include_router(predict.router,  prefix="/api")
 app.include_router(mlops.router,    prefix="/api")
 app.include_router(indices.router,  prefix="/api")
-app.include_router(pipeline.router, prefix="/api")
+app.include_router(pipeline.router,  prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 
 @app.get("/health")

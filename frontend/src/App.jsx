@@ -1,23 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
-import KpiBar from './components/KpiBar'
-import H3Map from './components/H3Map'
-import TimeSlider from './components/TimeSlider'
-import OpportunitiesTable from './components/OpportunitiesTable'
-import PricePanel from './components/PricePanel'
-import MlopsPanel from './components/MlopsPanel'
-import PipelinePanel from './components/PipelinePanel'
+import MapPage from './pages/MapPage'
+import OpportunitiesPage from './pages/OpportunitiesPage'
+import CommercePage from './pages/CommercePage'
+import ValuationPage from './pages/ValuationPage'
 import { fetchScores, fetchTimeseries } from './api'
 
-const TABS = ['Oportunidades', 'Mapa H3', 'Previsão ML', 'MLOps', 'Pipeline']
+const NAV = [
+  { id: 'map',           label: 'Mapa da cidade',         icon: '◉' },
+  { id: 'opportunities', label: 'Oportunidades',           icon: '◈' },
+  { id: 'commerce',      label: 'Comércios faltantes',     icon: '◫' },
+  { id: 'valuation',     label: 'Avaliar imóvel',          icon: '◧' },
+]
 
 export default function App() {
-  const [scores, setScores]       = useState([])
-  const [loading, setLoading]     = useState(true)
-  const [error, setError]         = useState(null)
-  const [activeTab, setActiveTab] = useState('Oportunidades')
-  const [filters, setFilters]     = useState({ priority: '', risk: '' })
+  const [page, setPage]   = useState('map')
+  const [scores, setScores]     = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [error, setError]       = useState(null)
 
-  // Time series state — lazy loaded when Mapa H3 tab is first opened
+  // Time series (lazy — loaded once when map is first opened)
   const [timeDates, setTimeDates]     = useState([])
   const [timeRecords, setTimeRecords] = useState([])
   const [timeLoaded, setTimeLoaded]   = useState(false)
@@ -34,94 +35,68 @@ export default function App() {
   useEffect(() => { loadScores() }, [loadScores])
 
   useEffect(() => {
-    if (activeTab === 'Mapa H3' && !timeLoaded) {
+    if (page === 'map' && !timeLoaded) {
       fetchTimeseries()
         .then(data => {
           setTimeDates(data.dates ?? [])
           setTimeRecords(data.records ?? [])
-          setTimeLoaded(true)
         })
-        .catch(() => setTimeLoaded(true)) // fail silently
+        .catch(() => {})
+        .finally(() => setTimeLoaded(true))
     }
-  }, [activeTab, timeLoaded])
-
-  const filtered = scores.filter(row => {
-    if (filters.priority && row.priority !== filters.priority) return false
-    if (filters.risk && row.risk_level !== filters.risk) return false
-    return true
-  })
+  }, [page, timeLoaded])
 
   return (
-    <div className="app">
-      <header className="header">
-        <h1>Recomendação Imobiliária</h1>
-        <span className="subtitle">Inteligência territorial · Pouso Alegre MG</span>
-      </header>
+    <div className="layout">
+      {/* ── Sidebar ── */}
+      <aside className="sidebar">
+        <div className="sidebar-brand">
+          <h1>Inteligência Territorial</h1>
+          <span>Pouso Alegre · MG</span>
+        </div>
 
-      {loading && <div className="loading">Carregando dados do PostGIS…</div>}
-      {error   && <div className="loading" style={{ color: '#dc2626' }}>Erro: {error}</div>}
+        <nav className="sidebar-nav">
+          {NAV.map(item => (
+            <button
+              key={item.id}
+              className={`nav-item${page === item.id ? ' active' : ''}`}
+              onClick={() => setPage(item.id)}
+            >
+              <span className="nav-icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-      {!loading && !error && (
-        <>
-          <KpiBar data={filtered} />
-
-          <div className="filters">
-            <select value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
-              <option value="">Todas as prioridades</option>
-              <option value="alta">Alta</option>
-              <option value="media">Média</option>
-              <option value="baixa">Baixa</option>
-              <option value="investigar">Investigar</option>
-            </select>
-            <select value={filters.risk} onChange={e => setFilters(f => ({ ...f, risk: e.target.value }))}>
-              <option value="">Todos os riscos</option>
-              <option value="baixo">Baixo</option>
-              <option value="medio">Médio</option>
-              <option value="alto">Alto</option>
-            </select>
-            <span style={{ color: '#64748b', fontSize: 12, alignSelf: 'center' }}>
-              {filtered.length} células
-            </span>
+        {!loading && !error && scores.length > 0 && (
+          <div className="sidebar-footer">
+            {scores.length} células · {scores.filter(r => r.priority === 'alta').length} prioridade alta
           </div>
+        )}
+      </aside>
 
-          <nav className="tabs">
-            {TABS.map(tab => (
-              <button
-                key={tab}
-                className={`tab${activeTab === tab ? ' active' : ''}`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
+      {/* ── Main ── */}
+      <main className="main">
+        {loading && <div className="loading">Carregando dados do PostGIS…</div>}
+        {error   && <div className="error-msg">Erro: {error}</div>}
 
-          <main className="content">
-            {activeTab === 'Oportunidades' && <OpportunitiesTable data={filtered} />}
-
-            {activeTab === 'Mapa H3' && (
-              <>
-                <TimeSlider
-                  dates={timeDates}
-                  selectedDate={selectedDate}
-                  onChange={setSelectedDate}
-                />
-                <H3Map
-                  data={filtered}
-                  timeData={timeRecords}
-                  selectedDate={selectedDate}
-                />
-              </>
+        {!loading && !error && (
+          <>
+            {page === 'map' && (
+              <MapPage
+                scores={scores}
+                timeDates={timeDates}
+                timeRecords={timeRecords}
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+              />
             )}
-
-            {activeTab === 'Previsão ML' && <PricePanel />}
-            {activeTab === 'MLOps'       && <MlopsPanel />}
-            {activeTab === 'Pipeline'    && (
-              <PipelinePanel onComplete={() => { loadScores(); setTimeLoaded(false) }} />
-            )}
-          </main>
-        </>
-      )}
+            {page === 'opportunities' && <OpportunitiesPage scores={scores} />}
+            {page === 'commerce'      && <CommercePage />}
+            {page === 'valuation'     && <ValuationPage />}
+          </>
+        )}
+      </main>
     </div>
   )
 }

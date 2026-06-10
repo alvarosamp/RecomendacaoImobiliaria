@@ -76,11 +76,30 @@ body {
 .nav-item.active { background: var(--sidebar-active); color: #fff; font-weight: 600; }
 .nav-icon { font-size: 16px; width: 20px; text-align: center; opacity: 0.85; }
 .sidebar-footer {
-  padding: 12px 20px;
-  font-size: 11px;
-  color: #334155;
+  padding: 12px 14px;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
+.sidebar-stats {
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 8px;
+}
+.sidebar-refresh-btn {
+  width: 100%;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 7px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-align: center;
+}
+.sidebar-refresh-btn:hover { background: rgba(255,255,255,0.13); color: #f1f5f9; }
+.sidebar-refresh-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.nav-item:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ── main area ── */
 .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
@@ -360,6 +379,110 @@ body {
 /* ── spinner ── */
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { display: inline-block; animation: spin 1s linear infinite; }
+
+/* ── setup screen ── */
+.setup-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 32px;
+}
+.setup-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 40px 48px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.07);
+  text-align: center;
+}
+.setup-icon {
+  font-size: 40px;
+  color: var(--blue);
+  margin-bottom: 18px;
+  line-height: 1;
+}
+.setup-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  margin-bottom: 12px;
+}
+.setup-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.setup-what {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 28px;
+}
+.setup-what-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.setup-what ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.setup-what li {
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.setup-what li::before {
+  content: '→';
+  color: var(--blue);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.setup-btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 13px 32px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  letter-spacing: -0.2px;
+}
+.setup-btn:hover { background: #1d4ed8; transform: translateY(-1px); }
+.setup-btn:active { transform: translateY(0); }
+.setup-steps {
+  text-align: left;
+  margin-bottom: 8px;
+}
+.setup-progress-bar {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.setup-progress-bar > div {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
 
 /* ── pipeline (internal — kept in code) ── */
 .panel { max-width: 820px; }

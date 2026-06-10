@@ -5,7 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-DEFAULT_RULES_PATH = Path("config/plan_director_pouso_alegre.json")
+# Resolve relative to source file so it works regardless of CWD (Docker, tests, etc.)
+_HERE = Path(__file__).parent
+DEFAULT_RULES_PATH = _HERE.parent.parent / "config" / "plan_director_pouso_alegre.json"
 STATUS_WEIGHT = {
     "allowed": 1.0,
     "conditioned": 0.65,

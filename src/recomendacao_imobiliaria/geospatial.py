@@ -22,6 +22,10 @@ POI_TAGS = {
         "restaurant",
         "cafe",
         "bank",
+        "atm",
+        "fuel",
+        "bus_station",
+        "community_centre",
     ],
     "shop": [
         "supermarket",
@@ -29,6 +33,30 @@ POI_TAGS = {
         "bakery",
         "mall",
         "pharmacy",
+        "butcher",
+        "greengrocer",
+    ],
+    "leisure": [
+        "park",
+        "garden",
+        "sports_centre",
+        "fitness_centre",
+        "pitch",
+        "playground",
+    ],
+    "public_transport": [
+        "stop_position",
+        "platform",
+    ],
+    "highway": [
+        "bus_stop",
+    ],
+    "healthcare": [
+        "pharmacy",
+        "hospital",
+        "clinic",
+        "doctor",
+        "dentist",
     ],
 }
 
@@ -159,6 +187,20 @@ def build_features(settings: Settings | None = None) -> int:
     settings = settings or load_settings()
     with db_engine(settings) as engine:
         with engine.begin() as conn:
+            # Auto-migrate: add extended columns for existing databases
+            for col_def in [
+                "poi_hospital_cnt INT",
+                "poi_restaurant_cnt INT",
+                "poi_bank_cnt INT",
+                "poi_leisure_cnt INT",
+                "dist_min_hospital_m DOUBLE PRECISION",
+                "dist_min_park_m DOUBLE PRECISION",
+                "dist_min_bus_stop_m DOUBLE PRECISION",
+            ]:
+                conn.execute(text(
+                    f"ALTER TABLE geo.features ADD COLUMN IF NOT EXISTS {col_def}"
+                ))
+
             conn.execute(
                 text(
                     """
@@ -167,34 +209,73 @@ def build_features(settings: Settings | None = None) -> int:
                         poi_supermarket_cnt,
                         poi_pharmacy_cnt,
                         poi_school_cnt,
+                        poi_hospital_cnt,
+                        poi_restaurant_cnt,
+                        poi_bank_cnt,
+                        poi_leisure_cnt,
                         dist_min_supermarket_m,
                         dist_min_pharmacy_m,
                         dist_min_school_m,
+                        dist_min_hospital_m,
+                        dist_min_park_m,
+                        dist_min_bus_stop_m,
                         updated_at
                     )
                     SELECT
                         g.h3_id,
-                        COUNT(*) FILTER (WHERE p.subcategory = 'supermarket')::INT,
-                        COUNT(*) FILTER (WHERE p.subcategory = 'pharmacy')::INT,
-                        COUNT(*) FILTER (WHERE p.subcategory IN ('school', 'kindergarten'))::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory = 'supermarket'
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory = 'pharmacy'
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory IN ('school', 'kindergarten')
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory = 'hospital'
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory IN ('restaurant', 'cafe')
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.subcategory IN ('bank', 'atm')
+                        )::INT,
+                        COUNT(*) FILTER (
+                            WHERE p.category = 'leisure'
+                        )::INT,
                         MIN(ST_Distance(g.geom::geography, p.geom::geography))
                             FILTER (WHERE p.subcategory = 'supermarket'),
                         MIN(ST_Distance(g.geom::geography, p.geom::geography))
                             FILTER (WHERE p.subcategory = 'pharmacy'),
                         MIN(ST_Distance(g.geom::geography, p.geom::geography))
                             FILTER (WHERE p.subcategory IN ('school', 'kindergarten')),
+                        MIN(ST_Distance(g.geom::geography, p.geom::geography))
+                            FILTER (WHERE p.subcategory = 'hospital'),
+                        MIN(ST_Distance(g.geom::geography, p.geom::geography))
+                            FILTER (WHERE p.category = 'leisure'
+                              AND p.subcategory IN ('park', 'garden', 'pitch', 'playground')),
+                        MIN(ST_Distance(g.geom::geography, p.geom::geography))
+                            FILTER (WHERE p.subcategory = 'bus_stop'),
                         now()
                     FROM geo.grid_h3 g
                     LEFT JOIN geo.osm_pois p
                       ON ST_DWithin(g.geom::geography, p.geom::geography, 5000)
                     GROUP BY g.h3_id
                     ON CONFLICT (h3_id) DO UPDATE SET
-                        poi_supermarket_cnt = EXCLUDED.poi_supermarket_cnt,
-                        poi_pharmacy_cnt = EXCLUDED.poi_pharmacy_cnt,
-                        poi_school_cnt = EXCLUDED.poi_school_cnt,
+                        poi_supermarket_cnt   = EXCLUDED.poi_supermarket_cnt,
+                        poi_pharmacy_cnt      = EXCLUDED.poi_pharmacy_cnt,
+                        poi_school_cnt        = EXCLUDED.poi_school_cnt,
+                        poi_hospital_cnt      = EXCLUDED.poi_hospital_cnt,
+                        poi_restaurant_cnt    = EXCLUDED.poi_restaurant_cnt,
+                        poi_bank_cnt          = EXCLUDED.poi_bank_cnt,
+                        poi_leisure_cnt       = EXCLUDED.poi_leisure_cnt,
                         dist_min_supermarket_m = EXCLUDED.dist_min_supermarket_m,
-                        dist_min_pharmacy_m = EXCLUDED.dist_min_pharmacy_m,
-                        dist_min_school_m = EXCLUDED.dist_min_school_m,
+                        dist_min_pharmacy_m   = EXCLUDED.dist_min_pharmacy_m,
+                        dist_min_school_m     = EXCLUDED.dist_min_school_m,
+                        dist_min_hospital_m   = EXCLUDED.dist_min_hospital_m,
+                        dist_min_park_m       = EXCLUDED.dist_min_park_m,
+                        dist_min_bus_stop_m   = EXCLUDED.dist_min_bus_stop_m,
                         updated_at = now()
                     """
                 )
@@ -329,13 +410,30 @@ def _single_polygon_to_h3_cells(polygon, resolution: int, h3_module) -> set[str]
 def _normalize_poi(row) -> tuple[str | None, str | None]:
     amenity = _safe_text(row.get("amenity"))
     shop = _safe_text(row.get("shop"))
+    leisure = _safe_text(row.get("leisure"))
+    highway = _safe_text(row.get("highway"))
+    public_transport = _safe_text(row.get("public_transport"))
+    healthcare = _safe_text(row.get("healthcare"))
 
-    if shop in {"supermarket", "convenience", "bakery", "mall"}:
+    if shop in {"supermarket", "convenience", "bakery", "mall", "butcher", "greengrocer"}:
         return "shop", shop
     if shop == "pharmacy":
-        return "shop", "pharmacy"
-    if amenity in {"school", "kindergarten", "pharmacy", "hospital", "clinic", "restaurant", "cafe", "bank"}:
+        return "amenity", "pharmacy"
+    if amenity in {
+        "school", "kindergarten", "pharmacy", "hospital", "clinic",
+        "restaurant", "cafe", "bank", "atm", "fuel", "bus_station",
+        "community_centre",
+    }:
         return "amenity", amenity
+    if leisure in {"park", "garden", "sports_centre", "fitness_centre", "pitch", "playground"}:
+        return "leisure", leisure
+    if highway == "bus_stop":
+        return "transport", "bus_stop"
+    if public_transport in {"stop_position", "platform"}:
+        return "transport", "bus_stop"
+    if healthcare in {"pharmacy", "hospital", "clinic", "doctor", "dentist"}:
+        hc_sub = healthcare if healthcare in {"pharmacy", "hospital"} else "clinic"
+        return "amenity", hc_sub
     return None, None
 
 

@@ -44,12 +44,38 @@ GAP_CONFIG = [
         "threshold_m": 2200,
         "zoning": "Zonas residenciais e mistas",
     },
+    {
+        "type": "hospital",
+        "label": "Hospital / UPA",
+        "description": (
+            "Atendimento de urgência e internação. "
+            "Áreas distantes de hospitais têm maior vulnerabilidade em saúde e maior "
+            "valorização quando recebem este equipamento."
+        ),
+        "col_cnt":  "poi_hospital_cnt",
+        "col_dist": "dist_min_hospital_m",
+        "threshold_m": 5000,
+        "zoning": "ZMU, ZC, ZE",
+    },
+    {
+        "type": "area_verde",
+        "label": "Parque / Área verde",
+        "description": (
+            "Presença de parques e áreas verdes eleva qualidade de vida, "
+            "valoriza imóveis residenciais próximos e é indicador de bairros maduros."
+        ),
+        "col_cnt":  "poi_leisure_cnt",
+        "col_dist": "dist_min_park_m",
+        "threshold_m": 1500,
+        "zoning": "ZR1, ZR2, ZMU",
+    },
 ]
 
 TYPOLOGY_FEATURES = [
     "ndbi_mean_90", "ndvi_mean_90", "ndvi_slope_180",
     "poi_supermarket_cnt", "poi_pharmacy_cnt", "poi_school_cnt",
-    "dist_min_supermarket_m", "dist_min_pharmacy_m",
+    "poi_hospital_cnt", "poi_leisure_cnt",
+    "dist_min_supermarket_m", "dist_min_pharmacy_m", "dist_min_hospital_m",
 ]
 
 TYPOLOGY_NAMES = [
@@ -61,7 +87,7 @@ TYPOLOGY_NAMES = [
 
 
 def _load_features():
-    """Load geo.features + geo.scores joined."""
+    """Load geo.features + geo.scores + zona joined."""
     from sqlalchemy import text
     from recomendacao_imobiliaria.config import load_settings
     from recomendacao_imobiliaria.db import make_engine
@@ -76,11 +102,16 @@ def _load_features():
                     f.h3_id,
                     f.ndbi_mean_90, f.ndvi_mean_90, f.ndvi_slope_180, f.ndbi_slope_180,
                     f.poi_supermarket_cnt, f.poi_pharmacy_cnt, f.poi_school_cnt,
+                    f.poi_hospital_cnt, f.poi_restaurant_cnt, f.poi_bank_cnt,
+                    f.poi_leisure_cnt,
                     f.dist_min_supermarket_m, f.dist_min_pharmacy_m, f.dist_min_school_m,
-                    f.zona,
+                    f.dist_min_hospital_m, f.dist_min_park_m, f.dist_min_bus_stop_m,
+                    f.pop_estimated,
+                    z.zona,
                     s.score_residencial, s.score_comercial,
                     s.explain_json
                 FROM geo.features f
+                LEFT JOIN geo.v_h3_zona z USING (h3_id)
                 LEFT JOIN geo.scores s USING (h3_id)
             """),
             engine,
@@ -141,6 +172,9 @@ def _build_reasons(row, cfg: dict, typology: str) -> list[str]:
     reasons.append(f"Sinal de crescimento: {_growth_label(slope)}")
     zona = row.get("zona") or "não identificada"
     reasons.append(f"Zoneamento: {zona} — usos permitidos: {cfg['zoning']}")
+    pop = row.get("pop_estimated")
+    if pop and not math.isnan(float(pop or 0)):
+        reasons.append(f"Estimativa de {int(pop):,} moradores na célula (IBGE Censo 2022)")
     score_res = row.get("score_residencial")
     if score_res and not math.isnan(score_res):
         reasons.append(f"Score residencial: {score_res:.0f}/100 (potencial de moradores)")

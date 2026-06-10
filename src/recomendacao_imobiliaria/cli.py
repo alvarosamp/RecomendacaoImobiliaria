@@ -86,6 +86,8 @@ def main() -> None:
     ml_api_parser.add_argument("--token", default=None, help="OAuth access_token do Mercado Livre (ou defina ML_ACCESS_TOKEN).")
 
     subparsers.add_parser("fetch-ibge", help="Busca indicadores habitacionais do IBGE para Pouso Alegre.")
+    subparsers.add_parser("estimate-population", help="Estima populacao por celula H3 via IBGE (setores censitarios + SIDRA).")
+    subparsers.add_parser("fetch-cnes", help="Busca estabelecimentos de saude (CNES/DataSUS) e insere em geo.osm_pois.")
 
     # --- normalizacao de listings ---
     normalize_parser = subparsers.add_parser("normalize-listings", help="Normaliza CSV de portal para formato padrao.")
@@ -193,6 +195,24 @@ def main() -> None:
             _raise_missing_dependency(exc)
         result = fetch_ibge_housing_indicators()
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "estimate-population":
+        try:
+            from .ibge_collector import estimate_h3_population
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        count = estimate_h3_population()
+        print(f"pop_estimated atualizado para {count} celulas H3.")
+        return
+
+    if args.command == "fetch-cnes":
+        try:
+            from .cnes_collector import fetch_cnes_establishments
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        count = fetch_cnes_establishments()
+        print(f"CNES/healthcare: {count} estabelecimentos inseridos em geo.osm_pois.")
         return
 
     if args.command == "normalize-listings":

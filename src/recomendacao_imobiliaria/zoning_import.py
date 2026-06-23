@@ -31,7 +31,22 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
         settings = Settings()
 
     path = Path(filepath)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"Arquivo de zoneamento nao encontrado: {path}. "
+            "Coloque o arquivo oficial em data/official/ ou gere um exemplo com gen-sample-zoning."
+        )
+    if path.suffix.lower() not in {".geojson", ".json", ".shp", ".gpkg", ".kml"}:
+        raise ValueError(
+            "Formato nao suportado para zoneamento. Use GeoJSON, Shapefile, GeoPackage ou KML."
+        )
     gdf = gpd.read_file(path)
+    if gdf.empty:
+        raise ValueError("Arquivo de zoneamento lido, mas sem geometrias.")
+    if gdf.crs is None:
+        raise ValueError(
+            "Arquivo de zoneamento esta sem CRS/SRID. Defina o sistema de coordenadas no QGIS antes de importar."
+        )
 
     col_map = {c.lower(): c for c in gdf.columns}
     zona_col = (

@@ -99,6 +99,9 @@ def main() -> None:
         help="Gera CSV realista de imoveis para Pouso Alegre (para treinar o modelo sem dados reais).",
     )
 
+    subparsers.add_parser("official-sources", help="Lista onde buscar Plano Diretor, zoneamento e bases oficiais.")
+    subparsers.add_parser("validate-official-data", help="Verifica arquivos oficiais em data/official.")
+
     # --- RAG juridico ---
     subparsers.add_parser("build-rag-index", help="Indexa artigos do Plano Diretor para RAG juridico.")
 
@@ -229,6 +232,17 @@ def main() -> None:
         from .listings_import import generate_realistic_listings
         path = generate_realistic_listings()
         print(f"CSV de imoveis gerado em: {path}")
+        return
+
+    if args.command == "official-sources":
+        from .official_sources import official_sources_as_dicts
+        print(json.dumps(official_sources_as_dicts(), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "validate-official-data":
+        from .official_sources import validate_official_data
+        result = validate_official_data()
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 
     # ---- RAG ----

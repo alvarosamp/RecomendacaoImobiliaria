@@ -177,6 +177,7 @@ models/*.joblib
 models/*.pkl
 data/raw/
 data/processed/
+data/official_test_tmp/
 
 # PyPI configuration file
 .pypirc

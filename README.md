@@ -1,195 +1,237 @@
 ﻿# Recomendacao Imobiliaria
 
-Ferramenta de inteligencia territorial para Pouso Alegre, MG. O objetivo e apoiar decisoes de investimento imobiliario, crescimento urbano e implantacao de estabelecimentos, sempre respeitando o Plano Diretor, zoneamento e restricoes territoriais.
+Plataforma de inteligencia territorial para apoio a decisao em investimento imobiliario, expansao urbana e implantacao de servicos em Pouso Alegre, MG.
 
-## O que este projeto faz
+O projeto combina dados geoespaciais, sensoriamento remoto, regras urbanisticas, indicadores de acessibilidade e modelos de machine learning para identificar regioes com potencial imobiliario e comercial. A proposta central nao e apenas gerar um score, mas apresentar uma recomendacao auditavel: por que determinada area e promissora, quais restricoes legais existem e quais dados sustentam a conclusao.
 
-- Gera grade H3 para analisar a cidade por celulas.
-- Coleta POIs do OpenStreetMap.
-- Calcula carencia e acessibilidade por regiao.
-- Importa NDVI/NDBI por H3 e calcula tendencias.
-- Avalia compatibilidade com Plano Diretor e zoneamento.
-- Gera score residencial e comercial explicavel.
-- Treina e aplica modelo inicial de preco de imoveis.
-- Mostra ranking, mapa e explicacoes no Streamlit.
+## Visao
 
-## Onde conseguir Plano Diretor e zoneamento
+Criar uma ferramenta de analise urbana que ajude investidores, planejadores, corretores, incorporadoras e gestores publicos a responder perguntas como:
 
-Voce precisa de dois tipos de documento:
+- Quais regioes tem maior potencial para investimento imobiliario?
+- Para qual direcao a cidade esta crescendo?
+- Onde ha carencia de mercado, farmacia, escola, saude ou servicos de bairro?
+- O Plano Diretor permite o uso pretendido naquela area?
+- Quais fatores explicam a recomendacao?
+- Como os atributos urbanos influenciam preco e valorizacao de imoveis?
 
-1. Texto legal: Plano Diretor, lei de uso e ocupacao do solo, anexos e alteracoes.
-2. Arquivo geografico: mapa oficial de zoneamento em GeoJSON, SHP, GPKG ou KML.
+## Problema
+
+Decisoes imobiliarias costumam depender de informacoes dispersas: anuncios, mapas, percepcao local, legislacao, imagens de satelite, infraestrutura urbana e conhecimento empirico. Sem integrar essas camadas, ha risco de recomendar areas com baixa viabilidade, restricoes legais, pouca infraestrutura ou crescimento urbano mal interpretado.
+
+Este projeto busca reduzir essa incerteza com uma base tecnica georreferenciada, explicavel e alinhada ao Plano Diretor.
+
+## Solucao proposta
+
+A plataforma avalia o territorio por celulas H3 e consolida diferentes sinais:
+
+- uso e ocupacao do solo;
+- zoneamento e Plano Diretor;
+- POIs e servicos urbanos;
+- acessibilidade a equipamentos essenciais;
+- indicadores ambientais e urbanos, como NDVI e NDBI;
+- dados de imoveis e atributos de mercado;
+- regras de elegibilidade e restricao;
+- modelos de predicao de preco.
+
+Cada area recebe scores e justificativas para usos residenciais e comerciais. Areas bloqueadas ou condicionadas pelo Plano Diretor sao penalizadas, sinalizadas ou excluidas da recomendacao.
+
+## Principios do produto
+
+1. **Legalidade antes do score**  
+   Nenhuma recomendacao deve ignorar Plano Diretor, zoneamento, restricoes ambientais ou regras urbanisticas.
+
+2. **Explicabilidade**  
+   Toda recomendacao precisa apresentar fatores positivos, negativos, restricoes e dados utilizados.
+
+3. **Dados oficiais primeiro**  
+   Zoneamento, limites, setores censitarios e parametros urbanisticos devem vir de fontes oficiais sempre que possivel.
+
+4. **IA como camada de apoio**  
+   Machine learning e modelos generativos devem apoiar analise e interpretacao, nao substituir validacao tecnica e legal.
+
+5. **Evolucao incremental**  
+   O MVP deve resolver bem uma pergunta urbana antes de tentar prever todo o mercado imobiliario.
+
+## Capacidades atuais
+
+### Inteligencia territorial
+
+- Grade H3 para analise espacial.
+- Coleta de POIs via OpenStreetMap.
+- Calculo de distancias e carencia de servicos.
+- Identificacao de oportunidades residenciais e comerciais.
+- Classificacao de prioridade, risco e uso principal.
+
+### Plano Diretor e zoneamento
+
+- Matriz inicial de compatibilidade por zona.
+- Avaliacao de uso pretendido contra regras urbanisticas.
+- Estados legais: permitido, condicionado e bloqueado.
+- Penalizacao automatica do score quando ha condicionantes.
+- Bloqueio de recomendacoes em zonas restritivas.
+- Estrutura pronta para importar zoneamento oficial georreferenciado.
+
+### Sensoriamento remoto
+
+- Importacao de series NDVI/NDBI por H3.
+- Calculo de medias recentes e tendencias temporais.
+- Sinalizacao de possivel expansao urbana com perda de vegetacao e aumento de area construida.
+
+### Mercado imobiliario
+
+- Modelo inicial de predicao de preco.
+- Normalizacao de bases de anuncios.
+- Estrutura para enriquecer imoveis com features urbanas.
+- Base para evoluir para valorizacao temporal.
+
+### Interface analitica
+
+- Dashboard em Streamlit.
+- Ranking de oportunidades.
+- Mapa de areas avaliadas.
+- Painel de explicabilidade.
+- Alertas de Plano Diretor.
+- Painel de predicao de preco.
+
+## Arquitetura conceitual
+
+```text
+Fontes oficiais e abertas
+        |
+        |-- Plano Diretor e zoneamento
+        |-- Limites municipais e setores censitarios
+        |-- OpenStreetMap e equipamentos urbanos
+        |-- Sentinel-2 / NDVI / NDBI
+        |-- Dados de anuncios imobiliarios
+        v
+PostGIS + Feature Store geoespacial
+        |
+        |-- geo.grid_h3
+        |-- geo.zoning
+        |-- geo.osm_pois
+        |-- geo.indices
+        |-- geo.features
+        |-- geo.scores
+        v
+Motores de analise
+        |
+        |-- compatibilidade legal
+        |-- scoring explicavel
+        |-- classificacao de oportunidade
+        |-- modelos de preco
+        v
+Dashboard e relatorios
+```
+
+## Componentes principais
+
+| Componente | Responsabilidade |
+|---|---|
+| `geospatial.py` | Limite municipal, grid H3, POIs e features espaciais |
+| `zoning_import.py` | Importacao de zoneamento oficial em GeoJSON, SHP, GPKG ou KML |
+| `plan_director.py` | Regras de compatibilidade entre zona e uso pretendido |
+| `scoring.py` | Score residencial/comercial e explicacao dos fatores |
+| `decision.py` | Priorizacao, risco, uso principal e resumo da oportunidade |
+| `remote_sensing.py` | Processamento de NDVI/NDBI e tendencias urbanas |
+| `ml.py` | Treino e aplicacao de modelos de preco |
+| `reporting.py` | Dados consolidados para dashboard e relatorios |
+| `app/streamlit_app.py` | Interface analitica do produto |
+
+## Fontes oficiais prioritarias
+
+Para evoluir de prototipo tecnico para ferramenta confiavel, os dados oficiais mais importantes sao:
+
+- mapa georreferenciado de zoneamento urbano;
+- Plano Diretor vigente e suas alteracoes;
+- lei de uso e ocupacao do solo;
+- anexos de parametros urbanisticos;
+- limite municipal oficial;
+- setores censitarios e dados socioeconomicos;
+- camadas ambientais e areas de restricao.
 
 Fontes recomendadas:
 
-- Prefeitura de Pouso Alegre: https://pousoalegre.mg.gov.br/
-- Camara/Legislador - Lei Ordinaria 6476/2021: https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476
-- IBGE geociencias: https://www.ibge.gov.br/geociencias/downloads-geociencias.html
-- IDE-Sisema MG: https://idesisema.meioambiente.mg.gov.br/
+- Prefeitura de Pouso Alegre;
+- Camara Municipal / Legislador;
+- IBGE Geociencias;
+- IDE-Sisema MG.
 
-Se o arquivo geografico de zoneamento nao estiver disponivel no site, solicite a Prefeitura por e-SIC/Lei de Acesso a Informacao. Peca explicitamente:
+Caso o zoneamento georreferenciado nao esteja publicado, ele deve ser solicitado formalmente a Prefeitura por e-SIC ou Lei de Acesso a Informacao.
 
-```text
-Arquivo georreferenciado do zoneamento urbano de Pouso Alegre, preferencialmente em Shapefile, GeoPackage, GeoJSON ou KML, com a sigla/codigo da zona e descricao, alem dos anexos do Plano Diretor e da lei de uso e ocupacao do solo em vigor.
-```
+## Estado de maturidade
 
-Coloque os arquivos oficiais em:
+| Area | Estado |
+|---|---|
+| Estrutura do projeto | Implementada |
+| Pipeline geoespacial | Implementado |
+| Scoring explicavel | Implementado |
+| Dashboard inicial | Implementado |
+| Plano Diretor como regra de negocio | Parcialmente implementado |
+| Importacao de zoneamento oficial | Preparada |
+| Sensoriamento remoto | Parcialmente implementado |
+| Modelo de preco | Baseline implementado |
+| Valorizacao temporal | Pendente |
+| RAG juridico com citacao legal | Pendente/experimental |
+| Validacao com dados oficiais | Pendente |
 
-```text
-data/official/
-```
+## Roadmap tecnico
 
-Nomes recomendados:
+### Fase 1: Confiabilidade territorial
 
-- `data/official/zoneamento_oficial.geojson`
-- `data/official/zoneamento_oficial.gpkg`
-- `data/official/plano_diretor_lei_6476_2021.pdf`
-- `data/official/uso_ocupacao_solo.pdf`
+- Importar zoneamento oficial.
+- Cruzar cada celula H3 com zona urbana real.
+- Associar regras do Plano Diretor a cada recomendacao.
+- Mapear areas ambientais, APPs e restricoes relevantes.
 
-Verifique o que ja existe:
+### Fase 2: Oportunidade urbana
 
-```powershell
-$env:PYTHONPATH='src'
-python -m recomendacao_imobiliaria.cli official-sources
-python -m recomendacao_imobiliaria.cli validate-official-data
-```
+- Melhorar indicadores de acessibilidade.
+- Incorporar densidade populacional e renda.
+- Criar recomendacoes por tipo de estabelecimento.
+- Gerar relatorios de top oportunidades por bairro/regiao.
 
-## Instalacao
+### Fase 3: Mercado imobiliario
 
-```powershell
-cd C:\Users\vish8\OneDrive\Documentos\RecomendacaoImobiliaria
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-$env:PYTHONPATH='src'
-```
+- Estruturar base real de anuncios.
+- Treinar modelo robusto de preco.
+- Avaliar erro por bairro, tipologia e faixa de preco.
+- Evoluir para modelo de valorizacao temporal.
 
-## Teste rapido sem banco
+### Fase 4: Inteligencia juridica
 
-```powershell
-python -m recomendacao_imobiliaria.cli score-demo
-python -m recomendacao_imobiliaria.cli check-plan --zone ZEU --use comercial
-```
+- Indexar Plano Diretor e leis complementares.
+- Citar artigos/anexos em cada recomendacao.
+- Implementar busca semantica/RAG juridico.
+- Criar trilha de auditoria legal por area.
 
-## Rodar o front
+### Fase 5: Produto
 
-```powershell
-$env:PYTHONPATH='src'
-streamlit run app/streamlit_app.py
-```
+- Refinar experiencia do dashboard.
+- Adicionar comparacao entre regioes.
+- Gerar relatorios executivos.
+- Preparar API para integracoes.
+- Criar fluxo de atualizacao periodica dos dados.
 
-No front voce encontra:
+## Criterios de qualidade
 
-- ranking de oportunidades;
-- mapa;
-- detalhe da area;
-- explicacao do score;
-- alertas de Plano Diretor;
-- painel de predicao de preco.
+Uma recomendacao so deve ser considerada confiavel quando apresentar:
 
-## Rodar com PostGIS
+- score calculado;
+- uso recomendado;
+- zona urbana identificada;
+- compatibilidade legal;
+- fatores positivos;
+- fatores negativos;
+- dados utilizados;
+- data de atualizacao;
+- nivel de risco;
+- justificativa textual.
 
-Suba o banco:
+## Limitacoes atuais
 
-```powershell
-docker compose -f Infra/docker-compose.yml up -d
-```
+O projeto ainda depende da importacao do zoneamento oficial e dos anexos legais para validar recomendacoes reais. Enquanto esses dados nao forem incorporados, os resultados devem ser tratados como demonstracao tecnica e apoio exploratorio, nao como parecer urbanistico ou recomendacao juridicamente validada.
 
-Pipeline basico:
+## Direcao do produto
 
-```powershell
-$env:PYTHONPATH='src'
-python -m recomendacao_imobiliaria.cli fetch-boundary
-python -m recomendacao_imobiliaria.cli build-grid
-python -m recomendacao_imobiliaria.cli fetch-pois
-python -m recomendacao_imobiliaria.cli build-features
-python -m recomendacao_imobiliaria.cli import-indices --csv data/sample_indices.csv
-python -m recomendacao_imobiliaria.cli update-index-features
-python -m recomendacao_imobiliaria.cli score-db
-```
-
-Importar zoneamento oficial:
-
-```powershell
-python -m recomendacao_imobiliaria.cli import-zoning --file data/official/zoneamento_oficial.geojson
-python -m recomendacao_imobiliaria.cli score-db
-```
-
-Se ainda nao tiver zoneamento oficial, gere um exemplo para testar:
-
-```powershell
-python -m recomendacao_imobiliaria.cli gen-sample-zoning
-python -m recomendacao_imobiliaria.cli import-zoning --file data/sample_zoning.geojson
-python -m recomendacao_imobiliaria.cli score-db
-```
-
-## ML de preco
-
-Treinar com CSV exemplo:
-
-```powershell
-python -m recomendacao_imobiliaria.cli train-price --csv data/sample_properties.csv --no-enrich
-```
-
-Predizer:
-
-```powershell
-python -m recomendacao_imobiliaria.cli predict-price --csv data/sample_properties.csv
-```
-
-Quando tiver dados reais de anuncios, use um CSV com colunas como:
-
-- `price`
-- `area_m2`
-- `bedrooms`
-- `bathrooms`
-- `parking_spaces`
-- `latitude`
-- `longitude`
-- `property_type`
-- `neighborhood`
-- `zona`
-
-## Estrutura importante
-
-```text
-app/                         Front Streamlit
-config/                      Regras do Plano Diretor e configuracoes
-data/official/               Arquivos oficiais da Prefeitura/Camara/IBGE
-data/sample_*.csv            Dados de exemplo
-docs/                        Documentacao tecnica
-Infra/                       Docker Compose e SQL do PostGIS
-src/recomendacao_imobiliaria Codigo Python do produto
-tests/                       Testes automatizados
-```
-
-## Modulos principais
-
-- `geospatial.py`: limite municipal, H3, POIs e features.
-- `zoning_import.py`: importacao do zoneamento oficial.
-- `plan_director.py`: compatibilidade zona + uso.
-- `scoring.py`: score residencial/comercial explicavel.
-- `decision.py`: prioridade, risco e resumo da oportunidade.
-- `remote_sensing.py`: NDVI/NDBI e tendencias.
-- `ml.py`: treino e predicao de preco.
-- `reporting.py`: dados para dashboard.
-
-## Estado atual
-
-Ja existe um MVP funcional com dados demo e pipeline para PostGIS. Para virar produto confiavel, o proximo passo mais importante e importar o zoneamento oficial de Pouso Alegre e anexos legais. Sem isso, a ferramenta deve ser tratada como prototipo tecnico, nao como recomendacao juridicamente validada.
-
-## Validacao
-
-```powershell
-$env:PYTHONPATH='src'
-python -m unittest discover -s tests -v
-```
-
-## Documentacao complementar
-
-- `docs/codigo.md`
-- `docs/pipeline.md`
-- `docs/plano_diretor.md`
-- `docs/data_model.md`
-- `docs/roadmap.md`
+A direcao mais importante agora e fortalecer a base legal e territorial. O diferencial do projeto nao sera apenas usar IA, mas combinar IA com dados oficiais, regras urbanisticas e explicabilidade. Isso permite transformar o sistema em uma ferramenta de decisao urbana mais confiavel, auditavel e util para analise imobiliaria.

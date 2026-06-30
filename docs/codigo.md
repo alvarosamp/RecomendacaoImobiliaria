@@ -100,6 +100,22 @@ Saida:
 - `score_residencial`;
 - `score_comercial`;
 - `explain`, um dicionario com fatores e recomendacoes.
+- `confidence`, fatores positivos/negativos e contribuicoes ponderadas.
+
+Os pesos ficam em `config/scoring_weights.json`.
+
+### `healthcheck.py`
+
+Diagnostica a saude do projeto:
+
+- arquivos de configuracao;
+- dados oficiais;
+- PostGIS;
+- tabelas e contagens principais.
+
+### `reports.py`
+
+Gera relatorio executivo em Markdown e CSV com ranking de oportunidades, resumo de risco e observacoes.
 
 Regras atuais:
 

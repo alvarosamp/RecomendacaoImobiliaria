@@ -15,6 +15,7 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   return (
     <div className="map-page">
       <div className="map-topbar">
+        <span className="map-topbar-title">Mapa de Oportunidades</span>
         <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
           <option value="">Todas as prioridades</option>
           <option value="alta">Alta</option>
@@ -27,7 +28,7 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
           <option value="medio">Médio</option>
           <option value="alto">Alto</option>
         </select>
-        <span className="count-tag">{filtered.length} células</span>
+        <span className="count-tag">{filtered.length} áreas</span>
       </div>
 
       <div className="map-area">

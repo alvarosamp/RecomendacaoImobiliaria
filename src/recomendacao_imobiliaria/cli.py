@@ -101,6 +101,12 @@ def main() -> None:
 
     subparsers.add_parser("official-sources", help="Lista onde buscar Plano Diretor, zoneamento e bases oficiais.")
     subparsers.add_parser("validate-official-data", help="Verifica arquivos oficiais em data/official.")
+    subparsers.add_parser("healthcheck", help="Diagnostica arquivos, dados oficiais e PostGIS.")
+
+    report_parser = subparsers.add_parser("export-report", help="Exporta relatorio executivo em Markdown e CSV.")
+    report_parser.add_argument("--output-dir", default="reports")
+    report_parser.add_argument("--source", choices=["auto", "postgis", "demo"], default="auto")
+    report_parser.add_argument("--top", type=int, default=10)
 
     # --- RAG juridico ---
     subparsers.add_parser("build-rag-index", help="Indexa artigos do Plano Diretor para RAG juridico.")
@@ -242,6 +248,21 @@ def main() -> None:
     if args.command == "validate-official-data":
         from .official_sources import validate_official_data
         result = validate_official_data()
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "healthcheck":
+        from .healthcheck import run_healthcheck
+        result = run_healthcheck()
+        print(json.dumps(result.as_dict(), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "export-report":
+        try:
+            from .reports import export_report
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        result = export_report(output_dir=args.output_dir, source=args.source, top_n=args.top)
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 

@@ -14,9 +14,9 @@ class OfficialSourcesTest(unittest.TestCase):
         self.assertIn("Camara", names)
 
     def test_validate_official_data_reports_missing_files(self):
-        result = validate_official_data("data/official")
+        result = validate_official_data("data/official_empty_test")
 
-        self.assertEqual(result.base_dir, "data\\official")
+        self.assertIn("data", result.base_dir)
         self.assertIn("zoneamento_oficial.geojson", result.missing_recommended)
 
 

@@ -178,6 +178,9 @@ models/*.pkl
 data/raw/
 data/processed/
 data/official_test_tmp/
+data/official_empty_test/
+reports/
+reports_test/
 
 # PyPI configuration file
 .pypirc

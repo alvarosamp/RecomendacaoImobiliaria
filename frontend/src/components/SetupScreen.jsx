@@ -1,45 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 
-const STEP_ICONS = {
-  pending: '○',
-  running: '◌',
-  done:    '●',
-  error:   '✕',
-}
-
 const STEP_COLORS = {
-  pending: '#94a3b8',
-  running: '#2563eb',
-  done:    '#16a34a',
-  error:   '#dc2626',
-}
-
-function StepRow({ step, index, total }) {
-  const pct = step.status === 'done' ? 100 : step.status === 'running' ? 50 : 0
-  const color = STEP_COLORS[step.status] ?? '#94a3b8'
-  return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-        <span style={{ color, fontSize: 14, width: 16, textAlign: 'center', flexShrink: 0 }}>
-          {step.status === 'running'
-            ? <SpinIcon />
-            : STEP_ICONS[step.status] ?? '○'}
-        </span>
-        <span style={{ fontSize: 13, color: step.status === 'pending' ? '#94a3b8' : '#1e293b', fontWeight: step.status === 'running' ? 600 : 400 }}>
-          {step.label}
-        </span>
-        <span style={{ marginLeft: 'auto', fontSize: 11, color: '#94a3b8' }}>
-          {index + 1}/{total}
-        </span>
-      </div>
-      <div style={{ height: 3, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden', marginLeft: 26 }}>
-        <div style={{
-          width: `${pct}%`, height: '100%', background: color,
-          transition: 'width 0.4s ease',
-        }} />
-      </div>
-    </div>
-  )
+  pending: '#A8A29E',
+  running: '#1B2A4A',
+  done:    '#16A34A',
+  error:   '#DC2626',
 }
 
 function SpinIcon() {
@@ -50,6 +15,51 @@ function SpinIcon() {
     return () => clearInterval(t)
   }, [])
   return <span>{chars[frame]}</span>
+}
+
+function StepRow({ step, index, total }) {
+  const color = STEP_COLORS[step.status] ?? '#A8A29E'
+  const isPending = step.status === 'pending'
+  const isDone    = step.status === 'done'
+  const isRunning = step.status === 'running'
+  const isError   = step.status === 'error'
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+        <span style={{
+          color, fontSize: 14, width: 18, textAlign: 'center',
+          flexShrink: 0, lineHeight: 1,
+        }}>
+          {isRunning ? <SpinIcon />
+            : isDone  ? '✓'
+            : isError ? '✕'
+            : '○'}
+        </span>
+        <span style={{
+          fontSize: 13,
+          color: isPending ? '#A8A29E' : '#1C1917',
+          fontWeight: isRunning ? 600 : 400,
+          flex: 1,
+        }}>
+          {step.label}
+        </span>
+        <span style={{ fontSize: 10, color: '#A8A29E', fontWeight: 600 }}>
+          {index + 1}/{total}
+        </span>
+      </div>
+      <div style={{
+        height: 3, background: '#E7E4DF', borderRadius: 99,
+        overflow: 'hidden', marginLeft: 28,
+      }}>
+        <div style={{
+          width: isDone ? '100%' : isRunning ? '55%' : '0%',
+          height: '100%', background: color, borderRadius: 99,
+          transition: 'width 0.4s ease',
+        }} />
+      </div>
+    </div>
+  )
 }
 
 export default function SetupScreen({ onComplete, onRefreshDone }) {
@@ -66,7 +76,6 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
   }
 
   useEffect(() => {
-    // Resume polling if pipeline was already running when component mounted
     fetch('/api/pipeline/status')
       .then(r => r.json())
       .then(s => {
@@ -108,31 +117,36 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
     try {
       await fetch(endpoint, { method: 'POST' })
       startPolling()
-    } catch (err) {
+    } catch {
       setPhase('error')
     }
   }
 
-  // ── Idle (empty DB) ──────────────────────────────────────────────
+  // ── Logo compartilhado ───────────────────────────────────────────
+  const Logo = () => (
+    <div className="setup-logo">IT</div>
+  )
+
+  // ── Idle ─────────────────────────────────────────────────────────
   if (phase === 'idle') {
     return (
       <div className="setup-screen">
         <div className="setup-card">
-          <div className="setup-icon">◎</div>
-          <h2 className="setup-title">Banco de dados vazio</h2>
+          <Logo />
+          <h2 className="setup-title">Bem-vindo à plataforma</h2>
           <p className="setup-desc">
-            O mapa e as análises precisam dos dados de Pouso Alegre.
-            Clique abaixo para carregar tudo automaticamente — leva cerca de 2 a 5 minutos.
+            Para iniciar, precisamos carregar os dados do município de Pouso Alegre — MG.
+            O processo é automático e leva cerca de 2 a 5 minutos.
           </p>
 
           <div className="setup-what">
-            <div className="setup-what-title">O que será carregado:</div>
+            <div className="setup-what-title">O que será carregado</div>
             <ul>
               <li>Grade hexagonal H3 sobre o município</li>
               <li>Pontos de interesse (OpenStreetMap)</li>
               <li>Estabelecimentos de saúde (CNES / DataSUS)</li>
-              <li>Estimativa de população por célula (IBGE Censo 2022)</li>
-              <li>Scores de oportunidade e risco por área</li>
+              <li>Estimativa de população por área (IBGE Censo 2022)</li>
+              <li>Scores de oportunidade e risco por região</li>
             </ul>
           </div>
 
@@ -153,16 +167,16 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
     return (
       <div className="setup-screen">
         <div className="setup-card">
-          <div className="setup-icon">⟳</div>
+          <Logo />
           <h2 className="setup-title">
             {mode === 'refresh' ? 'Atualizando dados…' : 'Carregando dados…'}
           </h2>
-          <div className="setup-progress-bar">
+          <div style={{ fontSize: 12, color: '#78716C', marginBottom: 16 }}>
+            {done} de {total} etapas concluídas ({pct}%)
+          </div>
+          <div className="setup-progress-bar" style={{ marginBottom: 24 }}>
             <div style={{ width: `${pct}%` }} />
           </div>
-          <p style={{ fontSize: 12, color: '#64748b', textAlign: 'center', margin: '4px 0 20px' }}>
-            {done} de {total} etapas concluídas
-          </p>
           <div className="setup-steps">
             {steps.map((s, i) => (
               <StepRow key={s.cmd} step={s} index={i} total={total} />
@@ -178,9 +192,14 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
     return (
       <div className="setup-screen">
         <div className="setup-card">
-          <div className="setup-icon" style={{ color: '#16a34a' }}>✓</div>
-          <h2 className="setup-title" style={{ color: '#16a34a' }}>Dados carregados!</h2>
-          <p className="setup-desc">Abrindo o mapa…</p>
+          <div style={{
+            width: 56, height: 56, borderRadius: 14,
+            background: '#DCFCE7', border: '2px solid #86EFAC',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24, margin: '0 auto 20px',
+          }}>✓</div>
+          <h2 className="setup-title" style={{ color: '#15803D' }}>Dados carregados!</h2>
+          <p className="setup-desc">Abrindo o mapa da cidade…</p>
         </div>
       </div>
     )
@@ -190,10 +209,15 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
   return (
     <div className="setup-screen">
       <div className="setup-card">
-        <div className="setup-icon" style={{ color: '#dc2626' }}>✕</div>
-        <h2 className="setup-title" style={{ color: '#dc2626' }}>Erro na inicialização</h2>
+        <div style={{
+          width: 56, height: 56, borderRadius: 14,
+          background: '#FEE2E2', border: '2px solid #FCA5A5',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 24, margin: '0 auto 20px',
+        }}>✕</div>
+        <h2 className="setup-title" style={{ color: '#DC2626' }}>Erro na inicialização</h2>
         <p className="setup-desc">
-          Uma etapa falhou. Verifique se o PostGIS está acessível e tente novamente.
+          Uma etapa falhou. Verifique se o banco de dados está acessível e tente novamente.
         </p>
         <div className="setup-steps" style={{ marginBottom: 20 }}>
           {steps.map((s, i) => (
@@ -206,7 +230,7 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
           </button>
           <button
             className="setup-btn"
-            style={{ background: '#64748b' }}
+            style={{ background: '#78716C' }}
             onClick={async () => {
               await fetch('/api/pipeline/reset', { method: 'POST' })
               setPhase('idle'); setSteps([])

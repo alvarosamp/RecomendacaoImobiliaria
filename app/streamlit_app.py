@@ -32,8 +32,8 @@ def main() -> None:
     filtered = sidebar_filters(table)
     render_kpis(filtered)
 
-    tab_opportunities, tab_map, tab_explain, tab_price, tab_rag, tab_pipeline = st.tabs(
-        ["Oportunidades", "Mapa H3", "Explicacao", "Preco ML", "RAG Juridico", "Pipeline"]
+    tab_opportunities, tab_map, tab_explain, tab_compare, tab_price, tab_rag, tab_pipeline = st.tabs(
+        ["Oportunidades", "Mapa H3", "Explicacao", "Comparacao", "Preco ML", "RAG Juridico", "Pipeline"]
     )
 
     with tab_opportunities:
@@ -44,6 +44,9 @@ def main() -> None:
 
     with tab_explain:
         render_explain(filtered, explain_lookup)
+
+    with tab_compare:
+        render_comparison(filtered, explain_lookup)
 
     with tab_price:
         render_price_panel()
@@ -209,7 +212,7 @@ def _demo_polygon(lat: float, lon: float, size: float = 0.004) -> list[list[floa
 
 
 def render_h3_map(table: pd.DataFrame) -> None:
-    st.subheader("Mapa de calor H3 — polígonos por score")
+    st.subheader("Mapa de calor H3 - poligonos por score")
 
     map_data = table.copy()
     if "latitude" in map_data.columns:
@@ -239,8 +242,8 @@ def render_h3_map(table: pd.DataFrame) -> None:
                 continue
             poly = _demo_polygon(float(lat), float(lon))
 
-        priority = str(row.get("priority", "—"))
-        zona = str(row.get("zona", "—"))
+        priority = str(row.get("priority", "-"))
+        zona = str(row.get("zona", "-"))
         summary = str(row.get("summary", ""))
 
         popup_html = (
@@ -268,8 +271,8 @@ def render_h3_map(table: pd.DataFrame) -> None:
                 padding:10px;border-radius:6px;font-size:12px;border:1px solid #ccc;">
       <b>Score</b><br>
       <span style="color:#1a9641">&#9632;</span> &ge; 0.70 alto<br>
-      <span style="color:#a6d96a">&#9632;</span> 0.45–0.70 medio<br>
-      <span style="color:#fdae61">&#9632;</span> 0.25–0.45 baixo<br>
+      <span style="color:#a6d96a">&#9632;</span> 0.45-0.70 medio<br>
+      <span style="color:#fdae61">&#9632;</span> 0.25-0.45 baixo<br>
       <span style="color:#d7191c">&#9632;</span> &lt; 0.25 muito baixo
     </div>
     """
@@ -307,6 +310,28 @@ def render_explain(table: pd.DataFrame, explain_lookup: dict[str, object]) -> No
         except json.JSONDecodeError:
             payload = {"raw": payload}
 
+    confidence = payload.get("confidence") if isinstance(payload, dict) else None
+    if confidence is not None:
+        st.progress(float(confidence), text=f"Confianca analitica: {float(confidence):.0%}")
+
+    positives = payload.get("positive_factors", []) if isinstance(payload, dict) else []
+    negatives = payload.get("negative_factors", []) if isinstance(payload, dict) else []
+    col_pos, col_neg = st.columns(2)
+    with col_pos:
+        st.markdown("**Fatores positivos**")
+        if positives:
+            for item in positives:
+                st.success(str(item))
+        else:
+            st.caption("Nenhum fator positivo forte detectado.")
+    with col_neg:
+        st.markdown("**Fatores de atencao**")
+        if negatives:
+            for item in negatives:
+                st.warning(str(item))
+        else:
+            st.caption("Nenhum fator critico detectado.")
+
     # Show zoning articles if present
     zoning = payload.get("zoning", {}) if isinstance(payload, dict) else {}
     articles = zoning.get("articles", [])
@@ -322,6 +347,51 @@ def render_explain(table: pd.DataFrame, explain_lookup: dict[str, object]) -> No
         st.warning(str(legal_notes))
 
     st.json(payload)
+
+
+def render_comparison(table: pd.DataFrame, explain_lookup: dict[str, object]) -> None:
+    st.subheader("Comparacao entre regioes")
+    if len(table) < 2:
+        st.info("Sao necessarias pelo menos duas areas para comparar.")
+        return
+
+    options = table["h3_id"].tolist()
+    left_id = st.selectbox("Area A", options, index=0)
+    right_id = st.selectbox("Area B", options, index=1 if len(options) > 1 else 0)
+
+    left = table[table["h3_id"] == left_id].iloc[0]
+    right = table[table["h3_id"] == right_id].iloc[0]
+    cols = st.columns(2)
+    with cols[0]:
+        render_comparison_card(left, explain_lookup.get(left_id, {}))
+    with cols[1]:
+        render_comparison_card(right, explain_lookup.get(right_id, {}))
+
+
+def render_comparison_card(row: pd.Series, explain: object) -> None:
+    payload = json.loads(explain) if isinstance(explain, str) else explain
+    if not isinstance(payload, dict):
+        payload = {}
+
+    st.markdown(f"### {row['h3_id']}")
+    st.metric("Melhor score", round(float(row.get("best_score", 0)), 2))
+    st.caption(str(row.get("summary", "")))
+
+    metrics = {
+        "Residencial": row.get("score_residencial", 0),
+        "Comercial": row.get("score_comercial", 0),
+        "Confianca": payload.get("confidence", 0),
+    }
+    st.dataframe(
+        pd.DataFrame([{"indicador": key, "valor": value} for key, value in metrics.items()]),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    positives = payload.get("positive_factors", [])
+    negatives = payload.get("negative_factors", [])
+    st.markdown("**Positivos:** " + (", ".join(positives) if positives else "sem destaque"))
+    st.markdown("**Atencao:** " + (", ".join(negatives) if negatives else "sem destaque"))
 
 
 # ---------------------------------------------------------------------------
@@ -364,9 +434,9 @@ def render_price_panel() -> None:
 # ---------------------------------------------------------------------------
 
 def render_rag_panel() -> None:
-    st.subheader("Consulta Juridica — Plano Diretor (RAG)")
+    st.subheader("Consulta Juridica - Plano Diretor (RAG)")
     st.caption(
-        "Faça perguntas em linguagem natural sobre a Lei 6476/2021. "
+        "Faca perguntas em linguagem natural sobre a Lei 6476/2021. "
         "Requer `chromadb` e `anthropic` instalados, e variavel ANTHROPIC_API_KEY configurada."
     )
 
@@ -406,7 +476,7 @@ def render_rag_panel() -> None:
                     st.markdown(f"**Resposta:**\n\n{result.answer}")
                     st.markdown("**Fontes consultadas:**")
                     for src in result.sources:
-                        st.caption(f"• {src['title']} — Lei {src['lei']} — {src['chapter']}")
+                        st.caption(f"- {src['title']} - Lei {src['lei']} - {src['chapter']}")
                 except ImportError as exc:
                     st.error(f"Dependencia ausente: {exc}")
                 except Exception as exc:
@@ -437,11 +507,13 @@ def render_pipeline_help() -> None:
         """
 docker compose -f Infra/docker-compose.yml up -d
 $env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli healthcheck
 python -m recomendacao_imobiliaria.cli fetch-boundary
 python -m recomendacao_imobiliaria.cli build-grid
 python -m recomendacao_imobiliaria.cli fetch-pois
 python -m recomendacao_imobiliaria.cli build-features
 python -m recomendacao_imobiliaria.cli score-db
+python -m recomendacao_imobiliaria.cli export-report
         """.strip(),
         language="powershell",
     )
@@ -515,7 +587,7 @@ python -m recomendacao_imobiliaria.cli rag-query --question "Posso construir na 
         language="powershell",
     )
 
-    st.markdown("#### Plano Diretor — verificacao de zona")
+    st.markdown("#### Plano Diretor - verificacao de zona")
     st.code(
         """
 python -m recomendacao_imobiliaria.cli check-plan --zone ZMC --use residencial

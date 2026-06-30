@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .scoring_config import ScoringConfig, load_scoring_config
+
 
 def clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
     return max(minimum, min(maximum, value))
@@ -58,22 +60,31 @@ def urban_growth_signal(features: AreaFeatures) -> float:
     return (0.45 * ndbi_growth) + (0.35 * ndvi_loss) + (0.20 * built_level)
 
 
-def score_area(features: AreaFeatures) -> ScoreResult:
+def score_area(features: AreaFeatures, config: ScoringConfig | None = None) -> ScoreResult:
+    config = config or load_scoring_config()
     growth = urban_growth_signal(features)
     environmental_quality = clamp(((features.ndvi_mean_90 or 0.0) + 1.0) / 2.0)
 
-    supermarket_gap = unmet_demand_score(features.poi_supermarket_cnt, target_count=2)
-    pharmacy_gap = unmet_demand_score(features.poi_pharmacy_cnt, target_count=2)
-    school_gap = unmet_demand_score(features.poi_school_cnt, target_count=1)
+    supermarket_gap = unmet_demand_score(features.poi_supermarket_cnt, config.demand_targets["supermarket"])
+    pharmacy_gap = unmet_demand_score(features.poi_pharmacy_cnt, config.demand_targets["pharmacy"])
+    school_gap = unmet_demand_score(features.poi_school_cnt, config.demand_targets["school"])
     commercial_gap = (0.45 * supermarket_gap) + (0.35 * pharmacy_gap) + (0.20 * school_gap)
 
-    supermarket_access = inverse_distance_score(features.dist_min_supermarket_m, 2500.0)
-    pharmacy_access = inverse_distance_score(features.dist_min_pharmacy_m, 1800.0)
-    school_access = inverse_distance_score(features.dist_min_school_m, 2200.0)
+    supermarket_access = inverse_distance_score(features.dist_min_supermarket_m, config.access_targets_m["supermarket"])
+    pharmacy_access = inverse_distance_score(features.dist_min_pharmacy_m, config.access_targets_m["pharmacy"])
+    school_access = inverse_distance_score(features.dist_min_school_m, config.access_targets_m["school"])
     mixed_access = (supermarket_access + pharmacy_access + school_access) / 3.0
 
-    raw_commercial = (0.45 * commercial_gap) + (0.35 * growth) + (0.20 * mixed_access)
-    raw_residential = (0.40 * environmental_quality) + (0.35 * mixed_access) + (0.25 * growth)
+    raw_commercial = (
+        (config.commercial_weights["commercial_gap"] * commercial_gap)
+        + (config.commercial_weights["growth"] * growth)
+        + (config.commercial_weights["mixed_access"] * mixed_access)
+    )
+    raw_residential = (
+        (config.residential_weights["environmental_quality"] * environmental_quality)
+        + (config.residential_weights["mixed_access"] * mixed_access)
+        + (config.residential_weights["growth"] * growth)
+    )
 
     score_commercial = (
         0.0
@@ -91,6 +102,36 @@ def score_area(features: AreaFeatures) -> ScoreResult:
         "environmental_quality": round(environmental_quality, 4),
         "commercial_gap": round(commercial_gap, 4),
         "mixed_access": round(mixed_access, 4),
+        "confidence": round(_confidence(features, config), 4),
+        "contributions": {
+            "commercial": {
+                "commercial_gap": round(config.commercial_weights["commercial_gap"] * commercial_gap, 4),
+                "growth": round(config.commercial_weights["growth"] * growth, 4),
+                "mixed_access": round(config.commercial_weights["mixed_access"] * mixed_access, 4),
+                "plan_multiplier": features.commercial_plan_multiplier,
+            },
+            "residential": {
+                "environmental_quality": round(
+                    config.residential_weights["environmental_quality"] * environmental_quality,
+                    4,
+                ),
+                "mixed_access": round(config.residential_weights["mixed_access"] * mixed_access, 4),
+                "growth": round(config.residential_weights["growth"] * growth, 4),
+                "plan_multiplier": features.residential_plan_multiplier,
+            },
+        },
+        "positive_factors": _positive_factors(
+            growth=growth,
+            environmental_quality=environmental_quality,
+            commercial_gap=commercial_gap,
+            mixed_access=mixed_access,
+        ),
+        "negative_factors": _negative_factors(
+            features=features,
+            growth=growth,
+            commercial_gap=commercial_gap,
+            mixed_access=mixed_access,
+        ),
         "zoning": {
             "zona": features.zona,
             "residential_allowed": features.residential_allowed,
@@ -104,6 +145,7 @@ def score_area(features: AreaFeatures) -> ScoreResult:
             pharmacy_gap=pharmacy_gap,
             school_gap=school_gap,
             commercial_allowed=features.commercial_allowed,
+            threshold=config.recommendation_threshold,
         ),
     }
 
@@ -120,6 +162,7 @@ def recommend_uses(
     pharmacy_gap: float,
     school_gap: float,
     commercial_allowed: bool,
+    threshold: float = 0.35,
 ) -> list[dict[str, str]]:
     if not commercial_allowed:
         return [{"use": "nenhum", "why": "O zoneamento informado veta ou nao permite uso comercial."}]
@@ -133,5 +176,63 @@ def recommend_uses(
     return [
         {"use": use, "why": why}
         for use, gap, why in ranked
-        if gap >= 0.35
+        if gap >= threshold
     ][:3]
+
+
+def _confidence(features: AreaFeatures, config: ScoringConfig) -> float:
+    value = config.confidence_weights["base"]
+    if features.ndvi_mean_90 is not None or features.ndbi_mean_90 is not None:
+        value += config.confidence_weights["has_remote_sensing"]
+    if any(
+        item is not None
+        for item in [
+            features.dist_min_supermarket_m,
+            features.dist_min_pharmacy_m,
+            features.dist_min_school_m,
+        ]
+    ):
+        value += config.confidence_weights["has_accessibility"]
+    if features.zona:
+        value += config.confidence_weights["has_zoning"]
+    if features.residential_plan_status != "blocked" and features.commercial_plan_status != "blocked":
+        value += config.confidence_weights["allowed_by_plan"]
+    return clamp(value)
+
+
+def _positive_factors(
+    growth: float,
+    environmental_quality: float,
+    commercial_gap: float,
+    mixed_access: float,
+) -> list[str]:
+    factors = []
+    if growth >= 0.35:
+        factors.append("sinal de crescimento urbano")
+    if environmental_quality >= 0.65:
+        factors.append("boa qualidade ambiental relativa")
+    if commercial_gap >= 0.45:
+        factors.append("carencia relevante de servicos")
+    if mixed_access >= 0.45:
+        factors.append("boa acessibilidade a equipamentos")
+    return factors
+
+
+def _negative_factors(
+    features: AreaFeatures,
+    growth: float,
+    commercial_gap: float,
+    mixed_access: float,
+) -> list[str]:
+    factors = []
+    if growth < 0.15:
+        factors.append("baixo sinal de crescimento recente")
+    if commercial_gap < 0.2:
+        factors.append("baixa carencia comercial detectada")
+    if mixed_access < 0.2:
+        factors.append("acessibilidade limitada aos servicos medidos")
+    if features.residential_plan_status == "conditioned" or features.commercial_plan_status == "conditioned":
+        factors.append("uso condicionado pelo Plano Diretor")
+    if not features.residential_allowed or not features.commercial_allowed:
+        factors.append("uso bloqueado ou vetado pela regra legal/zoneamento")
+    return factors

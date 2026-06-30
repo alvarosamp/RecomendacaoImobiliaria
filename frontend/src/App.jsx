@@ -6,28 +6,66 @@ import ValuationPage from './pages/ValuationPage'
 import SetupScreen from './components/SetupScreen'
 import { fetchScores, fetchTimeseries } from './api'
 
+// ── SVG Icons (real estate themed) ──────────────────────────────
+function IconMap() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 1.5C6.51 1.5 4.5 3.51 4.5 6c0 3.75 4.5 10.5 4.5 10.5s4.5-6.75 4.5-10.5c0-2.49-2.01-4.5-4.5-4.5z"/>
+      <circle cx="9" cy="6" r="1.5"/>
+    </svg>
+  )
+}
+
+function IconOpp() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="6" height="8" rx="1"/>
+      <rect x="10" y="6" width="6" height="10" rx="1"/>
+      <rect x="2" y="12" width="6" height="4" rx="1"/>
+    </svg>
+  )
+}
+
+function IconCommerce() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 7l1.5-4.5h11L16 7"/>
+      <path d="M2 7v8a1 1 0 001 1h12a1 1 0 001-1V7"/>
+      <path d="M2 7h14"/>
+      <path d="M7 15V10h4v5"/>
+    </svg>
+  )
+}
+
+function IconValuation() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="14" height="14" rx="2"/>
+      <path d="M6 9h6M9 6v6"/>
+    </svg>
+  )
+}
+
 const NAV = [
-  { id: 'map',           label: 'Mapa da cidade',         icon: '◉' },
-  { id: 'opportunities', label: 'Oportunidades',           icon: '◈' },
-  { id: 'commerce',      label: 'Comércios faltantes',     icon: '◫' },
-  { id: 'valuation',     label: 'Avaliar imóvel',          icon: '◧' },
+  { id: 'map',           label: 'Mapa da Cidade',       Icon: IconMap },
+  { id: 'opportunities', label: 'Oportunidades',          Icon: IconOpp },
+  { id: 'commerce',      label: 'Comércios Faltantes',   Icon: IconCommerce },
+  { id: 'valuation',     label: 'Avaliar Imóvel',        Icon: IconValuation },
 ]
 
 function RefreshStatus({ status, onDismiss }) {
   if (!status) return null
-  const colors = { running: '#2563eb', done: '#16a34a', error: '#dc2626' }
   const labels = {
-    running: '↻ Atualizando…',
+    running: '↻ Atualizando dados…',
     done:    '✓ Dados atualizados',
     error:   '✕ Falha na atualização',
   }
   return (
-    <div style={{
-      background: colors[status] ?? '#64748b',
-      color: '#fff', fontSize: 11, fontWeight: 600,
-      padding: '6px 12px', borderRadius: 6, textAlign: 'center',
-      margin: '8px 0 0', cursor: status !== 'running' ? 'pointer' : 'default',
-    }} onClick={status !== 'running' ? onDismiss : undefined}>
+    <div
+      className={`refresh-status ${status}`}
+      onClick={status !== 'running' ? onDismiss : undefined}
+      style={{ cursor: status !== 'running' ? 'pointer' : 'default' }}
+    >
       {labels[status]}
     </div>
   )
@@ -88,7 +126,7 @@ export default function App() {
           setRefreshStatus(s.success ? 'done' : 'error')
           if (s.success) {
             loadScores()
-            setTimeLoaded(false) // reload time series too
+            setTimeLoaded(false)
           }
         }
       } catch (_) {}
@@ -107,18 +145,28 @@ export default function App() {
     setTimeLoaded(false)
   }
 
-  // ── Empty state: show setup screen ──────────────────────────────
   const isEmpty = !loading && !error && scores.length === 0
 
   return (
     <div className="layout">
       {/* ── Sidebar ── */}
       <aside className="sidebar">
+        {/* Brand */}
         <div className="sidebar-brand">
-          <h1>Inteligência Territorial</h1>
-          <span>Pouso Alegre · MG</span>
+          <div className="sidebar-logo-row">
+            <div className="sidebar-logo-badge">IT</div>
+            <div>
+              <div className="sidebar-brand-name">Inteligência{'\n'}Territorial</div>
+            </div>
+          </div>
+          <div className="sidebar-brand-sub">
+            <span className="sidebar-city-dot" />
+            Pouso Alegre · MG
+          </div>
         </div>
 
+        {/* Nav */}
+        <div className="sidebar-section-label">Módulos</div>
         <nav className="sidebar-nav">
           {NAV.map(item => (
             <button
@@ -127,23 +175,28 @@ export default function App() {
               onClick={() => setPage(item.id)}
               disabled={isEmpty}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <item.Icon />
               {item.label}
             </button>
           ))}
         </nav>
 
+        {/* Footer */}
         {!loading && !error && scores.length > 0 && (
           <div className="sidebar-footer">
             <div className="sidebar-stats">
-              {scores.length} células · {scores.filter(r => r.priority === 'alta').length} alta prioridade
+              {scores.length} áreas · {scores.filter(r => r.priority === 'alta').length} alta prioridade
             </div>
             <button
               className="sidebar-refresh-btn"
               onClick={handleRefresh}
               disabled={refreshStatus === 'running'}
             >
-              ↻ Atualizar dados
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M11.5 2.5A5.5 5.5 0 1 0 12 7"/>
+                <path d="M12 2.5V5h-2.5"/>
+              </svg>
+              Atualizar dados
             </button>
             <RefreshStatus
               status={refreshStatus}
@@ -155,8 +208,13 @@ export default function App() {
 
       {/* ── Main ── */}
       <main className="main">
-        {loading && <div className="loading">Verificando banco de dados…</div>}
-        {error   && <div className="error-msg">Erro: {error}</div>}
+        {loading && (
+          <div className="loading">
+            <div className="loading-spinner" />
+            Verificando banco de dados…
+          </div>
+        )}
+        {error && <div className="error-msg">Erro: {error}</div>}
 
         {/* First-time setup */}
         {isEmpty && (

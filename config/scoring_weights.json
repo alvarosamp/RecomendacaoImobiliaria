@@ -1,0 +1,30 @@
+{
+  "commercial": {
+    "commercial_gap": 0.45,
+    "growth": 0.35,
+    "mixed_access": 0.2
+  },
+  "residential": {
+    "environmental_quality": 0.4,
+    "mixed_access": 0.35,
+    "growth": 0.25
+  },
+  "demand_targets": {
+    "supermarket": 2,
+    "pharmacy": 2,
+    "school": 1
+  },
+  "access_targets_m": {
+    "supermarket": 2500,
+    "pharmacy": 1800,
+    "school": 2200
+  },
+  "recommendation_threshold": 0.35,
+  "confidence": {
+    "base": 0.3,
+    "has_remote_sensing": 0.2,
+    "has_accessibility": 0.2,
+    "has_zoning": 0.2,
+    "allowed_by_plan": 0.1
+  }
+}

@@ -58,10 +58,17 @@ def main() -> None:
     plan_parser = subparsers.add_parser("check-plan", help="Avalia compatibilidade de zona e uso.")
     plan_parser.add_argument("--zone", required=True, help="Codigo ou nome da zona.")
     plan_parser.add_argument("--use", required=True, help="Uso pretendido: residencial, comercial, etc.")
+    subparsers.add_parser("inspect-legal-annexes", help="Verifica anexos legais necessarios para regras do PDPA.")
 
     # --- zoneamento oficial ---
     zoning_parser = subparsers.add_parser("import-zoning", help="Importa GeoJSON/Shapefile de zoneamento oficial.")
     zoning_parser.add_argument("--file", required=True, help="Caminho para GeoJSON ou Shapefile.")
+
+    inspect_zoning_parser = subparsers.add_parser("inspect-zoning", help="Inspeciona arquivo de zoneamento sem importar.")
+    inspect_zoning_parser.add_argument("--file", default=None, help="Caminho para KML/KMZ/GeoJSON/SHP/GPKG.")
+
+    import_official_parser = subparsers.add_parser("import-official-zoning", help="Importa o zoneamento oficial encontrado em data/official.")
+    import_official_parser.add_argument("--file", default=None, help="Opcional: caminho para substituir o arquivo padrao.")
 
     subparsers.add_parser("gen-sample-zoning", help="Gera GeoJSON de zoneamento de exemplo para testes.")
 
@@ -153,6 +160,11 @@ def main() -> None:
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 
+    if args.command == "inspect-legal-annexes":
+        from .legal_annexes import legal_annexes_as_dicts
+        print(json.dumps(legal_annexes_as_dicts(), ensure_ascii=False, indent=2))
+        return
+
     # ---- zoneamento ----
     if args.command == "import-zoning":
         try:
@@ -160,6 +172,26 @@ def main() -> None:
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
         result = import_zoning_file(args.file)
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "inspect-zoning":
+        try:
+            from .zoning_import import default_zoning_file, inspect_zoning_file
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        path = args.file or default_zoning_file()
+        result = inspect_zoning_file(path)
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "import-official-zoning":
+        try:
+            from .zoning_import import default_zoning_file, import_zoning_file
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        path = args.file or default_zoning_file()
+        result = import_zoning_file(path)
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 

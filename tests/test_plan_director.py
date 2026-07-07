@@ -18,7 +18,9 @@ class PlanDirectorTest(unittest.TestCase):
         self.assertTrue(decision.allowed)
 
     def test_normalize_zone_alias(self):
-        self.assertEqual(normalize_zone("Zona Mista Central"), "ZMC")
+        self.assertEqual(normalize_zone("Zona Mista Central"), "ZC")
+        self.assertEqual(normalize_zone("ZMC"), "ZC")
+        self.assertEqual(normalize_zone("ZEPAM 1"), "ZEPAM1")
 
 
 if __name__ == "__main__":

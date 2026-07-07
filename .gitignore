@@ -178,6 +178,16 @@ models/*.pkl
 data/raw/
 data/processed/
 data/official_test_tmp/
+data/official/**/*.pdf
+data/official/**/*.kml
+data/official/**/*.kmz
+data/official/**/*.gpkg
+data/official/**/*.shp
+data/official/**/*.dbf
+data/official/**/*.shx
+data/official/**/*.prj
+!data/official/**/README.md
+!data/official/**/manifest*.csv
 data/official_empty_test/
 reports/
 reports_test/

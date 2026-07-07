@@ -11,10 +11,6 @@ numpy>=2.2.0,<3.0.0
 python-dotenv>=1.2.1,<2.0.0
 osmnx>=2.0.6,<3.0.0
 
-# --- front ---
-streamlit>=1.51.0,<2.0.0
-folium>=0.20.0,<0.21.0
-streamlit-folium>=0.25.0,<1.0.0
 
 # --- ML ---
 scikit-learn>=1.7.0,<2.0.0

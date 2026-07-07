@@ -1,0 +1,7 @@
+﻿ZONEAMENTO URBANO KML/KMZ:
+https://drive.google.com/drive/folders/1lqTKd7lqZYv33IDVjO51UY_1EqIc7W56?usp=sharing
+
+ARQUIVOS COMPLEMENTARES DRIVE:
+https://drive.google.com/drive/folders/1wchSsym6NPQKOjv5OfyBdOdSlSBUor6g?usp=drive_link
+
+Observacao: o download de pasta do Google Drive pode exigir acao manual no navegador. Baixe os arquivos KML/KMZ e salve em data/official/zoneamento_oficial.kml ou data/official/zoneamento_oficial.kmz.

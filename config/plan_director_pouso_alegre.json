@@ -12,7 +12,7 @@
     }
   ],
   "rules": {
-    "ZMC": {
+    "ZC": {
       "label": "Zona Mista Central",
       "residencial": "allowed",
       "comercial": "allowed",

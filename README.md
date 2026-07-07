@@ -70,7 +70,8 @@ Cada area recebe scores e justificativas para usos residenciais e comerciais. Ar
 - Estados legais: permitido, condicionado e bloqueado.
 - Penalizacao automatica do score quando ha condicionantes.
 - Bloqueio de recomendacoes em zonas restritivas.
-- Estrutura pronta para importar zoneamento oficial georreferenciado.
+- Inspecao de KML/KMZ oficial do PDPA com 22 zonas reconhecidas.
+- Registro dos anexos legais prioritarios para uso, incomodidade, parametros urbanisticos e risco.
 
 ### Sensoriamento remoto
 
@@ -87,7 +88,8 @@ Cada area recebe scores e justificativas para usos residenciais e comerciais. Ar
 
 ### Interface analitica
 
-- Dashboard em Streamlit.
+- Frontend web em evolucao.
+- API para expor analises e recomendacoes.
 - Ranking de oportunidades.
 - Mapa de areas avaliadas.
 - Painel de explicabilidade.
@@ -136,7 +138,9 @@ Dashboard e relatorios
 | `remote_sensing.py` | Processamento de NDVI/NDBI e tendencias urbanas |
 | `ml.py` | Treino e aplicacao de modelos de preco |
 | `reporting.py` | Dados consolidados para dashboard e relatorios |
-| `app/streamlit_app.py` | Interface analitica do produto |
+| `legal_annexes.py` | Registro dos anexos oficiais que sustentam parametros e usos |
+| `api/` | Servico HTTP para integracao com o frontend |
+| `frontend/` | Interface web do produto |
 
 ## Fontes oficiais prioritarias
 
@@ -168,12 +172,12 @@ Caso o zoneamento georreferenciado nao esteja publicado, ele deve ser solicitado
 | Scoring explicavel | Implementado |
 | Dashboard inicial | Implementado |
 | Plano Diretor como regra de negocio | Parcialmente implementado |
-| Importacao de zoneamento oficial | Preparada |
+| Importacao de zoneamento oficial | Inspecao implementada; importacao em banco preparada |
 | Sensoriamento remoto | Parcialmente implementado |
 | Modelo de preco | Baseline implementado |
 | Valorizacao temporal | Pendente |
 | RAG juridico com citacao legal | Pendente/experimental |
-| Validacao com dados oficiais | Pendente |
+| Validacao com dados oficiais | Em andamento com arquivos oficiais do PDPA |
 
 ## Roadmap tecnico
 
@@ -230,7 +234,7 @@ Uma recomendacao so deve ser considerada confiavel quando apresentar:
 
 ## Limitacoes atuais
 
-O projeto ainda depende da importacao do zoneamento oficial e dos anexos legais para validar recomendacoes reais. Enquanto esses dados nao forem incorporados, os resultados devem ser tratados como demonstracao tecnica e apoio exploratorio, nao como parecer urbanistico ou recomendacao juridicamente validada.
+O projeto ja reconhece o KML/KMZ oficial do PDPA e localiza anexos legais prioritarios, mas ainda precisa converter esses documentos em regras estruturadas completas e importar as geometrias em PostGIS para validar recomendacoes reais por coordenada. Enquanto essa etapa nao estiver fechada, os resultados devem ser tratados como demonstracao tecnica e apoio exploratorio, nao como parecer urbanistico ou recomendacao juridicamente validada.
 
 ## Direcao do produto
 

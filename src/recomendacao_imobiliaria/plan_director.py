@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -32,7 +33,7 @@ class PlanDecision:
         return self.status != "blocked"
 
     def articles_text(self) -> str:
-        return "; ".join(self.articles) if self.articles else "—"
+        return "; ".join(self.articles) if self.articles else "-"
 
 
 def evaluate_plan_compatibility(
@@ -47,7 +48,7 @@ def evaluate_plan_compatibility(
 
     zone_rules = rules.get("rules", {}).get(zone_key)
     if not zone_rules:
-        unknown = rules.get("unknown_zone_policy", {})
+        unknown = infer_zone_policy(zone_key, rules)
         status = str(unknown.get("status", "conditioned"))
         return PlanDecision(
             zone=zone_key,
@@ -83,18 +84,64 @@ def load_plan_rules(path: str | Path = DEFAULT_RULES_PATH) -> dict[str, object]:
 def normalize_zone(zone: str | None) -> str | None:
     if zone is None:
         return None
-    value = str(zone).strip().upper().replace("-", "")
+    raw = str(zone).strip().upper()
+    value = re.sub(r"[^A-Z0-9]", "", raw)
     aliases = {
-        "ZONA CENTRAL": "ZMC",
-        "ZONA MISTA CENTRAL": "ZMC",
+        "ZMC": "ZC",
+        "ZONA CENTRAL": "ZC",
+        "ZONAS CENTRAIS": "ZC",
+        "ZONA MISTA CENTRAL": "ZC",
         "ZONA MISTA": "ZM",
         "ZONA DE EXPANSAO URBANA": "ZEU",
         "ZONA EXPANSAO": "ZEU",
-        "RESTRICAO AMBIENTAL": "ZPA",
-        "ZONA DE PRESERVACAO AMBIENTAL": "ZPA",
+        "RESTRICAO AMBIENTAL": "ZEPAM1",
+        "ZONA DE PRESERVACAO AMBIENTAL": "ZEPAM1",
         "ZONA ESPECIAL DE INTERESSE SOCIAL": "ZEIS",
     }
-    return aliases.get(value, value)
+    return aliases.get(raw, aliases.get(value, value))
+
+
+def infer_zone_policy(zone_key: str | None, rules: dict[str, object]) -> dict[str, object]:
+    unknown = dict(rules.get("unknown_zone_policy", {}))
+    if not zone_key:
+        return unknown
+
+    if zone_key.startswith("ZEPAM"):
+        return {
+            "status": "blocked",
+            "label": "Zona Especial de Preservacao Ambiental",
+            "notes": "Zona ambiental oficial do PDPA. Recomendacoes imobiliarias devem ser bloqueadas ate validacao ambiental especifica.",
+            "articles": unknown.get("articles", []),
+        }
+    if zone_key.startswith("ZEPU") or zone_key.startswith("ZEPEC") or zone_key in {"ZEIS", "ZEIS1", "ZEIS2", "ZERF"}:
+        return {
+            "status": "conditioned",
+            "label": "Zona especial do PDPA",
+            "notes": "Zona especial. Uso e ocupacao dependem de regras especificas dos anexos e validacao tecnica.",
+            "articles": unknown.get("articles", []),
+        }
+    if zone_key == "ZER":
+        return {
+            "status": "conditioned",
+            "label": "Zona Exclusivamente Residencial",
+            "notes": "Zona residencial restritiva. Usos comerciais e nao residenciais exigem verificacao nos quadros oficiais.",
+            "articles": unknown.get("articles", []),
+        }
+    if zone_key.startswith("ZM") or zone_key in {"ZC", "ZMV"}:
+        return {
+            "status": "conditioned",
+            "label": "Zona urbana mista/central do PDPA",
+            "notes": "Zona urbana identificada no KML oficial. Aplicar quadros de usos permitidos, incomodidade e parametros urbanisticos.",
+            "articles": unknown.get("articles", []),
+        }
+    if zone_key in {"ZEP", "ZEEP", "ZEU"}:
+        return {
+            "status": "conditioned",
+            "label": "Zona de expansao ou empreendimento",
+            "notes": "Zona com potencial de ocupacao condicionada a parametros urbanisticos, infraestrutura e restricoes ambientais.",
+            "articles": unknown.get("articles", []),
+        }
+    return unknown
 
 
 def normalize_use(intended_use: str) -> str:

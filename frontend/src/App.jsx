@@ -202,6 +202,13 @@ export default function App() {
               status={refreshStatus}
               onDismiss={() => setRefreshStatus(null)}
             />
+            
+            <button className="sidebar-refresh-btn" style={{marginTop: '8px', opacity: 0.8}} onClick={() => {
+              localStorage.removeItem('token');
+              window.location.href = '/login';
+            }}>
+              Sair da conta
+            </button>
           </div>
         )}
       </aside>

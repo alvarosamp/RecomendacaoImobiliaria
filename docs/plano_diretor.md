@@ -57,12 +57,30 @@ O modulo `src/recomendacao_imobiliaria/plan_director.py` le essa matriz e devolv
 
 Isso evita que a IA recomende uma area ambiental, cultural ou especial como se fosse investimento comum.
 
+## Estado atual dos dados oficiais
+
+O projeto ja possui KML/KMZ oficial do PDPA em `data/official/pdpa/` e reconhece 22 zonas urbanisticas na camada de zoneamento:
+
+- `ZC`, `ZEU`, `ZEEP`, `ZEP`, `ZER`, `ZERF`;
+- `ZM1`, `ZM2`, `ZM3`, `ZM4`, `ZMV`;
+- `ZEIS1`, `ZEIS2`;
+- `ZEPAM1`, `ZEPAM2`, `ZEPAM3`, `ZEPAM4`;
+- `ZEPEC2`, `ZEPEC3`;
+- `ZEPU1`, `ZEPU2`, `ZEPU3`.
+
+Tambem ha registro dos anexos prioritarios para transformar o Plano Diretor em regra estruturada:
+
+- Anexo 6 - parametros de ocupacao do solo;
+- Anexo 8 - usos nao residenciais e usos permitidos;
+- Anexo 9 - parametros de incomodidade e condicoes de instalacao;
+- Anexo IX - mapa de areas de risco.
+
 ## Limites atuais
 
 Esta e uma matriz inicial conservadora. Para uso juridico/tecnico real, ainda falta:
 
-1. importar o mapa oficial de zoneamento;
-2. importar anexos/tabelas oficiais de parametros urbanisticos;
+1. importar o mapa oficial de zoneamento no PostGIS;
+2. extrair anexos/tabelas oficiais de parametros urbanisticos para dados estruturados;
 3. separar usos comerciais por grau de incomodidade;
 4. cruzar APP, areas de risco, patrimonio, diretrizes viarias e infraestrutura;
 5. citar artigo/anexo especifico no `explain_json`.

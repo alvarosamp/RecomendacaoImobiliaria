@@ -26,7 +26,13 @@ OFFICIAL_SOURCES = [
         name="Prefeitura de Pouso Alegre",
         what_to_get="Mapa oficial de zoneamento, anexos do Plano Diretor e arquivos georreferenciados.",
         url="https://pousoalegre.mg.gov.br/",
-        expected_files=("zoneamento_oficial.geojson", "zoneamento_oficial.shp", "zoneamento_oficial.gpkg"),
+        expected_files=(
+            "zoneamento_oficial.geojson",
+            "zoneamento_oficial.shp",
+            "zoneamento_oficial.gpkg",
+            "zoneamento_oficial.kml",
+            "zoneamento_oficial.kmz",
+        ),
         notes=(
             "Procure por Secretaria de Planejamento, Desenvolvimento Urbano, "
             "Geoprocessamento, Cadastro Tecnico ou Portal da Transparencia. "
@@ -71,18 +77,32 @@ def validate_official_data(base_dir: str | Path = "data/official") -> OfficialDa
         if path.is_file()
     )
     lower_found = {Path(item).name.lower() for item in found}
+    zoning_ready = any(
+        "zoneamento" in Path(item).name.lower()
+        and Path(item).suffix.lower() in {".geojson", ".shp", ".gpkg", ".kml", ".kmz"}
+        for item in found
+    )
 
     recommended = {
         "zoneamento_oficial.geojson",
         "zoneamento_oficial.shp",
         "zoneamento_oficial.gpkg",
+        "zoneamento_oficial.kml",
+        "zoneamento_oficial.kmz",
         "plano_diretor_lei_6476_2021.pdf",
         "uso_ocupacao_solo.pdf",
     }
-    missing = sorted(item for item in recommended if item not in lower_found)
-    zoning_ready = any(
-        name in lower_found
-        for name in {"zoneamento_oficial.geojson", "zoneamento_oficial.shp", "zoneamento_oficial.gpkg"}
+    zoning_names = {
+        "zoneamento_oficial.geojson",
+        "zoneamento_oficial.shp",
+        "zoneamento_oficial.gpkg",
+        "zoneamento_oficial.kml",
+        "zoneamento_oficial.kmz",
+    }
+    missing = sorted(
+        item
+        for item in recommended
+        if item not in lower_found and not (item in zoning_names and zoning_ready)
     )
 
     return OfficialDataStatus(

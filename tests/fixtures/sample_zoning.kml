@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <Placemark>
+      <name>ZEU</name>
+      <ExtendedData>
+        <SchemaData>
+          <SimpleData name="Layer">ZEU</SimpleData>
+          <SimpleData name="DESC">Zona de Expansao Urbana.</SimpleData>
+        </SchemaData>
+      </ExtendedData>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -45.95,-22.23,0 -45.94,-22.23,0 -45.94,-22.22,0 -45.95,-22.22,0 -45.95,-22.23,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+    <Placemark>
+      <name>ZEPAM1</name>
+      <ExtendedData>
+        <SchemaData>
+          <SimpleData name="Layer">ZEPAM1</SimpleData>
+          <SimpleData name="DESC">Zona ambiental.</SimpleData>
+        </SchemaData>
+      </ExtendedData>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -45.96,-22.24,0 -45.95,-22.24,0 -45.95,-22.23,0 -45.96,-22.23,0 -45.96,-22.24,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>

@@ -1,7 +1,15 @@
 const BASE = '/api'
 
+function getHeaders() {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+}
+
 async function get(path) {
-  const res = await fetch(`${BASE}${path}`)
+  const res = await fetch(`${BASE}${path}`, { headers: getHeaders() })
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.json()
 }
@@ -9,12 +17,14 @@ async function get(path) {
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeaders(),
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.json()
 }
+
+export const api = { get, post };
 
 export const fetchScores       = ()   => get('/scores')
 export const predictPrice      = body => post('/predict', body)

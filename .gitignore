@@ -204,3 +204,5 @@ reports_test/
 
 mlruns/
 *.keras
+
+.env

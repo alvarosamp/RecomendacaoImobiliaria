@@ -11,7 +11,7 @@ from .config import Settings, load_settings
 
 def make_engine(settings: Settings | None = None) -> Engine:
     settings = settings or load_settings()
-    return create_engine(settings.database_url, future=True)
+    return create_engine(settings.database_url, future=True, pool_pre_ping=True)
 
 
 @contextmanager

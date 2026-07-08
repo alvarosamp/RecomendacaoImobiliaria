@@ -6,6 +6,7 @@ const MapPage           = lazy(() => import('./pages/MapPage'))
 const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
 const CommercePage      = lazy(() => import('./pages/CommercePage'))
 const ValuationPage     = lazy(() => import('./pages/ValuationPage'))
+const ConceptPage       = lazy(() => import('./pages/ConceptStudioPage'))
 
 // ── SVG Icons (real estate themed) ──────────────────────────────
 function IconMap() {
@@ -47,11 +48,22 @@ function IconValuation() {
   )
 }
 
+function IconConcept() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 15V7l6-4 6 4v8"/>
+      <path d="M6 15v-4h6v4"/>
+      <path d="M5 8.5h8"/>
+    </svg>
+  )
+}
+
 const NAV = [
   { id: 'map',           label: 'Mapa da Cidade',       Icon: IconMap },
   { id: 'opportunities', label: 'Oportunidades',          Icon: IconOpp },
   { id: 'commerce',      label: 'Comércios Faltantes',   Icon: IconCommerce },
   { id: 'valuation',     label: 'Avaliar Imóvel',        Icon: IconValuation },
+  { id: 'concept',       label: 'Conceito e Obra',        Icon: IconConcept },
 ]
 
 function RefreshStatus({ status, onDismiss }) {
@@ -246,6 +258,7 @@ export default function App() {
             {page === 'opportunities' && <OpportunitiesPage scores={scores} />}
             {page === 'commerce'      && <CommercePage />}
             {page === 'valuation'     && <ValuationPage />}
+            {page === 'concept'       && <ConceptPage />}
           </Suspense>
         )}
       </main>

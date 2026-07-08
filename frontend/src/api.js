@@ -55,3 +55,14 @@ export const fetchPoisGeojson   = ()  => getCached('/analytics/pois-geojson', 'c
 export const runPipeline       = ()   => post('/pipeline/run', {})
 export const refreshPipeline   = ()   => post('/pipeline/refresh', {})
 export const getPipelineStatus = ()   => get('/pipeline/status')
+export const analyzeConcept    = body => post('/concept/analyze', body)
+export const generateConceptImage = body => post('/concept/generate-image', body)
+export const downloadConceptReport = async body => {
+  const res = await fetch(`${BASE}/concept/report`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
+  return res.blob()
+}

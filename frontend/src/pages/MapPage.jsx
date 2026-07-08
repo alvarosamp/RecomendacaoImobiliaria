@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import H3Map from '../components/H3Map'
 import TimeSlider from '../components/TimeSlider'
 import { fetchPoisGeojson, fetchZoningGeojson } from '../api'
@@ -22,12 +22,35 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   const [pois, setPois]                     = useState(null)
   const [visibleLayers, setVisibleLayers]   = useState({ cells: true, zoning: true, pois: true })
   const [poiTypes, setPoiTypes]             = useState(['pharmacy', 'supermarket', 'school', 'clinic', 'hospital'])
+  const [influenceRadius, setInfluenceRadius] = useState(900)
+  const [labelMode, setLabelMode]           = useState('smart')
 
   const filtered = scores.filter(r => {
     if (priorityFilter && r.priority !== priorityFilter) return false
     if (riskFilter     && r.risk_level !== riskFilter)  return false
     return true
   })
+
+  const rankedZones = useMemo(() => {
+    const groups = new Map()
+    filtered.forEach(row => {
+      const key = row.zona || 'Area sem zona'
+      const current = groups.get(key) || { name: key, count: 0, total: 0, high: 0, growth: 0 }
+      current.count += 1
+      current.total += Math.max(row.score_residencial || 0, row.score_comercial || 0)
+      current.high += row.priority === 'alta' ? 1 : 0
+      current.growth += Number(row.growth_signal || row.ndbi_slope_180 || 0)
+      groups.set(key, current)
+    })
+    return [...groups.values()]
+      .map(item => ({
+        ...item,
+        avg: item.total / Math.max(item.count, 1),
+        growthAvg: item.growth / Math.max(item.count, 1),
+      }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 5)
+  }, [filtered])
 
   useEffect(() => {
     let active = true
@@ -79,6 +102,17 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
           <button className={visibleLayers.zoning ? 'active' : ''} onClick={() => toggleLayer('zoning')}>Zonas</button>
           <button className={visibleLayers.pois ? 'active' : ''} onClick={() => toggleLayer('pois')}>Pontos</button>
         </div>
+        <select value={influenceRadius} onChange={e => setInfluenceRadius(Number(e.target.value))}>
+          <option value={500}>Raio 500 m</option>
+          <option value={900}>Raio 900 m</option>
+          <option value={1500}>Raio 1,5 km</option>
+          <option value={2500}>Raio 2,5 km</option>
+        </select>
+        <select value={labelMode} onChange={e => setLabelMode(e.target.value)}>
+          <option value="smart">Nomes essenciais</option>
+          <option value="all">Mais nomes</option>
+          <option value="hidden">Sem nomes</option>
+        </select>
         <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
           <option value="">Todas as prioridades</option>
           <option value="alta">Alta</option>
@@ -106,6 +140,16 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         ))}
       </div>
 
+      <div className="map-ranking-strip">
+        {rankedZones.map((item, index) => (
+          <div key={item.name} className="map-ranking-item">
+            <span>#{index + 1} {item.name}</span>
+            <strong>{item.avg.toFixed(0)}/100</strong>
+            <small>{item.count} areas · {item.high} alta prioridade</small>
+          </div>
+        ))}
+      </div>
+
       <div className="map-area">
         <H3Map
           data={filtered}
@@ -116,6 +160,8 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
           visibleLayers={visibleLayers}
           poiTypes={poiTypes}
           mode={selectedDate ? 'growth' : mapMode}
+          influenceRadius={influenceRadius}
+          labelMode={labelMode}
         />
       </div>
 

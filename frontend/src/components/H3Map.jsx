@@ -1,7 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
-import { BitmapLayer, GeoJsonLayer, H3HexagonLayer, ScatterplotLayer, TextLayer, TileLayer } from 'deck.gl'
+import { BitmapLayer, GeoJsonLayer, H3HexagonLayer, PolygonLayer, ScatterplotLayer, TextLayer, TileLayer } from 'deck.gl'
 import { FlyToInterpolator } from '@deck.gl/core'
+import { cellToLatLng } from 'h3-js'
 
 const CITY = { longitude: -45.9489, latitude: -22.2303 }
 const INITIAL_VIEW = { ...CITY, zoom: 12, pitch: 0, bearing: 0 }
@@ -9,6 +10,7 @@ const INITIAL_VIEW = { ...CITY, zoom: 12, pitch: 0, bearing: 0 }
 const CITY_VIEWBOX = '-46.05,-22.13,-45.83,-22.38'
 
 const POI_LABEL_MIN_ZOOM = 15
+const INFLUENCE_MIN_ZOOM = 10.8
 
 const TILE_SCALE = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? '@2x' : ''
 
@@ -119,6 +121,55 @@ function legendFor(mode, selectedDate) {
   return SCORE_LEGEND
 }
 
+function shortPoiName(name) {
+  const value = String(name || '').trim()
+  if (!value) return ''
+  return value
+    .replace(/\b(supermercado|mercado|farmacia|drogaria|escola|colegio|hospital|clinica)\b/ig, match => {
+      const m = match.toLowerCase()
+      if (m === 'supermercado') return 'Sup.'
+      if (m === 'farmacia') return 'Farm.'
+      if (m === 'drogaria') return 'Drog.'
+      if (m === 'colegio') return 'Col.'
+      if (m === 'clinica') return 'Clin.'
+      return match
+    })
+    .slice(0, 28)
+}
+
+function poiImportance(feature) {
+  const type = poiType(feature)
+  if (type === 'hospital') return 9
+  if (type === 'school' || type === 'supermarket') return 7
+  if (type === 'clinic' || type === 'pharmacy') return 6
+  if (type === 'park') return 4
+  return 2
+}
+
+function selectedCenter(cell) {
+  if (!cell?.h3_id) return null
+  try {
+    const [lat, lng] = cellToLatLng(cell.h3_id)
+    return { longitude: lng, latitude: lat }
+  } catch {
+    return null
+  }
+}
+
+function circlePolygon(center, radiusMeters) {
+  const points = []
+  const latRadius = radiusMeters / 111320
+  const lngRadius = radiusMeters / (111320 * Math.cos(center.latitude * Math.PI / 180))
+  for (let i = 0; i <= 96; i += 1) {
+    const angle = (i / 96) * Math.PI * 2
+    points.push([
+      center.longitude + Math.cos(angle) * lngRadius,
+      center.latitude + Math.sin(angle) * latRadius,
+    ])
+  }
+  return points
+}
+
 export default function H3Map({
   data,
   timeData = [],
@@ -128,6 +179,8 @@ export default function H3Map({
   visibleLayers = { cells: true, zoning: true, pois: true },
   poiTypes = [],
   mode = 'score',
+  influenceRadius = 900,
+  labelMode = 'smart',
 }) {
   const [tooltip, setTooltip] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -145,6 +198,55 @@ export default function H3Map({
     if (!poiTypes.length) return features
     return features.filter(feature => poiTypes.includes(poiType(feature)))
   }, [pois, poiTypes, visibleLayers.pois])
+
+  const labeledPois = useMemo(() => {
+    if (labelMode === 'hidden') return []
+    const limit = viewState.zoom >= 16 ? 70 : viewState.zoom >= 15 ? 42 : 18
+    return filteredPois
+      .filter(feature => feature.properties?.name)
+      .sort((a, b) => poiImportance(b) - poiImportance(a))
+      .slice(0, labelMode === 'all' ? 120 : limit)
+  }, [filteredPois, labelMode, viewState.zoom])
+
+  const poiClusters = useMemo(() => {
+    const buckets = new Map()
+    const precision = viewState.zoom < 12 ? 1 : viewState.zoom < 14 ? 2 : 3
+    filteredPois.forEach(feature => {
+      const [lon, lat] = feature.geometry.coordinates
+      const key = `${lon.toFixed(precision)}:${lat.toFixed(precision)}`
+      const current = buckets.get(key) || { lon: 0, lat: 0, count: 0, types: new Set() }
+      current.lon += lon
+      current.lat += lat
+      current.count += 1
+      current.types.add(poiType(feature))
+      buckets.set(key, current)
+    })
+    return [...buckets.values()].map(item => ({
+      position: [item.lon / item.count, item.lat / item.count],
+      count: item.count,
+      label: String(item.count),
+      types: [...item.types],
+    })).filter(item => item.count > 1)
+  }, [filteredPois, viewState.zoom])
+
+  const influenceCenter = useMemo(() => {
+    if (searchPin) return { longitude: searchPin.lon, latitude: searchPin.lat }
+    return selectedCenter(selected) || CITY
+  }, [searchPin, selected])
+
+  const influenceLayer = useMemo(() => new PolygonLayer({
+    id: 'influence-radius',
+    data: influenceRadius > 0 ? [{ polygon: circlePolygon(influenceCenter, influenceRadius) }] : [],
+    getPolygon: d => d.polygon,
+    filled: true,
+    stroked: true,
+    getFillColor: [37, 99, 235, 34],
+    getLineColor: [27, 42, 74, 210],
+    getLineWidth: 3,
+    lineWidthUnits: 'pixels',
+    visible: viewState.zoom >= INFLUENCE_MIN_ZOOM,
+    pickable: false,
+  }), [influenceCenter, influenceRadius, viewState.zoom])
 
   const zoningLayer = useMemo(() => new GeoJsonLayer({
     id: 'official-zoning',
@@ -196,6 +298,7 @@ export default function H3Map({
   const poiLayer = useMemo(() => new ScatterplotLayer({
     id: 'osm-pois',
     data: filteredPois,
+    visible: viewState.zoom >= 13.5,
     pickable: true,
     stroked: true,
     filled: true,
@@ -208,24 +311,56 @@ export default function H3Map({
     autoHighlight: true,
     highlightColor: [15, 23, 42, 60],
     onHover: info => setTooltip(info.object ? { kind: 'poi', object: info.object, x: info.x, y: info.y } : null),
-  }), [filteredPois])
+  }), [filteredPois, viewState.zoom])
+
+  const clusterLayer = useMemo(() => new ScatterplotLayer({
+    id: 'poi-clusters',
+    data: poiClusters,
+    visible: viewState.zoom < 13.5,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    radiusUnits: 'pixels',
+    getPosition: d => d.position,
+    getRadius: d => Math.min(28, 8 + d.count * 1.8),
+    getFillColor: [201, 168, 76, 210],
+    getLineColor: [27, 42, 74, 230],
+    getLineWidth: 2,
+    onHover: info => setTooltip(info.object ? { kind: 'cluster', object: info.object, x: info.x, y: info.y } : null),
+  }), [poiClusters, viewState.zoom])
+
+  const clusterLabelLayer = useMemo(() => new TextLayer({
+    id: 'poi-cluster-labels',
+    data: poiClusters,
+    visible: viewState.zoom < 13.5,
+    pickable: false,
+    getPosition: d => d.position,
+    getText: d => d.label,
+    getSize: 12,
+    getColor: [27, 42, 74, 255],
+    fontWeight: 800,
+  }), [poiClusters, viewState.zoom])
 
   const poiLabelLayer = useMemo(() => new TextLayer({
     id: 'poi-labels',
-    data: filteredPois,
-    visible: viewState.zoom >= POI_LABEL_MIN_ZOOM,
+    data: labeledPois,
+    visible: labelMode !== 'hidden' && viewState.zoom >= POI_LABEL_MIN_ZOOM,
     pickable: false,
     getPosition: feature => feature.geometry.coordinates,
-    getText: feature => feature.properties?.name || '',
-    getSize: 12,
-    getColor: [30, 41, 59, 235],
-    getPixelOffset: [0, 14],
+    getText: feature => shortPoiName(feature.properties?.name),
+    getSize: viewState.zoom >= 16 ? 12 : 11,
+    getColor: [15, 23, 42, 245],
+    getPixelOffset: [0, 16],
     background: true,
-    getBackgroundColor: [255, 255, 255, 200],
-    backgroundPadding: [3, 1],
+    getBackgroundColor: [255, 255, 255, 226],
+    backgroundPadding: [5, 2],
     fontFamily: '"Segoe UI", sans-serif',
-    updateTriggers: { visible: [viewState.zoom] },
-  }), [filteredPois, viewState.zoom])
+    fontWeight: 700,
+    maxWidth: 96,
+    getTextAnchor: 'middle',
+    getAlignmentBaseline: 'top',
+    updateTriggers: { visible: [viewState.zoom, labelMode] },
+  }), [labeledPois, labelMode, viewState.zoom])
 
   const searchPinLayer = useMemo(() => new ScatterplotLayer({
     id: 'search-pin',
@@ -244,8 +379,11 @@ export default function H3Map({
   const zoningCount = zoning?.features?.length || 0
   const layers = [
     BASE_TILES,
+    influenceLayer,
     visibleLayers.zoning ? zoningLayer : null,
     visibleLayers.cells ? hexLayer : null,
+    visibleLayers.pois ? clusterLayer : null,
+    visibleLayers.pois ? clusterLabelLayer : null,
     visibleLayers.pois ? poiLayer : null,
     visibleLayers.pois ? poiLabelLayer : null,
     searchPinLayer,
@@ -282,6 +420,10 @@ export default function H3Map({
         <span>zonas</span>
         <strong>{filteredPois.length}</strong>
         <span>pontos</span>
+      </div>
+
+      <div className="atlas-radius-chip">
+        Raio {influenceRadius >= 1000 ? `${(influenceRadius / 1000).toFixed(1)} km` : `${influenceRadius} m`}
       </div>
 
       <div className="atlas-legend">
@@ -406,6 +548,14 @@ function Tooltip({ tooltip }) {
       <div className="atlas-tooltip" style={style}>
         <strong>{props.name || props.subcategory || 'Ponto urbano'}</strong>
         <span>{props.subcategory || props.category || 'equipamento'}</span>
+      </div>
+    )
+  }
+  if (kind === 'cluster') {
+    return (
+      <div className="atlas-tooltip" style={style}>
+        <strong>{object.count} estabelecimentos</strong>
+        <span>{object.types.join(', ')}</span>
       </div>
     )
   }

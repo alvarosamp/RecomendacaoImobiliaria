@@ -25,9 +25,13 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.poi_supermarket_cnt,
             f.poi_pharmacy_cnt,
             f.poi_school_cnt,
+            f.poi_hospital_cnt,
+            f.poi_leisure_cnt,
             f.dist_min_supermarket_m,
             f.dist_min_pharmacy_m,
             f.dist_min_school_m,
+            f.dist_min_hospital_m,
+            f.dist_min_park_m,
             ST_Y(ST_Centroid(g.geom)) AS latitude,
             ST_X(ST_Centroid(g.geom)) AS longitude
         FROM geo.scores s

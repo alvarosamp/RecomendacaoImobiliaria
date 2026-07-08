@@ -113,6 +113,17 @@ function OppCard({ row }) {
         </div>
       )}
 
+      {row.explainability?.length > 0 && (
+        <div className="explain-list">
+          {row.explainability.slice(0, 5).map(item => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Footer */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
         <GrowthTag signal={row.growth_signal} />

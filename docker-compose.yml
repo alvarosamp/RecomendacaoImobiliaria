@@ -18,6 +18,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2g
 
   pgadmin:
     image: dpage/pgadmin4:8.14
@@ -61,6 +66,11 @@ services:
       interval: 15s
       timeout: 5s
       retries: 6
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1g
 
   # ── api python ──────────────────────────────────────────────────────────────
   api:
@@ -87,6 +97,17 @@ services:
       - ./models:/app/models
       - ./data:/app/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2g
 
   # ── frontend ────────────────────────────────────────────────────────────────
   frontend:
@@ -99,6 +120,16 @@ services:
     depends_on:
       - api
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 256m
 
 volumes:
   pgdata:

@@ -4,6 +4,7 @@ import math
 from functools import lru_cache
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
@@ -242,3 +243,93 @@ def cell_typology():
         return typology_map
     except Exception as exc:
         return {"error": str(exc)}
+
+
+@router.get("/analytics/zoning-geojson")
+def zoning_geojson():
+    from sqlalchemy import text
+    from recomendacao_imobiliaria.config import load_settings
+    from recomendacao_imobiliaria.db import make_engine
+
+    settings = load_settings()
+    engine = make_engine(settings)
+    try:
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT
+                        zona,
+                        observacoes,
+                        ST_AsGeoJSON(ST_Transform(geom, 4326))::json AS geometry
+                    FROM geo.zoning
+                    WHERE geom IS NOT NULL
+                    ORDER BY zona
+                    """
+                )
+            ).mappings().all()
+    finally:
+        engine.dispose()
+
+    features = [
+        {
+            "type": "Feature",
+            "properties": {
+                "zona": row["zona"],
+                "observacoes": row["observacoes"],
+            },
+            "geometry": row["geometry"],
+        }
+        for row in rows
+        if row["geometry"]
+    ]
+    return JSONResponse({"type": "FeatureCollection", "features": features})
+
+
+@router.get("/analytics/pois-geojson")
+def pois_geojson():
+    from sqlalchemy import text
+    from recomendacao_imobiliaria.config import load_settings
+    from recomendacao_imobiliaria.db import make_engine
+
+    settings = load_settings()
+    engine = make_engine(settings)
+    try:
+        with engine.begin() as conn:
+            rows = conn.execute(
+                text(
+                    """
+                    SELECT
+                        id,
+                        COALESCE(NULLIF(name, ''), subcategory, category) AS name,
+                        category,
+                        subcategory,
+                        ST_X(geom) AS lon,
+                        ST_Y(geom) AS lat
+                    FROM geo.osm_pois
+                    WHERE geom IS NOT NULL
+                    ORDER BY category, subcategory, name
+                    """
+                )
+            ).mappings().all()
+    finally:
+        engine.dispose()
+
+    features = [
+        {
+            "type": "Feature",
+            "properties": {
+                "id": row["id"],
+                "name": row["name"],
+                "category": row["category"],
+                "subcategory": row["subcategory"],
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(row["lon"]), float(row["lat"])],
+            },
+        }
+        for row in rows
+        if row["lon"] is not None and row["lat"] is not None
+    ]
+    return JSONResponse({"type": "FeatureCollection", "features": features})

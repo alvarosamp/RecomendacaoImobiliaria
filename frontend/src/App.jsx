@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import MapPage from './pages/MapPage'
-import OpportunitiesPage from './pages/OpportunitiesPage'
-import CommercePage from './pages/CommercePage'
-import ValuationPage from './pages/ValuationPage'
+import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react'
 import SetupScreen from './components/SetupScreen'
 import { fetchScores, fetchTimeseries } from './api'
+
+const MapPage           = lazy(() => import('./pages/MapPage'))
+const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
+const CommercePage      = lazy(() => import('./pages/CommercePage'))
+const ValuationPage     = lazy(() => import('./pages/ValuationPage'))
 
 // ── SVG Icons (real estate themed) ──────────────────────────────
 function IconMap() {
@@ -232,7 +233,7 @@ export default function App() {
         )}
 
         {!loading && !error && scores.length > 0 && (
-          <>
+          <Suspense fallback={<div className="loading"><div className="loading-spinner" />Carregando módulo…</div>}>
             {page === 'map' && (
               <MapPage
                 scores={scores}
@@ -245,7 +246,7 @@ export default function App() {
             {page === 'opportunities' && <OpportunitiesPage scores={scores} />}
             {page === 'commerce'      && <CommercePage />}
             {page === 'valuation'     && <ValuationPage />}
-          </>
+          </Suspense>
         )}
       </main>
     </div>

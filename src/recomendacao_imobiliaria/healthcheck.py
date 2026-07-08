@@ -58,7 +58,11 @@ def run_healthcheck(settings: Settings | None = None) -> HealthcheckResult:
 
 def _filesystem_checks() -> list[CheckItem]:
     checks = []
-    for path in ["config/scoring_weights.json", "config/plan_director_pouso_alegre.json", "app/streamlit_app.py"]:
+    for path in [
+        "config/scoring_weights.json",
+        "config/plan_director_pouso_alegre.json",
+        "api/main.py",
+    ]:
         exists = Path(path).exists()
         checks.append(
             CheckItem(
@@ -67,6 +71,14 @@ def _filesystem_checks() -> list[CheckItem]:
                 details="encontrado" if exists else "arquivo ausente",
             )
         )
+    frontend_path = Path("frontend/src/App.jsx")
+    checks.append(
+        CheckItem(
+            name="file:frontend/src/App.jsx",
+            status="ok" if frontend_path.exists() else "warn",
+            details="encontrado" if frontend_path.exists() else "frontend servido por imagem separada",
+        )
+    )
     return checks
 
 

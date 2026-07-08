@@ -75,11 +75,11 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
 
     from sqlalchemy import text
 
-    from .config import Settings
+    from .config import load_settings
     from .db import make_engine
 
     if settings is None:
-        settings = Settings()
+        settings = load_settings()
 
     path = _prepare_zoning_path(Path(filepath))
     if not path.exists():
@@ -92,13 +92,16 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
             "Formato nao suportado para zoneamento. Use GeoJSON, Shapefile, GeoPackage, KML ou KMZ."
         )
     _enable_kml_driver()
-    gdf = gpd.read_file(path)
+    gdf = _read_zoning_geodataframe(path)
     if gdf.empty:
         raise ValueError("Arquivo de zoneamento lido, mas sem geometrias.")
     if gdf.crs is None:
-        raise ValueError(
-            "Arquivo de zoneamento esta sem CRS/SRID. Defina o sistema de coordenadas no QGIS antes de importar."
-        )
+        if path.suffix.lower() == ".kml":
+            gdf = gdf.set_crs(epsg=4326)
+        else:
+            raise ValueError(
+                "Arquivo de zoneamento esta sem CRS/SRID. Defina o sistema de coordenadas no QGIS antes de importar."
+            )
 
     col_map = {c.lower(): c for c in gdf.columns}
     zona_col = _find_zone_column(col_map)
@@ -201,6 +204,150 @@ def _enable_kml_driver() -> None:
         fiona.drvsupport.supported_drivers["LIBKML"] = "rw"
     except Exception:
         return
+
+
+def _read_zoning_geodataframe(path: Path):
+    import geopandas as gpd
+    import pandas as pd
+
+    if path.suffix.lower() != ".kml":
+        return gpd.read_file(path)
+
+    parsed = _read_kml_geodataframe(path)
+    if not parsed.empty:
+        return parsed
+
+    layers: list[str] = []
+    try:
+        import fiona
+
+        layers = list(fiona.listlayers(path))
+    except Exception:
+        layers = []
+
+    if not layers:
+        layers = [None]
+
+    frames = []
+    for layer in layers:
+        try:
+            frame = gpd.read_file(path, layer=layer) if layer else gpd.read_file(path)
+        except Exception:
+            continue
+        if frame.empty or "geometry" not in frame:
+            continue
+        frame = frame[frame.geometry.notna() & ~frame.geometry.is_empty].copy()
+        if frame.empty:
+            continue
+        if "Layer" not in frame.columns and layer:
+            frame["Layer"] = layer
+        frames.append(frame)
+
+    if not frames:
+        return gpd.GeoDataFrame(geometry=[], crs="EPSG:4326")
+
+    crs = next((frame.crs for frame in frames if frame.crs is not None), "EPSG:4326")
+    normalized = []
+    for frame in frames:
+        if frame.crs is None:
+            frame = frame.set_crs(crs)
+        elif str(frame.crs) != str(crs):
+            frame = frame.to_crs(crs)
+        normalized.append(frame)
+    return gpd.GeoDataFrame(pd.concat(normalized, ignore_index=True), crs=crs)
+
+
+def _read_kml_geodataframe(path: Path):
+    import geopandas as gpd
+    from shapely.geometry import LineString
+    from shapely.geometry import Polygon
+    from shapely.ops import unary_union
+
+    ns = {"kml": "http://www.opengis.net/kml/2.2"}
+    tree = ET.parse(path)
+    root = tree.getroot()
+    rows = []
+
+    for placemark in root.findall(".//kml:Placemark", ns):
+        values: dict[str, str] = {}
+        name = placemark.find("kml:name", ns)
+        if name is not None and name.text:
+            values["name"] = name.text
+        for item in placemark.findall(".//kml:SimpleData", ns):
+            key = item.attrib.get("name", "")
+            if key and item.text:
+                values[key] = item.text
+
+        zone = _clean_zone_code(values.get("Layer") or values.get("name")) or _infer_zone_from_description(values.get("DESC"))
+        if not zone:
+            continue
+
+        polygons = []
+        for polygon_node in placemark.findall(".//kml:Polygon", ns):
+            outer = polygon_node.find(".//kml:outerBoundaryIs/kml:LinearRing/kml:coordinates", ns)
+            if outer is None:
+                outer = polygon_node.find(".//kml:coordinates", ns)
+            if outer is None or not outer.text:
+                continue
+            shell = _parse_kml_coordinates(outer.text)
+            if len(shell) < 4:
+                continue
+            holes = []
+            for inner in polygon_node.findall(".//kml:innerBoundaryIs/kml:LinearRing/kml:coordinates", ns):
+                if inner.text:
+                    ring = _parse_kml_coordinates(inner.text)
+                    if len(ring) >= 4:
+                        holes.append(ring)
+            try:
+                poly = Polygon(shell, holes)
+                if not poly.is_valid:
+                    poly = poly.buffer(0)
+                if poly.is_valid and not poly.is_empty:
+                    polygons.append(poly)
+            except Exception:
+                continue
+
+        if not polygons:
+            line_buffers = []
+            for line_node in placemark.findall(".//kml:LineString/kml:coordinates", ns):
+                if not line_node.text:
+                    continue
+                line = _parse_kml_coordinates(line_node.text)
+                if len(line) < 2:
+                    continue
+                try:
+                    buffered = LineString(line).buffer(0.00022)
+                    if buffered.is_valid and not buffered.is_empty:
+                        line_buffers.append(buffered)
+                except Exception:
+                    continue
+            polygons = line_buffers
+
+        if not polygons:
+            continue
+        geometry = polygons[0] if len(polygons) == 1 else unary_union(polygons)
+        rows.append(
+            {
+                "zona": zone,
+                "label": values.get("DESC") or values.get("name") or zone,
+                "geometry": geometry,
+            }
+        )
+
+    return gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:4326")
+
+
+def _parse_kml_coordinates(text: str) -> list[tuple[float, float]]:
+    coords: list[tuple[float, float]] = []
+    for item in text.replace("\n", " ").replace("\t", " ").split():
+        parts = item.split(",")
+        if len(parts) < 2:
+            continue
+        try:
+            coords.append((float(parts[0]), float(parts[1])))
+        except ValueError:
+            continue
+    return coords
 
 
 def _find_zone_column(col_map: dict[str, str]) -> str | None:

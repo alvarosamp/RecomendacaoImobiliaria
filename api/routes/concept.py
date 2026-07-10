@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -21,12 +21,22 @@ ROOT = Path(__file__).resolve().parents[2]
 CACHE_DIR = ROOT / "cache" / "concept_images"
 USAGE_FILE = CACHE_DIR / "usage.json"
 DAILY_LIMIT = int(os.getenv("HF_DAILY_IMAGE_LIMIT", "8"))
-HF_MODEL = os.getenv("HF_IMAGE_MODEL", "stabilityai/stable-diffusion-xl-base-1.0")
+HF_MODEL = os.getenv("HF_IMAGE_MODEL", "black-forest-labs/FLUX.1-schnell")
+DEFAULT_CUB_M2 = float(os.getenv("CONSTRUCTION_CUB_M2", "2850"))
 
 FINISH_COST = {
-    "economico": 2300,
-    "medio": 3200,
-    "alto": 4700,
+    "economico": DEFAULT_CUB_M2 * 0.84,
+    "medio": DEFAULT_CUB_M2 * 1.12,
+    "alto": DEFAULT_CUB_M2 * 1.65,
+}
+
+ZONE_LIQUIDITY = {
+    "ZC": 1.16,
+    "ZM": 1.08,
+    "ZMU": 1.1,
+    "ZMC": 1.12,
+    "ZR": 0.98,
+    "ZEP": 0.9,
 }
 
 SCENARIOS = {
@@ -45,16 +55,20 @@ class ConceptInput(BaseModel):
     finish: str = "medio"
     style: str = "contemporaneo"
     zone: str | None = None
+    neighborhood: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     residentialScore: float | None = None
     commercialScore: float | None = None
     riskLevel: str | None = None
     growthSignal: float | None = None
+    predictedMarketPrice: float | None = None
     exteriorImage: str | None = None
     interiorImage: str | None = None
 
 
 class ImageRequest(ConceptInput):
-    view: str = Field("exterior", pattern="^(exterior|interior)$")
+    view: str = Field("fachada", pattern="^(fachada|implantacao|sala|cozinha|quarto|exterior|interior)$")
     variation: bool = False
 
 
@@ -62,7 +76,42 @@ def _money(value: float) -> str:
     return f"R$ {value:,.0f}".replace(",", ".")
 
 
-def _build_prompt(data: ConceptInput, view: str = "exterior", variation: bool = False) -> str:
+def _liquidity_factor(data: ConceptInput) -> float:
+    zone = (data.zone or "").upper()
+    factor = 1.0
+    for prefix, value in ZONE_LIQUIDITY.items():
+        if zone.startswith(prefix):
+            factor = value
+            break
+    if data.riskLevel == "baixo":
+        factor += 0.04
+    elif data.riskLevel == "alto":
+        factor -= 0.12
+    try:
+        growth = float(data.growthSignal or 0)
+    except (TypeError, ValueError):
+        growth = 0
+    if growth > 0.002:
+        factor += 0.06
+    elif growth < -0.001:
+        factor -= 0.05
+    return max(0.72, min(1.28, factor))
+
+
+def _market_price_estimate(data: ConceptInput, build_area: float, total_cost: float) -> float:
+    if data.predictedMarketPrice and data.predictedMarketPrice > 0:
+        return float(data.predictedMarketPrice)
+    score = ((data.residentialScore or 55) * 0.58) + ((data.commercialScore or 45) * 0.42)
+    base_m2 = DEFAULT_CUB_M2 * (1.42 + score / 180)
+    if data.finish == "alto":
+        base_m2 *= 1.22
+    elif data.finish == "economico":
+        base_m2 *= 0.88
+    market = build_area * base_m2 * _liquidity_factor(data)
+    return max(total_cost * 1.05, market)
+
+
+def _build_prompt(data: ConceptInput, view: str = "fachada", variation: bool = False) -> str:
     base = [
         f"conceito arquitetonico para {data.typology}",
         f"lote urbano de {data.lotArea:.0f} m2 com frente de {data.frontage:.0f} m",
@@ -72,10 +121,31 @@ def _build_prompt(data: ConceptInput, view: str = "exterior", variation: bool = 
     ]
     if data.zone:
         base.append(f"zoneamento {data.zone}")
+    if data.neighborhood:
+        base.append(f"bairro {data.neighborhood}")
+    if view == "exterior":
+        view = "fachada"
     if view == "interior":
+        view = "sala"
+    if view == "implantacao":
+        base.extend([
+            "vista superior de implantacao no lote, recuos, jardim, garagem, circulacao externa",
+            "planta de massa arquitetonica, sem textos, escala coerente",
+        ])
+    elif view == "sala":
         base.extend([
             "visualizacao interna, sala integrada, cozinha, circulacao clara",
             "luz natural, escala humana, moveis simples, render arquitetonico",
+        ])
+    elif view == "cozinha":
+        base.extend([
+            "cozinha interna funcional, bancada, circulacao pratica, iluminacao natural",
+            "materiais de custo viavel, render arquitetonico realista",
+        ])
+    elif view == "quarto":
+        base.extend([
+            "quarto principal interno, janela bem posicionada, armario, cama, conforto termico",
+            "ambiente realista, escala humana, acabamento coerente",
         ])
     else:
         base.extend([
@@ -101,11 +171,13 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
     if data.riskLevel == "alto":
         potential *= 0.82
     viability = max(0, min(100, (potential * 0.72) + ((100 - min(100, occupancy)) * 0.18) + 10))
-    sale_value = total * (1 + (potential / 100) * 0.42)
-    monthly_rent = sale_value * (0.0045 + (data.commercialScore or 0) / 100 * 0.002)
+    sale_value = _market_price_estimate(data, build_area, total)
+    liquidity = _liquidity_factor(data)
+    monthly_rent = sale_value * (0.0042 + (data.commercialScore or 0) / 100 * 0.0022) * liquidity
+    gross_margin = (sale_value - total) / max(total, 1)
 
     return {
-        "costPerM2": cost_m2,
+        "costPerM2": round(cost_m2),
         "constructionCost": round(construction),
         "softCosts": round(soft),
         "contingency": round(contingency),
@@ -116,6 +188,8 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
         "saleValue": round(sale_value),
         "monthlyRent": round(monthly_rent),
         "paybackYears": round(total / max(monthly_rent * 12, 1), 1),
+        "liquidityFactor": round(liquidity, 2),
+        "grossMargin": round(gross_margin * 100, 1),
         "schedule": [
             {"label": "Estudo e anteprojeto", "weeks": "2-4 semanas"},
             {"label": "Projetos e aprovacoes", "weeks": "6-10 semanas"},
@@ -123,14 +197,19 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
             {"label": "Instalacoes e fechamento", "weeks": f"{max(8, round(months * 1.4))} semanas"},
             {"label": "Acabamento e entrega", "weeks": f"{max(6, round(months * 1.1))} semanas"},
         ],
-        "promptExterior": _build_prompt(data, "exterior"),
-        "promptInterior": _build_prompt(data, "interior"),
+        "promptFachada": _build_prompt(data, "fachada"),
+        "promptImplantacao": _build_prompt(data, "implantacao"),
+        "promptSala": _build_prompt(data, "sala"),
+        "promptCozinha": _build_prompt(data, "cozinha"),
+        "promptQuarto": _build_prompt(data, "quarto"),
+        "promptExterior": _build_prompt(data, "fachada"),
+        "promptInterior": _build_prompt(data, "sala"),
     }
 
 
 def _scenario(data: ConceptInput, key: str, cfg: dict[str, float]) -> dict[str, Any]:
     build_area = max(45, data.lotArea * cfg["area_factor"])
-    raw = data.dict()
+    raw = data.model_dump() if hasattr(data, "model_dump") else data.dict()
     raw.update({
         "typology": key.replace("_", " "),
         "buildArea": build_area,
@@ -227,24 +306,43 @@ def generate_image(payload: ImageRequest):
         }
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    url = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
-    response = requests.post(
-        url,
-        headers={"Authorization": f"Bearer {token}", "Accept": "image/png"},
-        json={
-            "inputs": prompt,
-            "parameters": {
-                "negative_prompt": "texto ilegivel, baixa resolucao, deformado, perspectiva impossivel, pessoas distorcidas",
-                "num_inference_steps": 24,
-                "guidance_scale": 7,
-                "width": 1024,
-                "height": 768,
+    url = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": f"Bearer {token}", "Accept": "image/png"},
+            json={
+                "inputs": prompt,
+                "parameters": {
+                    "negative_prompt": "texto ilegivel, baixa resolucao, deformado, perspectiva impossivel, pessoas distorcidas",
+                    "num_inference_steps": 24,
+                    "guidance_scale": 7,
+                    "width": 1024,
+                    "height": 768,
+                },
             },
-        },
-        timeout=120,
-    )
+            timeout=120,
+        )
+    except requests.RequestException as exc:
+        return {
+            "status": "provider_error",
+            "model": HF_MODEL,
+            "view": payload.view,
+            "prompt": prompt,
+            "image": None,
+            "remainingToday": max(0, DAILY_LIMIT - used),
+            "message": f"Falha ao chamar Hugging Face: {exc}",
+        }
     if not response.ok:
-        raise HTTPException(status_code=502, detail=response.text[:500])
+        return {
+            "status": "provider_error",
+            "model": HF_MODEL,
+            "view": payload.view,
+            "prompt": prompt,
+            "image": None,
+            "remainingToday": max(0, DAILY_LIMIT - used),
+            "message": response.text[:500],
+        }
     path.write_bytes(response.content)
     usage[today] = used + 1
     _save_usage(usage)
@@ -327,20 +425,30 @@ def _simple_pdf(lines: list[str], image: tuple[bytes, int, int] | None = None) -
 def concept_report(payload: ConceptInput):
     plan = _plan(payload)
     scenarios = [_scenario(payload, key, cfg) for key, cfg in SCENARIOS.items()]
+    best = sorted(scenarios, key=lambda item: item["viabilityScore"], reverse=True)[0]
     lines = [
-        "Relatorio de oportunidade imobiliaria",
+        "INTELIGENCIA TERRITORIAL",
+        "Relatorio de Oportunidade Imobiliaria",
+        "Pouso Alegre - MG",
+        "=" * 72,
         "",
+        "1. RESUMO EXECUTIVO",
         f"Tipologia base: {payload.typology}",
-        f"Terreno: {payload.lotArea:.0f} m2 | Frente: {payload.frontage:.0f} m | Zona: {payload.zone or '-'}",
+        f"Cenario recomendado: {best['label']} ({best['viabilityScore']}/100)",
+        f"Terreno: {payload.lotArea:.0f} m2 | Frente: {payload.frontage:.0f} m | Zona: {payload.zone or '-'} | Bairro: {payload.neighborhood or '-'}",
         f"Area construida: {payload.buildArea:.0f} m2 | Pavimentos: {payload.floors}",
         f"Score de viabilidade construtiva: {plan['viabilityScore']}/100",
+        "",
+        "2. VIABILIDADE FINANCEIRA",
         f"Custo total estimado: {_money(plan['total'])}",
         f"Prazo estimado: {plan['months']} meses",
         f"Valor potencial de venda: {_money(plan['saleValue'])}",
         f"Aluguel potencial mensal: {_money(plan['monthlyRent'])}",
         f"Payback estimado: {plan['paybackYears']} anos",
+        f"Margem bruta estimada: {plan['grossMargin']}%",
+        f"Fator de liquidez territorial: {plan['liquidityFactor']}",
         "",
-        "Comparador de cenarios:",
+        "3. COMPARADOR DE CENARIOS",
     ]
     for item in scenarios:
         lines.append(
@@ -349,17 +457,30 @@ def concept_report(payload: ConceptInput):
         )
     lines.extend([
         "",
-        "Justificativa tecnica:",
+        "4. JUSTIFICATIVA TECNICA",
         f"Score residencial: {payload.residentialScore if payload.residentialScore is not None else '-'}",
         f"Score comercial: {payload.commercialScore if payload.commercialScore is not None else '-'}",
         f"Risco: {payload.riskLevel or '-'}",
         f"Crescimento urbano: {payload.growthSignal if payload.growthSignal is not None else '-'}",
         "",
-        "Prompt exterior:",
-        plan["promptExterior"],
+        "5. PROMPTS DE GERACAO VISUAL",
+        "Fachada:",
+        plan["promptFachada"],
         "",
-        "Prompt interior:",
-        plan["promptInterior"],
+        "Implantacao:",
+        plan["promptImplantacao"],
+        "",
+        "Sala:",
+        plan["promptSala"],
+        "",
+        "Cozinha:",
+        plan["promptCozinha"],
+        "",
+        "Quarto:",
+        plan["promptQuarto"],
+        "",
+        "Assinatura tecnica: Sistema de Recomendacao Imobiliaria - estudo preliminar automatizado.",
+        "Observacao: valores indicativos; validar com CUB/SINAPI vigente, projeto legal e avaliacao profissional.",
     ])
     return Response(
         content=_simple_pdf(lines, _decode_data_image(payload.exteriorImage or payload.interiorImage)),

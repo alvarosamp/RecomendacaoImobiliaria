@@ -59,7 +59,7 @@ function GrowthTag({ signal }) {
   )
 }
 
-function OppCard({ row }) {
+function OppCard({ row, onOpenConcept }) {
   const score = Math.max(row.score_residencial || 0, row.score_comercial || 0)
   const recs  = row.recommendations || []
   const pCfg  = PRIORITY_COLOR[row.priority]
@@ -131,11 +131,16 @@ function OppCard({ row }) {
           Score {score.toFixed(0)}/100
         </span>
       </div>
+      {onOpenConcept && (
+        <button className="opp-concept-btn" onClick={() => onOpenConcept(row)}>
+          Abrir conceito desta area
+        </button>
+      )}
     </div>
   )
 }
 
-export default function OpportunitiesPage({ scores }) {
+export default function OpportunitiesPage({ scores, onOpenConcept }) {
   const [priority, setPriority] = useState('')
   const [risk, setRisk]         = useState('')
   const [sort, setSort]         = useState('score')
@@ -220,7 +225,7 @@ export default function OpportunitiesPage({ scores }) {
         )
         : (
           <div className="card-grid">
-            {filtered.map(row => <OppCard key={row.h3_id} row={row} />)}
+            {filtered.map(row => <OppCard key={row.h3_id} row={row} onOpenConcept={onOpenConcept} />)}
           </div>
         )
       }

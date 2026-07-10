@@ -14,7 +14,7 @@ const POI_FILTERS = [
   { id: 'bus_stop', label: 'Onibus' },
 ]
 
-export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange }) {
+export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange, onOpenConcept }) {
   const [priorityFilter, setPriorityFilter] = useState('')
   const [riskFilter, setRiskFilter]         = useState('')
   const [mapMode, setMapMode]               = useState('score')
@@ -35,20 +35,32 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
     const groups = new Map()
     filtered.forEach(row => {
       const key = row.zona || 'Area sem zona'
-      const current = groups.get(key) || { name: key, count: 0, total: 0, high: 0, growth: 0 }
+      const current = groups.get(key) || { name: key, count: 0, total: 0, high: 0, growth: 0, lowRisk: 0, gap: 0, zoning: 0 }
       current.count += 1
       current.total += Math.max(row.score_residencial || 0, row.score_comercial || 0)
       current.high += row.priority === 'alta' ? 1 : 0
       current.growth += Number(row.growth_signal || row.ndbi_slope_180 || 0)
+      current.lowRisk += row.risk_level === 'baixo' ? 1 : 0
+      current.gap += Number(row.commercial_gap || 0)
+      current.zoning += /ZC|ZM|ZMU|ZMC/i.test(row.zona || '') ? 1 : 0
       groups.set(key, current)
     })
     return [...groups.values()]
-      .map(item => ({
-        ...item,
-        avg: item.total / Math.max(item.count, 1),
-        growthAvg: item.growth / Math.max(item.count, 1),
-      }))
-      .sort((a, b) => b.avg - a.avg)
+      .map(item => {
+        const count = Math.max(item.count, 1)
+        const avg = item.total / count
+        const growthNorm = Math.min(1, Math.max(0, (item.growth / count) * 180))
+        const index = (
+          avg * 0.42
+          + Math.min(100, item.count * 8) * 0.16
+          + growthNorm * 100 * 0.13
+          + (item.lowRisk / count) * 100 * 0.12
+          + (item.gap / count) * 100 * 0.1
+          + (item.zoning / count) * 100 * 0.07
+        )
+        return { ...item, avg, index, growthAvg: item.growth / count }
+      })
+      .sort((a, b) => b.index - a.index)
       .slice(0, 5)
   }, [filtered])
 
@@ -89,81 +101,32 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   }
 
   return (
-    <div className="map-page">
-      <div className="map-topbar">
-        <span className="map-topbar-title">Mapa de Oportunidades</span>
-        <div className="map-mode-group">
-          <button className={mapMode === 'score' ? 'active' : ''} onClick={() => setMapMode('score')}>Score</button>
-          <button className={mapMode === 'zoning' ? 'active' : ''} onClick={() => setMapMode('zoning')}>Zoneamento</button>
-          <button className={mapMode === 'growth' ? 'active' : ''} onClick={() => setMapMode('growth')}>Crescimento</button>
-        </div>
-        <div className="map-layer-toggles">
-          <button className={visibleLayers.cells ? 'active' : ''} onClick={() => toggleLayer('cells')}>Celulas</button>
-          <button className={visibleLayers.zoning ? 'active' : ''} onClick={() => toggleLayer('zoning')}>Zonas</button>
-          <button className={visibleLayers.pois ? 'active' : ''} onClick={() => toggleLayer('pois')}>Pontos</button>
-        </div>
-        <select value={influenceRadius} onChange={e => setInfluenceRadius(Number(e.target.value))}>
-          <option value={500}>Raio 500 m</option>
-          <option value={900}>Raio 900 m</option>
-          <option value={1500}>Raio 1,5 km</option>
-          <option value={2500}>Raio 2,5 km</option>
-        </select>
-        <select value={labelMode} onChange={e => setLabelMode(e.target.value)}>
-          <option value="smart">Nomes essenciais</option>
-          <option value="all">Mais nomes</option>
-          <option value="hidden">Sem nomes</option>
-        </select>
-        <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
-          <option value="">Todas as prioridades</option>
-          <option value="alta">Alta</option>
-          <option value="media">Média</option>
-          <option value="baixa">Baixa</option>
-        </select>
-        <select value={riskFilter} onChange={e => setRiskFilter(e.target.value)}>
-          <option value="">Todos os riscos</option>
-          <option value="baixo">Baixo</option>
-          <option value="medio">Médio</option>
-          <option value="alto">Alto</option>
-        </select>
-        <span className="count-tag">{filtered.length} áreas</span>
-      </div>
-
-      <div className="map-filter-strip">
-        {POI_FILTERS.map(item => (
-          <button
-            key={item.id}
-            className={poiTypes.includes(item.id) ? 'active' : ''}
-            onClick={() => togglePoiType(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="map-ranking-strip">
-        {rankedZones.map((item, index) => (
-          <div key={item.name} className="map-ranking-item">
-            <span>#{index + 1} {item.name}</span>
-            <strong>{item.avg.toFixed(0)}/100</strong>
-            <small>{item.count} areas · {item.high} alta prioridade</small>
-          </div>
-        ))}
-      </div>
-
-      <div className="map-area">
-        <H3Map
-          data={filtered}
-          timeData={timeRecords}
-          selectedDate={selectedDate}
-          zoning={zoning}
-          pois={pois}
-          visibleLayers={visibleLayers}
-          poiTypes={poiTypes}
-          mode={selectedDate ? 'growth' : mapMode}
-          influenceRadius={influenceRadius}
-          labelMode={labelMode}
-        />
-      </div>
+    <div className="map-page-full">
+      <H3Map
+        data={filtered}
+        timeData={timeRecords}
+        selectedDate={selectedDate}
+        zoning={zoning}
+        pois={pois}
+        visibleLayers={visibleLayers}
+        poiTypes={poiTypes}
+        poiFilterDefs={POI_FILTERS}
+        mode={selectedDate ? 'growth' : mapMode}
+        rawMode={mapMode}
+        influenceRadius={influenceRadius}
+        labelMode={labelMode}
+        onOpenConcept={onOpenConcept}
+        onModeChange={setMapMode}
+        onToggleLayer={toggleLayer}
+        onTogglePoiType={togglePoiType}
+        onRadiusChange={setInfluenceRadius}
+        onLabelModeChange={setLabelMode}
+        priorityFilter={priorityFilter}
+        onPriorityChange={setPriorityFilter}
+        riskFilter={riskFilter}
+        onRiskChange={setRiskFilter}
+        rankedZones={rankedZones}
+      />
 
       <TimeSlider
         dates={timeDates}

@@ -7,6 +7,7 @@ const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
 const CommercePage      = lazy(() => import('./pages/CommercePage'))
 const ValuationPage     = lazy(() => import('./pages/ValuationPage'))
 const ConceptPage       = lazy(() => import('./pages/ConceptStudioPage'))
+const CaseStudyPage     = lazy(() => import('./pages/CaseStudyPage'))
 
 // ── SVG Icons (real estate themed) ──────────────────────────────
 function IconMap() {
@@ -58,12 +59,23 @@ function IconConcept() {
   )
 }
 
+function IconCaseStudy() {
+  return (
+    <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 2h8l2 2v12H4z"/>
+      <path d="M11 2v3h3"/>
+      <path d="M6.5 8h5M6.5 11h5M6.5 14h3"/>
+    </svg>
+  )
+}
+
 const NAV = [
   { id: 'map',           label: 'Mapa da Cidade',       Icon: IconMap },
   { id: 'opportunities', label: 'Oportunidades',          Icon: IconOpp },
   { id: 'commerce',      label: 'Comércios Faltantes',   Icon: IconCommerce },
   { id: 'valuation',     label: 'Avaliar Imóvel',        Icon: IconValuation },
   { id: 'concept',       label: 'Conceito e Obra',        Icon: IconConcept },
+  { id: 'case-study',    label: 'Estudo de Caso',         Icon: IconCaseStudy },
 ]
 
 function RefreshStatus({ status, onDismiss }) {
@@ -87,6 +99,7 @@ function RefreshStatus({ status, onDismiss }) {
 export default function App() {
   const [page, setPage]     = useState('map')
   const [scores, setScores] = useState([])
+  const [conceptSeed, setConceptSeed] = useState(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
   const [refreshStatus, setRefreshStatus] = useState(null)
@@ -159,6 +172,10 @@ export default function App() {
   }
 
   const isEmpty = !loading && !error && scores.length === 0
+  const openConcept = row => {
+    setConceptSeed(row)
+    setPage('concept')
+  }
 
   return (
     <div className="layout">
@@ -253,12 +270,14 @@ export default function App() {
                 timeRecords={timeRecords}
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
+                onOpenConcept={openConcept}
               />
             )}
-            {page === 'opportunities' && <OpportunitiesPage scores={scores} />}
+            {page === 'opportunities' && <OpportunitiesPage scores={scores} onOpenConcept={openConcept} />}
             {page === 'commerce'      && <CommercePage />}
             {page === 'valuation'     && <ValuationPage />}
-            {page === 'concept'       && <ConceptPage />}
+            {page === 'concept'       && <ConceptPage seed={conceptSeed} />}
+            {page === 'case-study'    && <CaseStudyPage scores={scores} />}
           </Suspense>
         )}
       </main>

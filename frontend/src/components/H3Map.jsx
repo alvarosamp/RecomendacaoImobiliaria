@@ -66,6 +66,17 @@ const POI_COLORS = {
   bus_stop: [71, 85, 105],
 }
 
+const POI_LABELS = {
+  pharmacy: 'Farmacia',
+  supermarket: 'Mercado',
+  school: 'Escola',
+  clinic: 'Clinica',
+  hospital: 'Hospital',
+  park: 'Parque',
+  restaurant: 'Restaurante',
+  bus_stop: 'Onibus',
+}
+
 function scoreToRgba(score, alpha = 96) {
   if (score >= 70) return [21, 128, 61, alpha]
   if (score >= 50) return [202, 138, 4, alpha]
@@ -178,14 +189,30 @@ export default function H3Map({
   pois = null,
   visibleLayers = { cells: true, zoning: true, pois: true },
   poiTypes = [],
+  poiFilterDefs = [],
   mode = 'score',
+  rawMode = mode,
   influenceRadius = 900,
   labelMode = 'smart',
+  onOpenConcept = null,
+  onModeChange = () => {},
+  onToggleLayer = () => {},
+  onTogglePoiType = () => {},
+  onRadiusChange = () => {},
+  onLabelModeChange = () => {},
+  priorityFilter = '',
+  onPriorityChange = () => {},
+  riskFilter = '',
+  onRiskChange = () => {},
+  rankedZones = [],
 }) {
   const [tooltip, setTooltip] = useState(null)
   const [selected, setSelected] = useState(null)
   const [viewState, setViewState] = useState(INITIAL_VIEW)
   const [searchPin, setSearchPin] = useState(null)
+  const isNarrow = typeof window !== 'undefined' && window.innerWidth <= 900
+  const [layersOpen, setLayersOpen] = useState(!isNarrow)
+  const [rankingOpen, setRankingOpen] = useState(!isNarrow)
 
   const ndviByCell = useMemo(() => {
     if (!selectedDate || !timeData.length) return {}
@@ -229,6 +256,14 @@ export default function H3Map({
     })).filter(item => item.count > 1)
   }, [filteredPois, viewState.zoom])
 
+  const poiLegend = useMemo(() => {
+    if (!visibleLayers.pois) return []
+    const present = new Set(filteredPois.map(poiType))
+    return Object.keys(POI_LABELS)
+      .filter(type => present.has(type))
+      .map(type => ({ type, label: POI_LABELS[type], color: `rgb(${POI_COLORS[type].join(',')})` }))
+  }, [filteredPois, visibleLayers.pois])
+
   const influenceCenter = useMemo(() => {
     if (searchPin) return { longitude: searchPin.lon, latitude: searchPin.lat }
     return selectedCenter(selected) || CITY
@@ -253,13 +288,19 @@ export default function H3Map({
     data: zoning || { type: 'FeatureCollection', features: [] },
     pickable: true,
     stroked: true,
-    filled: true,
-    getFillColor: f => zoneColor(f.properties?.zona, mode === 'zoning' ? 92 : 28),
-    getLineColor: f => zoneColor(f.properties?.zona, 224).slice(0, 3),
-    getLineWidth: mode === 'zoning' ? 80 : 36,
-    lineWidthMinPixels: mode === 'zoning' ? 1.6 : 0.8,
-    autoHighlight: true,
+    filled: mode === 'zoning',
+    getFillColor: f => zoneColor(f.properties?.zona, 92),
+    getLineColor: f => mode === 'zoning' ? [...zoneColor(f.properties?.zona, 224).slice(0, 3), 224] : [100, 116, 139, 140],
+    getLineWidth: mode === 'zoning' ? 80 : 30,
+    lineWidthMinPixels: mode === 'zoning' ? 1.6 : 0.6,
+    autoHighlight: mode === 'zoning',
     highlightColor: [255, 255, 255, 70],
+    updateTriggers: {
+      filled: [mode],
+      getLineColor: [mode],
+      getLineWidth: [mode],
+      lineWidthMinPixels: [mode],
+    },
     onHover: info => setTooltip(info.object ? { kind: 'zone', object: info.object, x: info.x, y: info.y } : null),
   }), [zoning, mode])
 
@@ -323,8 +364,8 @@ export default function H3Map({
     radiusUnits: 'pixels',
     getPosition: d => d.position,
     getRadius: d => Math.min(28, 8 + d.count * 1.8),
-    getFillColor: [201, 168, 76, 210],
-    getLineColor: [27, 42, 74, 230],
+    getFillColor: [219, 39, 119, 205],
+    getLineColor: [255, 255, 255, 235],
     getLineWidth: 2,
     onHover: info => setTooltip(info.object ? { kind: 'cluster', object: info.object, x: info.x, y: info.y } : null),
   }), [poiClusters, viewState.zoom])
@@ -337,7 +378,7 @@ export default function H3Map({
     getPosition: d => d.position,
     getText: d => d.label,
     getSize: 12,
-    getColor: [27, 42, 74, 255],
+    getColor: [255, 255, 255, 255],
     fontWeight: 800,
   }), [poiClusters, viewState.zoom])
 
@@ -374,6 +415,18 @@ export default function H3Map({
     getLineWidth: 2,
     stroked: true,
   }), [searchPin])
+
+  const zoomBy = delta => setViewState(current => ({
+    ...current,
+    zoom: Math.max(2, Math.min(20, current.zoom + delta)),
+    transitionDuration: 200,
+  }))
+
+  const resetView = () => setViewState({
+    ...INITIAL_VIEW,
+    transitionDuration: 600,
+    transitionInterpolator: new FlyToInterpolator(),
+  })
 
   const legend = legendFor(mode, selectedDate)
   const zoningCount = zoning?.features?.length || 0
@@ -413,35 +466,212 @@ export default function H3Map({
         }}
       />
 
-      <div className="atlas-map-summary">
-        <strong>{data.length}</strong>
-        <span>celulas</span>
-        <strong>{zoningCount}</strong>
-        <span>zonas</span>
-        <strong>{filteredPois.length}</strong>
-        <span>pontos</span>
+      <RankingPanel
+        open={rankingOpen}
+        onToggle={() => setRankingOpen(o => !o)}
+        cellCount={data.length}
+        zoningCount={zoningCount}
+        poiCount={filteredPois.length}
+        rankedZones={rankedZones}
+      />
+
+      <div className="atlas-right-stack">
+        <LayersPanel
+          open={layersOpen}
+          onToggle={() => setLayersOpen(o => !o)}
+          rawMode={rawMode}
+          onModeChange={onModeChange}
+          dateActive={!!selectedDate}
+          visibleLayers={visibleLayers}
+          onToggleLayer={onToggleLayer}
+          cellCount={data.length}
+          zoningCount={zoningCount}
+          poiCount={filteredPois.length}
+          poiFilterDefs={poiFilterDefs}
+          poiTypes={poiTypes}
+          onTogglePoiType={onTogglePoiType}
+          influenceRadius={influenceRadius}
+          onRadiusChange={onRadiusChange}
+          labelMode={labelMode}
+          onLabelModeChange={onLabelModeChange}
+          priorityFilter={priorityFilter}
+          onPriorityChange={onPriorityChange}
+          riskFilter={riskFilter}
+          onRiskChange={onRiskChange}
+        />
+        {selected && <SelectedPanel cell={selected} onClose={() => setSelected(null)} onOpenConcept={onOpenConcept} />}
       </div>
 
-      <div className="atlas-radius-chip">
-        Raio {influenceRadius >= 1000 ? `${(influenceRadius / 1000).toFixed(1)} km` : `${influenceRadius} m`}
+      <div className="atlas-zoom-controls">
+        <button onClick={() => zoomBy(1)} title="Aumentar zoom">+</button>
+        <button onClick={() => zoomBy(-1)} title="Diminuir zoom">−</button>
+        <button onClick={resetView} title="Ver cidade inteira">⌂</button>
       </div>
 
-      <div className="atlas-legend">
-        <span>{selectedDate ? `NDVI ${selectedDate}` : mode === 'zoning' ? 'Zoneamento PDPA' : mode === 'growth' ? 'Tendencia urbana' : 'Score'}</span>
-        {legend.map(item => (
-          <div key={item.label}>
-            <i style={{ background: item.color }} />
-            {item.label}
+      <div className="atlas-legend-group">
+        <div className="atlas-legend">
+          <span>{selectedDate ? `NDVI ${selectedDate}` : mode === 'zoning' ? 'Zoneamento PDPA' : mode === 'growth' ? 'Tendencia urbana' : 'Score'}</span>
+          {legend.map(item => (
+            <div key={item.label}>
+              <i style={{ background: item.color }} />
+              {item.label}
+            </div>
+          ))}
+        </div>
+
+        {poiLegend.length > 0 && (
+          <div className="atlas-legend atlas-poi-legend">
+            <span>Pontos urbanos</span>
+            {poiLegend.map(item => (
+              <div key={item.type}>
+                <i style={{ background: item.color, borderRadius: '50%' }} />
+                {item.label}
+              </div>
+            ))}
+            <div className="atlas-poi-legend-cluster">
+              <i style={{ background: 'rgb(219, 39, 119)', borderRadius: '50%' }} />
+              Agrupamento (numero = qtde.)
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
-      {selected && <SelectedPanel cell={selected} onClose={() => setSelected(null)} />}
       {tooltip && <Tooltip tooltip={tooltip} />}
 
       <div className="atlas-map-attribution">
         © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>
       </div>
+    </div>
+  )
+}
+
+const MODE_LABELS = { score: 'Score', zoning: 'Zoneamento', growth: 'Crescimento' }
+
+function Chevron({ open }) {
+  return (
+    <svg className={`atlas-chevron${open ? ' open' : ''}`} width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function LayersPanel({
+  open, onToggle, rawMode, onModeChange, dateActive,
+  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount,
+  poiFilterDefs, poiTypes, onTogglePoiType,
+  influenceRadius, onRadiusChange, labelMode, onLabelModeChange,
+  priorityFilter, onPriorityChange, riskFilter, onRiskChange,
+}) {
+  return (
+    <div className={`atlas-floating-panel atlas-layers-panel${open ? '' : ' collapsed'}`}>
+      <button className="atlas-panel-header" onClick={onToggle}>
+        <span>Camadas &amp; filtros</span>
+        <Chevron open={open} />
+      </button>
+      {open && (
+        <div className="atlas-panel-body">
+          <div className="atlas-mode-row">
+            {Object.keys(MODE_LABELS).map(m => (
+              <button
+                key={m}
+                className={rawMode === m ? 'active' : ''}
+                onClick={() => onModeChange(m)}
+              >
+                {MODE_LABELS[m]}
+              </button>
+            ))}
+          </div>
+          {dateActive && <p className="atlas-panel-hint">Modo forcado para Crescimento pela linha do tempo (NDVI).</p>}
+
+          <label className="atlas-layer-row">
+            <input type="checkbox" checked={visibleLayers.cells} onChange={() => onToggleLayer('cells')} />
+            Celulas <span>{cellCount}</span>
+          </label>
+          <label className="atlas-layer-row">
+            <input type="checkbox" checked={visibleLayers.zoning} onChange={() => onToggleLayer('zoning')} />
+            Zonas <span>{zoningCount}</span>
+          </label>
+          <label className="atlas-layer-row">
+            <input type="checkbox" checked={visibleLayers.pois} onChange={() => onToggleLayer('pois')} />
+            Pontos <span>{poiCount}</span>
+          </label>
+
+          {visibleLayers.pois && poiFilterDefs.length > 0 && (
+            <div className="atlas-poi-chip-row">
+              {poiFilterDefs.map(item => (
+                <button
+                  key={item.id}
+                  className={poiTypes.includes(item.id) ? 'active' : ''}
+                  onClick={() => onTogglePoiType(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="atlas-panel-divider" />
+
+          <div className="atlas-select-row">
+            <select value={influenceRadius} onChange={e => onRadiusChange(Number(e.target.value))}>
+              <option value={500}>Raio 500 m</option>
+              <option value={900}>Raio 900 m</option>
+              <option value={1500}>Raio 1,5 km</option>
+              <option value={2500}>Raio 2,5 km</option>
+            </select>
+            <select value={labelMode} onChange={e => onLabelModeChange(e.target.value)}>
+              <option value="smart">Nomes essenciais</option>
+              <option value="all">Mais nomes</option>
+              <option value="hidden">Sem nomes</option>
+            </select>
+          </div>
+          <div className="atlas-select-row">
+            <select value={priorityFilter} onChange={e => onPriorityChange(e.target.value)}>
+              <option value="">Todas as prioridades</option>
+              <option value="alta">Alta</option>
+              <option value="media">Média</option>
+              <option value="baixa">Baixa</option>
+            </select>
+            <select value={riskFilter} onChange={e => onRiskChange(e.target.value)}>
+              <option value="">Todos os riscos</option>
+              <option value="baixo">Baixo</option>
+              <option value="medio">Médio</option>
+              <option value="alto">Alto</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, rankedZones }) {
+  return (
+    <div className={`atlas-floating-panel atlas-ranking-panel${open ? '' : ' collapsed'}`}>
+      <button className="atlas-panel-header" onClick={onToggle}>
+        <span>Painel de oportunidades</span>
+        <Chevron open={open} />
+      </button>
+      {open && (
+        <div className="atlas-panel-body">
+          <div className="atlas-ranking-stats">
+            <div><strong>{cellCount}</strong><span>celulas</span></div>
+            <div><strong>{zoningCount}</strong><span>zonas</span></div>
+            <div><strong>{poiCount}</strong><span>pontos</span></div>
+          </div>
+          {rankedZones.length > 0 && (
+            <ol className="atlas-ranking-list">
+              {rankedZones.map((item, index) => (
+                <li key={item.name}>
+                  <span className="atlas-ranking-pos">#{index + 1}</span>
+                  <span className="atlas-ranking-name">{item.name}</span>
+                  <strong>{item.index.toFixed(0)}</strong>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -512,7 +742,7 @@ function AddressSearch({ onSelect }) {
   )
 }
 
-function SelectedPanel({ cell, onClose }) {
+function SelectedPanel({ cell, onClose, onOpenConcept }) {
   return (
     <aside className="atlas-selected-panel">
       <button className="atlas-panel-close" onClick={onClose}>x</button>
@@ -526,6 +756,11 @@ function SelectedPanel({ cell, onClose }) {
       <Metric label="NDVI 90d" value={formatNumber(cell.ndvi_mean_90, 3)} />
       <Metric label="NDBI 90d" value={formatNumber(cell.ndbi_mean_90, 3)} />
       {cell.legal_notes && <p>{cell.legal_notes}</p>}
+      {onOpenConcept && (
+        <button className="atlas-concept-btn" onClick={() => onOpenConcept(cell)}>
+          Gerar conceito e obra
+        </button>
+      )}
     </aside>
   )
 }

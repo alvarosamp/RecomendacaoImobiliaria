@@ -86,8 +86,9 @@ services:
       PG_PASS: ${PG_PASS}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MODEL_PATH: ${MODEL_PATH}
+      HF_TOKEN: ${HF_TOKEN}
     ports:
-      - "8000:8000"
+      - "8001:8000"
     depends_on:
       db:
         condition: service_healthy

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { analyzeConcept, downloadConceptReport, generateConceptImage } from '../api'
+import { analyzeConcept, downloadConceptReport, generateConceptImage, predictPrice } from '../api'
 
 const INITIAL = {
   lotArea: 300,
@@ -14,6 +14,38 @@ const INITIAL = {
   commercialScore: 48,
   riskLevel: 'medio',
   growthSignal: 0.0015,
+  latitude: null,
+  longitude: null,
+  predictedMarketPrice: null,
+}
+
+const VIEWS = [
+  ['fachada', 'Fachada'],
+  ['implantacao', 'Implantacao'],
+  ['sala', 'Sala'],
+  ['cozinha', 'Cozinha'],
+  ['quarto', 'Quarto'],
+]
+
+function seedToForm(seed) {
+  if (!seed) return INITIAL
+  const score = Math.max(seed.score_residencial || 0, seed.score_comercial || 0)
+  const lotArea = score >= 75 ? 360 : score >= 55 ? 300 : 240
+  return {
+    ...INITIAL,
+    lotArea,
+    buildArea: Math.round(lotArea * 0.55),
+    floors: seed.score_comercial > seed.score_residencial ? 3 : 2,
+    typology: seed.score_comercial > seed.score_residencial ? 'uso misto' : 'casa',
+    zone: seed.zona || seed.zone || '',
+    neighborhood: seed.zona || '',
+    latitude: seed.latitude ?? null,
+    longitude: seed.longitude ?? null,
+    residentialScore: Math.round(seed.score_residencial || 0),
+    commercialScore: Math.round(seed.score_comercial || 0),
+    riskLevel: seed.risk_level || 'medio',
+    growthSignal: Number(seed.growth_signal || seed.ndbi_slope_180 || 0),
+  }
 }
 
 function money(value) {
@@ -28,15 +60,45 @@ function number(value, digits = 0) {
   return Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: digits })
 }
 
-export default function ConceptStudioPage() {
-  const [form, setForm] = useState(INITIAL)
+export default function ConceptStudioPage({ seed = null }) {
+  const [form, setForm] = useState(() => seedToForm(seed))
   const [analysis, setAnalysis] = useState(null)
-  const [selectedView, setSelectedView] = useState('exterior')
-  const [images, setImages] = useState({ exterior: null, interior: null })
+  const [selectedView, setSelectedView] = useState('fachada')
+  const [images, setImages] = useState({})
   const [imageStatus, setImageStatus] = useState(null)
   const [loadingImage, setLoadingImage] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const [priceStatus, setPriceStatus] = useState(null)
   const set = (key, value) => setForm(current => ({ ...current, [key]: value }))
+
+  useEffect(() => {
+    setForm(seedToForm(seed))
+    setImages({})
+    setImageStatus(null)
+  }, [seed])
+
+  useEffect(() => {
+    let active = true
+    if (!form.latitude || !form.longitude) return undefined
+    predictPrice({
+      area_m2: form.buildArea,
+      bedrooms: form.typology === 'casa' ? 3 : 2,
+      bathrooms: form.typology === 'casa' ? 2 : 1,
+      parking_spaces: 1,
+      property_type: form.typology.includes('comercial') || form.typology.includes('misto') ? 'comercial' : 'casa',
+      latitude: form.latitude,
+      longitude: form.longitude,
+    })
+      .then(res => {
+        if (!active) return
+        setPriceStatus(res)
+        if (res.predicted_price) {
+          setForm(current => ({ ...current, predictedMarketPrice: res.predicted_price }))
+        }
+      })
+      .catch(() => { if (active) setPriceStatus(null) })
+    return () => { active = false }
+  }, [form.latitude, form.longitude, form.buildArea, form.typology])
 
   useEffect(() => {
     let active = true
@@ -71,8 +133,8 @@ export default function ConceptStudioPage() {
     try {
       const blob = await downloadConceptReport({
         ...form,
-        exteriorImage: images.exterior,
-        interiorImage: images.interior,
+        exteriorImage: images.fachada || images.implantacao,
+        interiorImage: images.sala || images.cozinha || images.quarto,
       })
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -95,6 +157,12 @@ export default function ConceptStudioPage() {
       <div className="concept-layout">
         <section className="valuation-card concept-card">
           <h3>Dados do Terreno</h3>
+          {seed && (
+            <div className="seed-banner">
+              <strong>Oportunidade carregada</strong>
+              <span>{seed.zona || seed.h3_id} · score {Math.max(seed.score_residencial || 0, seed.score_comercial || 0).toFixed(0)}/100</span>
+            </div>
+          )}
           <div className="field-group">
             <div className="field-row">
               <Field label="Area do terreno (m2)" value={form.lotArea} min={60} max={10000} onChange={v => set('lotArea', v)} />
@@ -138,6 +206,13 @@ export default function ConceptStudioPage() {
               <Field label="Score residencial" value={form.residentialScore} min={0} max={100} onChange={v => set('residentialScore', v)} />
               <Field label="Score comercial" value={form.commercialScore} min={0} max={100} onChange={v => set('commercialScore', v)} />
             </div>
+            {priceStatus?.predicted_price && (
+              <div className="price-model-note">
+                <span>Previsao ML de preco</span>
+                <strong>{money(priceStatus.predicted_price)}</strong>
+                <small>{priceStatus.model_status} · faixa {money(priceStatus.price_low)} - {money(priceStatus.price_high)}</small>
+              </div>
+            )}
           </div>
         </section>
 
@@ -183,8 +258,11 @@ export default function ConceptStudioPage() {
         <section className="valuation-card concept-card">
           <h3>Visualizacao da Casa</h3>
           <div className="view-tabs">
-            <button className={selectedView === 'exterior' ? 'active' : ''} onClick={() => setSelectedView('exterior')}>Exterior</button>
-            <button className={selectedView === 'interior' ? 'active' : ''} onClick={() => setSelectedView('interior')}>Interior</button>
+            {VIEWS.map(([id, label]) => (
+              <button key={id} className={selectedView === id ? 'active' : ''} onClick={() => setSelectedView(id)}>
+                {label}
+              </button>
+            ))}
           </div>
           <div className="concept-preview">
             {images[selectedView]
@@ -209,12 +287,16 @@ export default function ConceptStudioPage() {
         <section className="valuation-card concept-card">
           <h3>Relatorio e Prompt</h3>
           <div className="prompt-box">
-            <span>Prompt exterior</span>
-            <p>{plan?.promptExterior}</p>
+            <span>Prompt fachada</span>
+            <p>{plan?.promptFachada}</p>
           </div>
           <div className="prompt-box">
-            <span>Prompt interior</span>
-            <p>{plan?.promptInterior}</p>
+            <span>Prompt implantacao</span>
+            <p>{plan?.promptImplantacao}</p>
+          </div>
+          <div className="prompt-box">
+            <span>Prompts internos</span>
+            <p>{[plan?.promptSala, plan?.promptCozinha, plan?.promptQuarto].filter(Boolean).join(' | ')}</p>
           </div>
           <button className="submit-btn" onClick={exportReport} disabled={reporting}>
             {reporting ? 'Gerando PDF...' : 'Exportar PDF da oportunidade'}
@@ -255,14 +337,25 @@ function Metric({ label, value }) {
 }
 
 function HouseSketch({ view, floors }) {
-  if (view === 'interior') {
+  if (view === 'implantacao') {
+    return (
+      <div className="siteplan-sketch">
+        <div className="lot-outline">
+          <div className="site-building">Volume</div>
+          <div className="site-garden">Jardim</div>
+          <div className="site-drive">Garagem</div>
+        </div>
+      </div>
+    )
+  }
+  if (view === 'sala' || view === 'cozinha' || view === 'quarto') {
     return (
       <div className="floorplan-sketch">
-        <div className="room living">Sala</div>
-        <div className="room kitchen">Cozinha</div>
-        <div className="room suite">Suite</div>
+        <div className={`room living ${view === 'sala' ? 'focus' : ''}`}>Sala</div>
+        <div className={`room kitchen ${view === 'cozinha' ? 'focus' : ''}`}>Cozinha</div>
+        <div className={`room suite ${view === 'quarto' ? 'focus' : ''}`}>Suite</div>
         <div className="room bath">Banho</div>
-        <div className="room bedroom">Quarto</div>
+        <div className={`room bedroom ${view === 'quarto' ? 'focus' : ''}`}>Quarto</div>
       </div>
     )
   }

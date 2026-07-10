@@ -1,0 +1,17 @@
+.git
+.agents
+.claude
+.pytest_cache
+cache
+reports_test
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/node_modules/.vite
+node_modules
+dist
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env

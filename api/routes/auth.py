@@ -1,4 +1,5 @@
 import datetime
+import logging
 import jwt
 from typing import Optional
 from passlib.context import CryptContext
@@ -16,6 +17,8 @@ SECRET_KEY = "super-secret-key-for-saas-platform" # Em producao, viria do .env
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 
+log = logging.getLogger(__name__)
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -32,8 +35,13 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="client")
 
-# Create tables se nao existem
-Base.metadata.create_all(bind=engine)
+# Create tables se nao existem. Nao derruba a importacao do modulo (e portanto a API
+# inteira) se o Postgres nao estiver acessivel neste momento — as rotas ja falham de
+# forma apropriada, por requisicao, via get_db/Depends quando o banco esta fora.
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception as exc:
+    log.warning("Nao foi possivel criar/verificar tabelas no Postgres: %s", exc)
 
 # --- Pydantic Models ---
 class UserCreate(BaseModel):

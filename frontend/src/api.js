@@ -24,7 +24,17 @@ async function post(path, body) {
   return res.json()
 }
 
-export const api = { get, post };
+async function patch(path, body) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'PATCH',
+    headers: getHeaders(),
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
+  return res.json()
+}
+
+export const api = { get, post, patch };
 
 export const fetchScores       = ()   => get('/scores')
 export const predictPrice      = body => post('/predict', body)
@@ -66,3 +76,12 @@ export const downloadConceptReport = async body => {
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.blob()
 }
+
+export const fetchLeads = (params = {}) => {
+  const query = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+  ).toString()
+  return get(`/leads${query ? `?${query}` : ''}`)
+}
+export const createLead       = body            => post('/leads', body)
+export const updateLeadStatus = (id, status)     => patch(`/leads/${id}/status`, { status })

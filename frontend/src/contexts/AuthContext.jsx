@@ -13,9 +13,11 @@ export function AuthProvider({ children }) {
       api.get('/auth/me')
         .then(res => {
           setUser(res);
+          localStorage.setItem('user', JSON.stringify(res));
         })
         .catch(() => {
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
         })
         .finally(() => setLoading(false));
     } else {
@@ -28,6 +30,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', res.access_token);
     const meRes = await api.get('/auth/me');
     setUser(meRes);
+    localStorage.setItem('user', JSON.stringify(meRes));
   };
 
   const register = async (name, email, password) => {
@@ -37,6 +40,7 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
   };
 

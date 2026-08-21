@@ -43,6 +43,13 @@ export const fetchTimeseries   = ()   => get('/indices/timeseries')
 export const fetchCommerceGaps = ()   => get('/analytics/commerce-gaps')
 export const fetchTypology     = ()   => get('/analytics/typology')
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h — zoneamento/POIs mudam raramente
+const GEOJSON_CACHE_KEYS = ['cache:zoning-geojson', 'cache:pois-geojson']
+
+export function clearMapDataCache() {
+  GEOJSON_CACHE_KEYS.forEach(key => {
+    try { localStorage.removeItem(key) } catch { /* localStorage indisponivel */ }
+  })
+}
 
 async function getCached(path, cacheKey) {
   try {

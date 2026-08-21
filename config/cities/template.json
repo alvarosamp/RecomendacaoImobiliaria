@@ -1,0 +1,35 @@
+{
+  "id": "nova_cidade",
+  "name": "Nova Cidade",
+  "state": "UF",
+  "ibge_code": "",
+  "status": "planned",
+  "center": {
+    "longitude": 0,
+    "latitude": 0,
+    "zoom": 12
+  },
+  "analysis_profiles": [
+    "real_estate",
+    "commerce",
+    "government"
+  ],
+  "data_sources": {
+    "boundary": "",
+    "zoning": "",
+    "properties": "",
+    "listings": "",
+    "remote_sensing": "",
+    "plan_director": ""
+  },
+  "official_sources": [],
+  "readiness": {
+    "boundary": "pending",
+    "h3_grid": "pending",
+    "pois": "pending",
+    "zoning": "pending",
+    "remote_sensing": "pending",
+    "legal_rules": "pending",
+    "price_model": "pending"
+  }
+}

@@ -2,6 +2,12 @@ import { useEffect, useMemo, useState } from 'react'
 import H3Map from '../components/H3Map'
 import TimeSlider from '../components/TimeSlider'
 import { fetchPoisGeojson, fetchZoningGeojson } from '../api'
+import {
+  ANALYSIS_OBJECTIVES,
+  CITY_CONFIGS,
+  DEFAULT_CITY_ID,
+  DEFAULT_OBJECTIVE_ID,
+} from '../config/cities'
 
 const POI_FILTERS = [
   { id: 'pharmacy', label: 'Farmacias' },
@@ -18,12 +24,16 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   const [priorityFilter, setPriorityFilter] = useState('')
   const [riskFilter, setRiskFilter]         = useState('')
   const [mapMode, setMapMode]               = useState('score')
+  const [cityId, setCityId]                 = useState(DEFAULT_CITY_ID)
+  const [objectiveId, setObjectiveId]       = useState(DEFAULT_OBJECTIVE_ID)
   const [zoning, setZoning]                 = useState(null)
   const [pois, setPois]                     = useState(null)
   const [visibleLayers, setVisibleLayers]   = useState({ cells: true, zoning: true, pois: true })
   const [poiTypes, setPoiTypes]             = useState(['pharmacy', 'supermarket', 'school', 'clinic', 'hospital'])
   const [influenceRadius, setInfluenceRadius] = useState(900)
   const [labelMode, setLabelMode]           = useState('smart')
+  const cityConfig = CITY_CONFIGS.find(city => city.id === cityId) || CITY_CONFIGS[0]
+  const objectiveConfig = ANALYSIS_OBJECTIVES.find(item => item.id === objectiveId) || ANALYSIS_OBJECTIVES[0]
 
   const filtered = scores.filter(r => {
     if (priorityFilter && r.priority !== priorityFilter) return false
@@ -37,7 +47,7 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
       const key = row.zona || 'Area sem zona'
       const current = groups.get(key) || { name: key, count: 0, total: 0, high: 0, growth: 0, lowRisk: 0, gap: 0, zoning: 0 }
       current.count += 1
-      current.total += Math.max(row.score_residencial || 0, row.score_comercial || 0)
+      current.total += Number(row[objectiveConfig.primaryMetric] || 0)
       current.high += row.priority === 'alta' ? 1 : 0
       current.growth += Number(row.growth_signal || row.ndbi_slope_180 || 0)
       current.lowRisk += row.risk_level === 'baixo' ? 1 : 0
@@ -50,19 +60,40 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         const count = Math.max(item.count, 1)
         const avg = item.total / count
         const growthNorm = Math.min(1, Math.max(0, (item.growth / count) * 180))
+        const objectiveBoost = objectiveConfig.id === 'government'
+          ? ((item.growth / count) * 120) + ((1 - (item.lowRisk / count)) * 20)
+          : objectiveConfig.id === 'commerce'
+            ? (item.gap / count) * 60
+            : (item.lowRisk / count) * 28
         const index = (
-          avg * 0.42
+          avg * 0.46
           + Math.min(100, item.count * 8) * 0.16
           + growthNorm * 100 * 0.13
           + (item.lowRisk / count) * 100 * 0.12
           + (item.gap / count) * 100 * 0.1
           + (item.zoning / count) * 100 * 0.07
+          + objectiveBoost
         )
         return { ...item, avg, index, growthAvg: item.growth / count }
       })
       .sort((a, b) => b.index - a.index)
       .slice(0, 5)
-  }, [filtered])
+  }, [filtered, objectiveConfig])
+
+  const cockpit = useMemo(() => {
+    const total = filtered.length
+    const highPriority = filtered.filter(row => row.priority === 'alta').length
+    const legalRisk = filtered.filter(row => row.risk_level === 'alto' || /bloque|vetad/i.test(row.legal_notes || '')).length
+    const growthSignals = filtered.filter(row => (
+      Number(row.ndbi_slope_180 || 0) > 0.001
+      || Number(row.growth_signal || 0) > 0.35
+    )).length
+    const avgPrimary = filtered.reduce((sum, row) => sum + Number(row[objectiveConfig.primaryMetric] || 0), 0) / Math.max(total, 1)
+    const best = [...filtered]
+      .sort((a, b) => Number(b[objectiveConfig.primaryMetric] || 0) - Number(a[objectiveConfig.primaryMetric] || 0))
+      .slice(0, 3)
+    return { total, highPriority, legalRisk, growthSignals, avgPrimary, best }
+  }, [filtered, objectiveConfig])
 
   useEffect(() => {
     let active = true
@@ -106,6 +137,13 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         data={filtered}
         timeData={timeRecords}
         selectedDate={selectedDate}
+        cityConfig={cityConfig}
+        cities={CITY_CONFIGS}
+        onCityChange={setCityId}
+        objectiveConfig={objectiveConfig}
+        objectives={ANALYSIS_OBJECTIVES}
+        onObjectiveChange={setObjectiveId}
+        cockpit={cockpit}
         zoning={zoning}
         pois={pois}
         visibleLayers={visibleLayers}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react'
 import SetupScreen from './components/SetupScreen'
-import { fetchScores, fetchTimeseries } from './api'
+import { clearMapDataCache, fetchScores, fetchTimeseries } from './api'
 
 const MapPage           = lazy(() => import('./pages/MapPage'))
 const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
@@ -10,7 +10,7 @@ const ConceptPage       = lazy(() => import('./pages/ConceptStudioPage'))
 const CaseStudyPage     = lazy(() => import('./pages/CaseStudyPage'))
 const LeadsPage         = lazy(() => import('./pages/LeadsPage'))
 
-// ── SVG Icons (real estate themed) ──────────────────────────────
+// ── SVG Icons ──────────────────────────────────────────
 function IconMap() {
   return (
     <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -80,14 +80,40 @@ function IconLead() {
   )
 }
 
-const NAV = [
-  { id: 'map',           label: 'Mapa da Cidade',       Icon: IconMap },
-  { id: 'opportunities', label: 'Oportunidades',          Icon: IconOpp },
-  { id: 'leads',         label: 'Lead Scoring',           Icon: IconLead },
-  { id: 'commerce',      label: 'Comércios Faltantes',   Icon: IconCommerce },
-  { id: 'valuation',     label: 'Avaliar Imóvel',        Icon: IconValuation },
-  { id: 'concept',       label: 'Conceito e Obra',        Icon: IconConcept },
-  { id: 'case-study',    label: 'Estudo de Caso',         Icon: IconCaseStudy },
+function IconLogout() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 14H2a1 1 0 01-1-1V2a1 1 0 011-1h3"/>
+      <path d="M10 11l4-4-4-4"/>
+      <path d="M14 7.5H5"/>
+    </svg>
+  )
+}
+
+// ── Nav groups ──────────────────────────────────────────
+const NAV_GROUPS = [
+  {
+    label: 'Explorar',
+    items: [
+      { id: 'map',      label: 'Mapa da Cidade',     Icon: IconMap },
+      { id: 'opportunities', label: 'Oportunidades',  Icon: IconOpp },
+      { id: 'commerce', label: 'Comércios Faltantes', Icon: IconCommerce },
+    ],
+  },
+  {
+    label: 'Analisar',
+    items: [
+      { id: 'valuation', label: 'Avaliar Imóvel',   Icon: IconValuation },
+      { id: 'leads',     label: 'Lead Scoring',      Icon: IconLead },
+    ],
+  },
+  {
+    label: 'Criar',
+    items: [
+      { id: 'concept',    label: 'Conceito e Obra',  Icon: IconConcept },
+      { id: 'case-study', label: 'Estudo de Caso',   Icon: IconCaseStudy },
+    ],
+  },
 ]
 
 function RefreshStatus({ status, onDismiss }) {
@@ -108,6 +134,91 @@ function RefreshStatus({ status, onDismiss }) {
   )
 }
 
+function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus, onRefresh, onDismissRefresh }) {
+  const userData = (() => {
+    try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
+  })()
+
+  const initials = (userData.name || '?').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
+  }
+
+  return (
+    <aside className="sidebar">
+      {/* Brand */}
+      <div className="sidebar-brand">
+        <div className="sidebar-logo-row">
+          <div className="sidebar-logo-badge">Ur</div>
+          <div className="sidebar-brand-name">Urbia</div>
+        </div>
+        <div className="sidebar-brand-sub">
+          <span className="sidebar-city-dot" />
+          Inteligência territorial
+        </div>
+      </div>
+
+      {/* Nav groups */}
+      {NAV_GROUPS.map(group => (
+        <div key={group.label} className="sidebar-group">
+          <span className="sidebar-group-label">{group.label}</span>
+          <nav className="sidebar-nav">
+            {group.items.map(item => (
+              <button
+                key={item.id}
+                className={`nav-item${page === item.id ? ' active' : ''}`}
+                onClick={() => setPage(item.id)}
+                disabled={isEmpty}
+              >
+                <item.Icon />
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+      ))}
+
+      {/* Footer */}
+      <div className="sidebar-footer">
+        {/* User row */}
+        <div className="sidebar-user-row">
+          <div className="sidebar-user-avatar">{initials}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{userData.name || 'Usuário'}</div>
+            <div className="sidebar-user-role">{userData.profile || 'Plataforma'}</div>
+          </div>
+          <button className="sidebar-logout-btn" onClick={handleLogout} title="Sair">
+            <IconLogout />
+          </button>
+        </div>
+
+        {!loading && !error && scores.length > 0 && (
+          <>
+            <div className="sidebar-stats">
+              {scores.length} áreas · {scores.filter(r => r.priority === 'alta').length} alta prioridade
+            </div>
+            <button
+              className="sidebar-refresh-btn"
+              onClick={onRefresh}
+              disabled={refreshStatus === 'running'}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <path d="M10.5 2.5A5 5 0 1 0 11 6"/>
+                <path d="M11 2.5V5H8.5"/>
+              </svg>
+              Atualizar dados
+            </button>
+            <RefreshStatus status={refreshStatus} onDismiss={onDismissRefresh} />
+          </>
+        )}
+      </div>
+    </aside>
+  )
+}
+
 export default function App() {
   const [page, setPage]     = useState('map')
   const [scores, setScores] = useState([])
@@ -117,7 +228,6 @@ export default function App() {
   const [refreshStatus, setRefreshStatus] = useState(null)
   const refreshRef = useRef(null)
 
-  // Time series (lazy — loaded once when map is first opened)
   const [timeDates, setTimeDates]       = useState([])
   const [timeRecords, setTimeRecords]   = useState([])
   const [timeLoaded, setTimeLoaded]     = useState(false)
@@ -145,7 +255,6 @@ export default function App() {
     }
   }, [page, timeLoaded])
 
-  // ── Quick refresh pipeline ───────────────────────────────────────
   const handleRefresh = async () => {
     if (refreshStatus === 'running') return
     setRefreshStatus('running')
@@ -163,6 +272,7 @@ export default function App() {
           clearInterval(refreshRef.current)
           setRefreshStatus(s.success ? 'done' : 'error')
           if (s.success) {
+            clearMapDataCache()
             loadScores()
             setTimeLoaded(false)
           }
@@ -191,71 +301,18 @@ export default function App() {
 
   return (
     <div className="layout">
-      {/* ── Sidebar ── */}
-      <aside className="sidebar">
-        {/* Brand */}
-        <div className="sidebar-brand">
-          <div className="sidebar-logo-row">
-            <div className="sidebar-logo-badge">IT</div>
-            <div>
-              <div className="sidebar-brand-name">Inteligência{'\n'}Territorial</div>
-            </div>
-          </div>
-          <div className="sidebar-brand-sub">
-            <span className="sidebar-city-dot" />
-            Pouso Alegre · MG
-          </div>
-        </div>
+      <Sidebar
+        page={page}
+        setPage={setPage}
+        scores={scores}
+        isEmpty={isEmpty}
+        loading={loading}
+        error={error}
+        refreshStatus={refreshStatus}
+        onRefresh={handleRefresh}
+        onDismissRefresh={() => setRefreshStatus(null)}
+      />
 
-        {/* Nav */}
-        <div className="sidebar-section-label">Módulos</div>
-        <nav className="sidebar-nav">
-          {NAV.map(item => (
-            <button
-              key={item.id}
-              className={`nav-item${page === item.id ? ' active' : ''}`}
-              onClick={() => setPage(item.id)}
-              disabled={isEmpty}
-            >
-              <item.Icon />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Footer */}
-        {!loading && !error && scores.length > 0 && (
-          <div className="sidebar-footer">
-            <div className="sidebar-stats">
-              {scores.length} áreas · {scores.filter(r => r.priority === 'alta').length} alta prioridade
-            </div>
-            <button
-              className="sidebar-refresh-btn"
-              onClick={handleRefresh}
-              disabled={refreshStatus === 'running'}
-            >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-                <path d="M11.5 2.5A5.5 5.5 0 1 0 12 7"/>
-                <path d="M12 2.5V5h-2.5"/>
-              </svg>
-              Atualizar dados
-            </button>
-            <RefreshStatus
-              status={refreshStatus}
-              onDismiss={() => setRefreshStatus(null)}
-            />
-            
-            <button className="sidebar-refresh-btn" style={{marginTop: '8px', opacity: 0.8}} onClick={() => {
-              localStorage.removeItem('token');
-              window.location.href = '/login';
-            }}>
-              Sair da conta
-            </button>
-          </div>
-        )}
-      </aside>
-
-      {/* ── Main ── */}
       <main className="main">
         {loading && (
           <div className="loading">
@@ -265,7 +322,6 @@ export default function App() {
         )}
         {error && <div className="error-msg">Erro: {error}</div>}
 
-        {/* First-time setup */}
         {isEmpty && (
           <SetupScreen
             onComplete={handleSetupComplete}
@@ -287,7 +343,7 @@ export default function App() {
             )}
             {page === 'opportunities' && <OpportunitiesPage scores={scores} onOpenConcept={openConcept} />}
             {page === 'leads'         && <LeadsPage />}
-            {page === 'commerce'      && <CommercePage />}
+            {page === 'commerce'      && <CommercePage scores={scores} />}
             {page === 'valuation'     && <ValuationPage />}
             {page === 'concept'       && <ConceptPage seed={conceptSeed} />}
             {page === 'case-study'    && <CaseStudyPage scores={scores} />}

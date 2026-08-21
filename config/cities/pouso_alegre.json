@@ -1,0 +1,40 @@
+{
+  "id": "pouso_alegre",
+  "name": "Pouso Alegre",
+  "state": "MG",
+  "ibge_code": "3152501",
+  "status": "operational",
+  "center": {
+    "longitude": -45.9489,
+    "latitude": -22.2303,
+    "zoom": 12
+  },
+  "analysis_profiles": [
+    "real_estate",
+    "commerce",
+    "government"
+  ],
+  "data_sources": {
+    "zoning": "data/sample_zoning.geojson",
+    "properties": "data/sample_properties.csv",
+    "listings": "data/pouso_alegre_listings.csv",
+    "remote_sensing": "data/sentinel2_indices.csv",
+    "plan_director": "docs/PlanoDiretor/plano_diretor_pouso_alegre.pdf"
+  },
+  "official_sources": [
+    "Prefeitura de Pouso Alegre",
+    "Plano Diretor",
+    "OpenStreetMap",
+    "Sentinel-2",
+    "IBGE"
+  ],
+  "readiness": {
+    "boundary": "implemented",
+    "h3_grid": "implemented",
+    "pois": "implemented",
+    "zoning": "partial",
+    "remote_sensing": "partial",
+    "legal_rules": "partial",
+    "price_model": "baseline"
+  }
+}

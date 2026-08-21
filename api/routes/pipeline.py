@@ -8,6 +8,8 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 
 router = APIRouter()
 
+Command = str | tuple[str, ...]
+
 _state: dict[str, Any] = {
     "running": False,
     "steps": [],
@@ -16,37 +18,39 @@ _state: dict[str, Any] = {
     "mode": None,
 }
 
-# Pipeline completo: primeira vez ou reset total
-FULL_STEPS = [
-    ("fetch-boundary",        "Buscando limite do município"),
-    ("build-grid",            "Gerando grade H3"),
-    ("fetch-pois",            "Coletando POIs do OpenStreetMap"),
-    ("fetch-cnes",            "Buscando estabelecimentos de saúde (CNES)"),
-    ("build-features",        "Calculando features de acessibilidade"),
-    ("estimate-population",   "Estimando população por célula (IBGE)"),
-    ("update-index-features", "Processando índices Sentinel-2"),
-    ("score-db",              "Calculando e salvando scores"),
+FULL_STEPS: list[tuple[Command, str]] = [
+    ("fetch-boundary", "Buscando limite do municipio"),
+    ("build-grid", "Gerando grade H3"),
+    ("fetch-pois", "Coletando POIs do OpenStreetMap"),
+    ("fetch-cnes", "Buscando estabelecimentos de saude (CNES)"),
+    ("build-features", "Calculando features de acessibilidade"),
+    ("estimate-population", "Estimando populacao por celula (IBGE)"),
+    (("import-indices", "--csv", "data/sentinel2_indices.csv"), "Importando serie Sentinel-2 local"),
+    ("update-index-features", "Processando indices Sentinel-2"),
+    ("score-db", "Calculando e salvando scores"),
 ]
 
-# Atualização rápida: não refaz o grid, só atualiza POIs e scores
-REFRESH_STEPS = [
-    ("fetch-pois",            "Atualizando POIs do OpenStreetMap"),
-    ("fetch-cnes",            "Atualizando dados de saúde (CNES)"),
-    ("build-features",        "Recalculando features de acessibilidade"),
-    ("estimate-population",   "Atualizando estimativa populacional (IBGE)"),
-    ("score-db",              "Atualizando scores das células"),
+REFRESH_STEPS: list[tuple[Command, str]] = [
+    ("fetch-pois", "Atualizando POIs do OpenStreetMap"),
+    ("fetch-cnes", "Atualizando dados de saude (CNES)"),
+    ("build-features", "Recalculando features de acessibilidade"),
+    ("estimate-population", "Atualizando estimativa populacional (IBGE)"),
+    (("import-indices", "--csv", "data/sentinel2_indices.csv"), "Atualizando serie Sentinel-2 local"),
+    ("update-index-features", "Recalculando indices Sentinel-2"),
+    ("score-db", "Atualizando scores das celulas"),
 ]
 
 
-async def _run_steps(steps: list[tuple[str, str]]) -> None:
+async def _run_steps(steps: list[tuple[Command, str]]) -> None:
     _state["running"] = True
     _state["steps"] = []
     _state["done"] = False
     _state["success"] = None
 
     for cmd, label in steps:
+        args = [cmd] if isinstance(cmd, str) else list(cmd)
         step: dict[str, Any] = {
-            "cmd": cmd,
+            "cmd": " ".join(args),
             "label": label,
             "status": "running",
             "output": "",
@@ -54,7 +58,10 @@ async def _run_steps(steps: list[tuple[str, str]]) -> None:
         _state["steps"].append(step)
 
         proc = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "recomendacao_imobiliaria.cli", cmd,
+            sys.executable,
+            "-m",
+            "recomendacao_imobiliaria.cli",
+            *args,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -76,9 +83,9 @@ async def _run_steps(steps: list[tuple[str, str]]) -> None:
 
 @router.post("/pipeline/run", status_code=202)
 async def run_pipeline(background_tasks: BackgroundTasks):
-    """Pipeline completo — usar na primeira execução ou para reset total."""
+    """Pipeline completo: usar na primeira execucao ou para reset total."""
     if _state["running"]:
-        raise HTTPException(409, "Pipeline já em execução")
+        raise HTTPException(409, "Pipeline ja em execucao")
     _state["mode"] = "full"
     background_tasks.add_task(_run_steps, FULL_STEPS)
     return {"status": "accepted", "mode": "full", "total_steps": len(FULL_STEPS)}
@@ -86,9 +93,9 @@ async def run_pipeline(background_tasks: BackgroundTasks):
 
 @router.post("/pipeline/refresh", status_code=202)
 async def refresh_pipeline(background_tasks: BackgroundTasks):
-    """Atualização rápida — atualiza POIs, features e scores sem refazer o grid."""
+    """Atualizacao rapida: atualiza POIs, features e scores sem refazer o grid."""
     if _state["running"]:
-        raise HTTPException(409, "Pipeline já em execução")
+        raise HTTPException(409, "Pipeline ja em execucao")
     _state["mode"] = "refresh"
     background_tasks.add_task(_run_steps, REFRESH_STEPS)
     return {"status": "accepted", "mode": "refresh", "total_steps": len(REFRESH_STEPS)}
@@ -96,9 +103,9 @@ async def refresh_pipeline(background_tasks: BackgroundTasks):
 
 @router.post("/pipeline/reset", status_code=200)
 async def reset_pipeline_state():
-    """Reseta o estado do pipeline (útil se travou)."""
+    """Reseta o estado do pipeline."""
     if _state["running"]:
-        raise HTTPException(409, "Pipeline em execução — aguarde terminar")
+        raise HTTPException(409, "Pipeline em execucao; aguarde terminar")
     _state.update({"running": False, "steps": [], "done": False, "success": None, "mode": None})
     return {"status": "reset"}
 

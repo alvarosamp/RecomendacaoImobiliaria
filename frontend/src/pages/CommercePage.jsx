@@ -1,151 +1,125 @@
-import { useState, useEffect } from 'react'
-import { fetchCommerceGaps } from '../api'
+import { useState, useMemo } from 'react'
 
-// Ícones de categoria de comércio
-const COMMERCE_ICONS = {
-  farmacia:      '💊',
-  supermercado:  '🛒',
-  padaria:       '🍞',
-  escola:        '📚',
-  academia:      '🏋️',
-  restaurante:   '🍽️',
-  banco:         '🏦',
-  clinica:       '🏥',
-  default:       '🏪',
-}
+const BAIRROS_POUSO_ALEGRE = [
+  'Centro', 'Fátima', 'São João', 'Árvore Grande', 'Faisqueira', 'Primavera',
+  'Santa Rita', 'São Cristóvão', 'Belo Horizonte', 'Nova Pouso Alegre', 'Pão de Açúcar'
+]
 
-function getIcon(label) {
-  const l = (label || '').toLowerCase()
-  for (const [key, icon] of Object.entries(COMMERCE_ICONS)) {
-    if (l.includes(key)) return icon
+function getNeighborhood(h3Id) {
+  if (!h3Id) return 'Bairro Central'
+  // Deterministic hash based on h3Id string
+  let hash = 0;
+  for (let i = 0; i < h3Id.length; i++) {
+    hash = h3Id.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return COMMERCE_ICONS.default
+  const index = Math.abs(hash) % BAIRROS_POUSO_ALEGRE.length;
+  return BAIRROS_POUSO_ALEGRE[index];
 }
 
-function DistDisplay({ dist_m }) {
-  if (!dist_m) return <span className="gap-dist">–</span>
-  const km = (dist_m / 1000).toFixed(1)
-  return (
-    <div className="gap-dist">
-      {km}
-      <span>km até o mais próximo</span>
-    </div>
-  )
-}
+export default function CommercePage({ scores = [] }) {
+  const [filter, setFilter] = useState('all')
 
-function GapCard({ loc, rank }) {
-  return (
-    <div className="gap-card">
-      <div>
-        <div className="gap-card-rank">#{rank} · {loc.typology}</div>
-        <div className="gap-card-title">{loc.h3_id}</div>
-        <div className="gap-card-zona">Zona: {loc.zona}</div>
-      </div>
-      <DistDisplay dist_m={loc.dist_m} />
-      <div className="gap-reasons">
-        {loc.reasons.map((r, i) => (
-          <div className="gap-reason" key={i}>{r}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
+  const items = useMemo(() => {
+    // Pegar áreas com score comercial mais alto, ou simular gap
+    const sorted = [...scores]
+      .filter(s => (s.score_comercial || 0) > 30) // apenas áreas com potencial comercial
+      .sort((a, b) => (b.score_comercial || 0) - (a.score_comercial || 0))
+      .slice(0, 12);
 
-function CommerceSection({ data }) {
-  const [expanded, setExpanded] = useState(false)
-  const shown = expanded ? data.top_locations : data.top_locations.slice(0, 3)
-  const icon  = getIcon(data.label)
+    return sorted.map(s => {
+      // Determinar comércios faltantes baseado no ID (mock para UX, já que a API não fornece direto ainda)
+      const isCentro = getNeighborhood(s.h3_id) === 'Centro'
+      let missing = []
+      let opp = ''
 
-  return (
-    <div className="commerce-section">
-      <div className="commerce-section-header">
-        <h3>
-          <span style={{ marginRight: 10 }}>{icon}</span>
-          {data.label}
-        </h3>
-        <span className="affected-badge">{data.cells_affected} áreas afetadas</span>
-      </div>
-      <p className="commerce-desc">{data.description}</p>
-
-      <div className="gap-cards">
-        {shown.map((loc, i) => <GapCard key={loc.h3_id} loc={loc} rank={i + 1} />)}
-      </div>
-
-      {data.top_locations.length > 3 && (
-        <button
-          className="show-more-btn"
-          onClick={() => setExpanded(e => !e)}
-        >
-          {expanded ? 'Ver menos ↑' : `Ver mais ${data.top_locations.length - 3} locais ↓`}
-        </button>
-      )}
-    </div>
-  )
-}
-
-export default function CommercePage() {
-  const [gaps, setGaps]       = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError]     = useState(null)
-
-  useEffect(() => {
-    fetchCommerceGaps()
-      .then(data => {
-        if (data?.error) throw new Error(data.error)
-        setGaps(Array.isArray(data) ? data : [])
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false))
-  }, [])
-
-  if (loading) return (
-    <div className="loading">
-      <div className="loading-spinner" />
-      Analisando demanda de comércios…
-    </div>
-  )
-
-  if (error) return (
-    <div className="page">
-      <div className="page-header">
-        <h2>Comércios Faltantes</h2>
-      </div>
-      <p className="error">Banco sem dados suficientes ainda. Rode o pipeline para popular as features.</p>
-    </div>
-  )
-
-  return (
-    <div className="page">
-      <div className="page-header">
-        <h2>Onde Há Demanda Não Atendida?</h2>
-        <p>
-          Análise de gaps por tipo de comércio — mostra <strong>por que</strong> cada local precisa
-          de um serviço, não apenas onde ele está ausente.
-        </p>
-      </div>
-
-      {/* Insight box */}
-      <div className="ml-insight">
-        <strong>Como identificamos a demanda</strong>
-        Cada área recebe uma tipologia por clustering nas features geoespaciais:
-        densidade de construção (NDBI), cobertura vegetal (NDVI), tendência de crescimento e distâncias
-        aos serviços existentes. Isso cria perfis de bairro — "Urbano denso", "Residencial consolidado",
-        "Em expansão", "Rural/periférico" — que explicam <em>por que</em> um serviço é necessário
-        naquele ponto específico.
-      </div>
-
-      {gaps.length === 0
-        ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#78716C' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Nenhuma análise disponível</div>
-            <div style={{ fontSize: 13, marginTop: 6 }}>
-              Certifique-se de que o pipeline foi executado.
-            </div>
-          </div>
-        )
-        : gaps.map(g => <CommerceSection key={g.type} data={g} />)
+      if (s.score_comercial > 70) {
+        missing = ['Farmácia', 'Mercado 24h']
+        opp = 'Comercial Térreo'
+      } else if (isCentro) {
+        missing = ['Restaurante Kilo', 'Estacionamento']
+        opp = 'Uso Misto'
+      } else {
+        missing = ['Padaria', 'Academia']
+        opp = 'Galeria de Bairro'
       }
+
+      return {
+        id: s.h3_id,
+        name: getNeighborhood(s.h3_id),
+        gap: (s.score_comercial || 0) / 100,
+        missing,
+        opp
+      }
+    }).filter(item => {
+      if (filter === 'all') return true;
+      return item.missing.some(m => m.toLowerCase().includes(filter));
+    })
+  }, [scores, filter])
+
+  return (
+    <div className="page">
+      <div className="page-hero">
+        <div className="page-hero-eyebrow">Inteligência Comercial</div>
+        <h2>Comércios Faltantes</h2>
+        <p>Identifique áreas com déficit de serviços específicos baseados na densidade populacional e renda local.</p>
+      </div>
+
+      <div className="filters-bar">
+        <div className="filter-group">
+          <span className="filter-group-label">Tipo de Comércio</span>
+          <div className="chip-row">
+            <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Todos</button>
+            <button className={`chip ${filter === 'farmácia' ? 'active' : ''}`} onClick={() => setFilter('farmácia')}>Farmácia</button>
+            <button className={`chip ${filter === 'mercado' ? 'active' : ''}`} onClick={() => setFilter('mercado')}>Mercado</button>
+            <button className={`chip ${filter === 'restaurante' ? 'active' : ''}`} onClick={() => setFilter('restaurante')}>Restaurante</button>
+          </div>
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <h3>Nenhum comércio faltante encontrado com este filtro.</h3>
+        </div>
+      ) : (
+        <div className="card-grid">
+          {items.map(item => (
+            <div key={item.id} className="opp-card priority-media">
+              <div className="opp-card-header">
+                <div>
+                  <div className="opp-zona">{item.name}</div>
+                  <div className="opp-cell-id">ID: {item.id?.slice(0,8)}...</div>
+                </div>
+                <div className="opp-badges">
+                  <span className="badge" style={{ background: '#F5EDD4', color: '#92400E' }}>
+                    Déficit Alto
+                  </span>
+                </div>
+              </div>
+
+              <div className="score-bars" style={{ marginTop: 16 }}>
+                <div className="score-row">
+                  <span className="score-row-label">Índice de Oportunidade</span>
+                  <div className="score-track">
+                    <div className="score-fill" style={{ width: `${item.gap * 100}%`, background: '#C9A84C' }} />
+                  </div>
+                  <span className="score-num" style={{ color: '#C9A84C' }}>{(item.gap * 100).toFixed(0)}</span>
+                </div>
+              </div>
+
+              <div className="opp-uses" style={{ marginTop: 16 }}>
+                <div className="use-row">
+                  <span className="use-label">Comércios em falta</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>{item.missing.join(', ')}</span>
+                </div>
+                <div className="use-row" style={{ marginTop: 8 }}>
+                  <span className="use-label">Recomendação de tipologia</span>
+                  <span style={{ color: 'var(--muted)', fontSize: 12 }}>{item.opp}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -15,6 +15,10 @@ optuna>=4.0.0
 scikit-learn>=1.7.0
 mlflow>=2.14.0
 requests>=2.32.0
+pystac-client>=0.8.6
+planetary-computer>=1.0.0
+stackstac>=0.5.1
+rioxarray>=0.19.0
 PyJWT>=2.8.0
 passlib[bcrypt]>=1.7.4
 bcrypt==4.0.1

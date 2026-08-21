@@ -1,0 +1,3 @@
+dataset,source_name,source_uri,reference_date,format,status,notes
+mapa_urbano_pouso_alegre_2025,Prefeitura Municipal de Pouso Alegre - Departamento de Informações Georreferenciadas,https://cmpousoalegre.gwlegis.com.br/arquivo/68dacdc5cd7e6.pdf,2025,PDF,reference_only,"Mapa urbano georreferenciado com nomes; não contém polígonos vetoriais de limites de bairros para importação espacial."
+ibge_bairros_mg_cd2022,IBGE,https://geoftp.ibge.gov.br/organizacao_do_territorio/malhas_territoriais/malhas_de_setores_censitarios__divisoes_intramunicipais/censo_2022/bairros/gpkg/UF/MG/MG_bairros_CD2022.gpkg,2022,GPKG,no_coverage,"Camada baixada e verificada; não possui feições para Pouso Alegre."

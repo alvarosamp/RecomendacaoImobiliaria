@@ -337,3 +337,40 @@ def collect_for_grid(
         output_csv=output_csv,
         max_cloud_pct=max_cloud_pct,
     )
+
+
+def collect_time_series_for_grid(
+    months: int = 12,
+    output_csv: str = "data/sentinel2_indices.csv",
+    max_cloud_pct: float = 30.0,
+    settings=None,
+) -> SatelliteCollectResult:
+    """Mantém uma série mensal: uma melhor cena por mês e por célula H3.
+
+    A coleta por janelas evita que a melhor cena mais recente apague a história
+    necessária para calcular tendência de NDVI/NDBI.
+    """
+    if months < 1:
+        raise ValueError("months deve ser maior que zero")
+    today = datetime.date.today()
+    frames: list[pd.DataFrame] = []
+    errors: list[str] = []
+    h3_cells = scenes = rows = 0
+    for offset in range(months - 1, -1, -1):
+        end = (pd.Timestamp(today).replace(day=1) - pd.DateOffset(months=offset - 1) - pd.Timedelta(days=1)).date()
+        start = end.replace(day=1)
+        temporary = Path(output_csv).with_name(f".{Path(output_csv).stem}-{start:%Y%m}.csv")
+        result = collect_for_grid(start.isoformat(), end.isoformat(), str(temporary), max_cloud_pct, settings)
+        h3_cells = max(h3_cells, result.h3_cells)
+        scenes += result.scenes_processed
+        rows += result.rows_written
+        errors.extend(result.errors)
+        if temporary.exists() and temporary.stat().st_size:
+            frames.append(pd.read_csv(temporary))
+        temporary.unlink(missing_ok=True)
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    if not combined.empty:
+        combined = combined.drop_duplicates(subset=["h3_id", "date"], keep="last").sort_values(["h3_id", "date"])
+    Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(output_csv, index=False)
+    return SatelliteCollectResult(h3_cells, scenes, len(combined), output_csv, errors[:20])

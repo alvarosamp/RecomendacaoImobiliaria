@@ -1,0 +1,52 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{booktabs}
+\title{Geospatial Context for Residential Property Valuation: An H3-Enriched Gradient-Boosting Framework}
+\author{\IEEEauthorblockN{Alvaro Careli}\IEEEauthorblockA{Independent Researcher\\Brazil}}
+\begin{document}
+\maketitle
+\begin{abstract}
+Property values reflect both property attributes and spatial context. This paper presents a reproducible valuation framework that enriches listing records with H3-indexed urban features: accessibility to services, POI counts, Sentinel-2 NDVI/NDBI statistics, zoning, and explainable opportunity scores. The implementation uses LightGBM with encoded categorical variables and a cross-validation plus hold-out evaluation workflow. We provide a rigorous experimental protocol contrasting intrinsic-only and geospatially enriched models, including spatial and temporal validation to prevent information leakage. No unverified accuracy values are reported: the available implementation establishes a testable pipeline, and the manuscript specifies the evidence required for a publishable empirical claim.
+\end{abstract}
+\begin{IEEEkeywords}automated valuation model, real estate, geospatial machine learning, LightGBM, H3, explainable AI\end{IEEEkeywords}
+
+\section{Introduction}
+Automated valuation models traditionally combine area, rooms, bathrooms, parking, property type, and location. Hedonic approaches formalize the relationship between price and property characteristics \cite{anand2016hedonic}, but coarse location variables can omit the urban context that buyers and businesses experience: nearby services, accessibility, land-use patterns, environmental conditions, and legal restrictions.
+
+This paper describes an enrichment-first valuation architecture. Each listing is joined to an H3 cell, then augmented with spatial features produced by a territorial intelligence pipeline. A LightGBM regressor is trained on the enriched table. LightGBM is an efficient gradient-boosting decision-tree approach \cite{ke2017lightgbm}; nevertheless, model sophistication is not a substitute for a leakage-safe evaluation. Our contribution is a replicable experimental design that tests whether geospatial context adds out-of-sample value beyond intrinsic housing attributes.
+
+\section{Architecture}
+The input table contains price and available intrinsic attributes: area, bedrooms, bathrooms, parking spaces, property type, neighbourhood, and coordinates. If an H3 identifier is absent, latitude and longitude are converted to an H3 resolution-8 cell. The enrichment join supplies NDVI/NDBI means and slopes, POI counts, distances to supermarkets/pharmacies/schools, zone, and residential/commercial opportunity scores.
+
+The model supports numeric variables and categorical property type, neighbourhood, and zone. Categorical fields use an ordinal encoder with a reserved unknown representation. Hyperparameters are selected with five-fold cross-validation, then a final estimator is fit on the training partition. Mean absolute error (MAE), $R^2$, cross-validated MAE mean, and cross-validated MAE standard deviation are recorded. Model and preprocessing metadata are stored together to ensure inference uses the training feature schema.
+
+\section{Hypotheses and Experimental Design}
+The main hypothesis is $H_1$: adding spatial features reduces prediction error relative to an intrinsic-only model on an untouched evaluation set. The study should compare:
+\begin{itemize}
+\item M0: intrinsic attributes only;
+\item M1: M0 plus latitude/longitude and neighbourhood;
+\item M2: M1 plus POI and accessibility features;
+\item M3: M2 plus NDVI/NDBI, zoning, and opportunity scores.
+\end{itemize}
+All models must use identical records and a fixed preprocessing definition. Report MAE, median absolute error, RMSE, $R^2$, and the relative MAE reduction from M0. Use paired bootstrap confidence intervals for differences in absolute error, not just point estimates.
+
+Random splits alone can overestimate performance when nearby listings are similar. The primary validation should group folds by neighbourhood or H3 parent cell. If listing dates are available, a second evaluation must train on earlier listings and test on later listings. Features must be computed using only information available on or before each listing date; otherwise POI changes, later satellite data, and aggregate scores can leak future information.
+
+\section{Interpretation and Feature Governance}
+The enrichment design produces useful features but does not imply causality. A distance to a school, for example, may correlate with price through unobserved neighbourhood characteristics. Model explanations such as SHAP values can communicate local feature contributions \cite{lundberg2017shap}, but must be framed as associations.
+
+Every feature should carry source, spatial resolution, and observation date. OSM data should be audited for geographic coverage \cite{haklay2010osm}; Sentinel-2's spectral and spatial properties are documented by ESA \cite{esaS2}. Zoning must be treated cautiously: it can be informative, but it may encode planning classifications correlated with price. A valuation system must not use protected personal attributes or proxies intended to discriminate against residents or neighbourhoods.
+
+\section{Current Implementation Status}
+The software implementation contains the full enrichment interface, configurable feature lists, LightGBM training, Optuna hyperparameter tuning, five-fold cross-validation, a hold-out split, and optional MLflow logging. A small listing file is present for technical testing, but no held-out metrics are presented here because the dataset's provenance, temporal coverage, and target quality have not yet been established for scientific evaluation.
+
+The paper should be updated only after assembling a documented dataset of completed transactions or consistently verified listings. Minimum reporting includes the number of records, city and period, missing-value policy, geographic distribution, price currency, all model hyperparameters, and results for M0--M3. Insert measured results here before submission: sample size = \texttt{TBD}; M0 MAE = \texttt{TBD}; M3 MAE = \texttt{TBD}; spatial-fold MAE = \texttt{TBD}.
+
+\section{Conclusion}
+We introduced an H3-enriched property valuation workflow that connects urban intelligence with gradient-boosting regression. Its technical contribution is a reproducible pipeline and a strict evaluation plan for testing incremental value from geospatial context. The next research milestone is not additional model complexity; it is a time-stamped, representative market dataset and spatially honest benchmark results.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

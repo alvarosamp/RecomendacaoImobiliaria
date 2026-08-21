@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef, Suspense, lazy } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense, lazy, useContext } from 'react'
 import SetupScreen from './components/SetupScreen'
 import { clearMapDataCache, fetchScores, fetchTimeseries } from './api'
+import { AuthContext } from './contexts/AuthContext'
 
 const MapPage           = lazy(() => import('./pages/MapPage'))
 const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
@@ -116,6 +117,40 @@ const NAV_GROUPS = [
   },
 ]
 
+const PROFILE_CONFIG = {
+  investidor: {
+    label: 'Investidor',
+    defaultPage: 'opportunities',
+    pages: ['opportunities', 'map', 'valuation', 'case-study'],
+  },
+  corretor: {
+    label: 'Corretor',
+    defaultPage: 'leads',
+    pages: ['leads', 'valuation', 'map', 'concept'],
+  },
+  incorporadora: {
+    label: 'Incorporadora',
+    defaultPage: 'opportunities',
+    pages: ['opportunities', 'map', 'concept', 'case-study'],
+  },
+  governo: {
+    label: 'Poder Público',
+    defaultPage: 'map',
+    pages: ['map', 'commerce', 'opportunities', 'case-study'],
+  },
+}
+
+function getProfile(role) {
+  return PROFILE_CONFIG[role] ? role : 'investidor'
+}
+
+function getNavigation(profile) {
+  const allowedPages = new Set(PROFILE_CONFIG[profile].pages)
+  return NAV_GROUPS
+    .map(group => ({ ...group, items: group.items.filter(item => allowedPages.has(item.id)) }))
+    .filter(group => group.items.length > 0)
+}
+
 function RefreshStatus({ status, onDismiss }) {
   if (!status) return null
   const labels = {
@@ -134,10 +169,9 @@ function RefreshStatus({ status, onDismiss }) {
   )
 }
 
-function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus, onRefresh, onDismissRefresh }) {
-  const userData = (() => {
-    try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
-  })()
+function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus, onRefresh, onDismissRefresh, user, profile, onProfileChange }) {
+  const userData = user || {}
+  const navigation = getNavigation(profile)
 
   const initials = (userData.name || '?').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
 
@@ -162,7 +196,7 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
       </div>
 
       {/* Nav groups */}
-      {NAV_GROUPS.map(group => (
+      {navigation.map(group => (
         <div key={group.label} className="sidebar-group">
           <span className="sidebar-group-label">{group.label}</span>
           <nav className="sidebar-nav">
@@ -188,12 +222,24 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
           <div className="sidebar-user-avatar">{initials}</div>
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{userData.name || 'Usuário'}</div>
-            <div className="sidebar-user-role">{userData.profile || 'Plataforma'}</div>
+            <div className="sidebar-user-role">{PROFILE_CONFIG[profile].label}</div>
           </div>
           <button className="sidebar-logout-btn" onClick={handleLogout} title="Sair">
             <IconLogout />
           </button>
         </div>
+
+        <label className="profile-switcher-label" htmlFor="profile-switcher">Modo de trabalho</label>
+        <select
+          id="profile-switcher"
+          className="profile-switcher"
+          value={profile}
+          onChange={event => onProfileChange(event.target.value)}
+        >
+          {Object.entries(PROFILE_CONFIG).map(([id, config]) => (
+            <option key={id} value={id}>{config.label}</option>
+          ))}
+        </select>
 
         {!loading && !error && scores.length > 0 && (
           <>
@@ -220,7 +266,9 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
 }
 
 export default function App() {
-  const [page, setPage]     = useState('map')
+  const { user, updateProfile } = useContext(AuthContext)
+  const profile = getProfile(user?.role)
+  const [page, setPage]     = useState(PROFILE_CONFIG[profile].defaultPage)
   const [scores, setScores] = useState([])
   const [conceptSeed, setConceptSeed] = useState(null)
   const [loading, setLoading]   = useState(true)
@@ -242,6 +290,11 @@ export default function App() {
   }, [])
 
   useEffect(() => { loadScores() }, [loadScores])
+
+  useEffect(() => {
+    const { pages, defaultPage } = PROFILE_CONFIG[profile]
+    if (!pages.includes(page)) setPage(defaultPage)
+  }, [page, profile])
 
   useEffect(() => {
     if (page === 'map' && !timeLoaded) {
@@ -295,8 +348,19 @@ export default function App() {
 
   const isEmpty = !loading && !error && scores.length === 0
   const openConcept = row => {
+    if (!PROFILE_CONFIG[profile].pages.includes('concept')) return
     setConceptSeed(row)
     setPage('concept')
+  }
+
+  const handleProfileChange = async nextProfile => {
+    if (nextProfile === profile) return
+    try {
+      await updateProfile(nextProfile)
+      setPage(PROFILE_CONFIG[nextProfile].defaultPage)
+    } catch {
+      setRefreshStatus('error')
+    }
   }
 
   return (
@@ -311,6 +375,9 @@ export default function App() {
         refreshStatus={refreshStatus}
         onRefresh={handleRefresh}
         onDismissRefresh={() => setRefreshStatus(null)}
+        user={user}
+        profile={profile}
+        onProfileChange={handleProfileChange}
       />
 
       <main className="main">
@@ -338,10 +405,11 @@ export default function App() {
                 timeRecords={timeRecords}
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
-                onOpenConcept={openConcept}
+                onOpenConcept={PROFILE_CONFIG[profile].pages.includes('concept') ? openConcept : undefined}
+                profile={profile}
               />
             )}
-            {page === 'opportunities' && <OpportunitiesPage scores={scores} onOpenConcept={openConcept} />}
+            {page === 'opportunities' && <OpportunitiesPage scores={scores} onOpenConcept={PROFILE_CONFIG[profile].pages.includes('concept') ? openConcept : undefined} />}
             {page === 'leads'         && <LeadsPage />}
             {page === 'commerce'      && <CommercePage scores={scores} />}
             {page === 'valuation'     && <ValuationPage />}

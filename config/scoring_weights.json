@@ -20,6 +20,16 @@
     "school": 2200
   },
   "recommendation_threshold": 0.35,
+  "priority_thresholds": {
+    "high": 35.9,
+    "medium": 29.25
+  },
+  "calibration": {
+    "method": "quantis_90_70",
+    "sample_size": 711,
+    "score_spread_p90_p10": 35.9,
+    "calibrated_at": "2026-08-21"
+  },
   "confidence": {
     "base": 0.3,
     "has_remote_sensing": 0.2,

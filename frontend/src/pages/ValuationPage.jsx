@@ -1,99 +1,48 @@
 import { useState } from 'react'
+import { predictPrice } from '../api'
+
+const PROPERTY_TYPES = [['apartamento', 'Apartamento'], ['casa', 'Casa'], ['comercial', 'Comercial'], ['terreno', 'Terreno']]
+const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 
 export default function ValuationPage() {
-  const [address, setAddress] = useState('')
-  const [area, setArea] = useState('')
-  const [rooms, setRooms] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState({ reference: '', area_m2: '', bedrooms: 2, bathrooms: 1, parking_spaces: 1, property_type: 'apartamento', latitude: '', longitude: '' })
   const [result, setResult] = useState(null)
-
-  const handleSimulate = (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      setResult({
-        price: 850000,
-        pricePerSqm: 11500,
-        confidence: 88,
-        factors: [
-          { name: 'Proximidade ao Metrô', impact: '+12%' },
-          { name: 'Área verde no raio de 500m', impact: '+5%' },
-          { name: 'Idade média do entorno', impact: '-3%' }
-        ]
-      })
-      setLoading(false)
-    }, 1500)
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const set = (field, value) => setForm(current => ({ ...current, [field]: value }))
+  const handleSubmit = async event => {
+    event.preventDefault(); setLoading(true); setError(null); setResult(null)
+    try {
+      setResult(await predictPrice({ ...form, area_m2: Number(form.area_m2), bedrooms: Number(form.bedrooms), bathrooms: Number(form.bathrooms), parking_spaces: Number(form.parking_spaces), latitude: Number(form.latitude || 0), longitude: Number(form.longitude || 0) }))
+    } catch (err) { setError(`Não foi possível calcular a avaliação. ${err.message}`) } finally { setLoading(false) }
   }
-
-  return (
-    <div className="page">
-      <div className="page-hero">
-        <div className="page-hero-eyebrow">Modelo de Precificação</div>
-        <h2>Avaliação de Imóvel</h2>
-        <p>Estime o valor de mercado de um imóvel baseado em dados de transações reais enriquecidos com variáveis territoriais.</p>
-      </div>
-
-      <div className="card-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-        <div className="opp-card">
-          <div className="opp-card-header">
-            <h3>Dados do Imóvel</h3>
+  return <div className="page">
+    <div className="page-hero"><div className="page-hero-eyebrow">Modelo de Precificação</div><h2>Avaliação de Imóvel</h2><p>Estimativa baseada nas características informadas e, quando disponíveis, na localização do imóvel. O resultado mostra a faixa de preço e o método usado.</p></div>
+    <div className="card-grid valuation-grid">
+      <section className="opp-card"><div className="opp-card-header"><h3>Dados para a estimativa</h3></div>
+        <form onSubmit={handleSubmit} className="valuation-form">
+          <div className="form-group"><label>Referência do imóvel</label><input value={form.reference} onChange={e => set('reference', e.target.value)} placeholder="Ex.: Centro, Pouso Alegre" /><small>Usada para identificação. Informe coordenadas para considerar a localização.</small></div>
+          <div className="valuation-fields">
+            <div className="form-group"><label>Área útil (m²)</label><input type="number" min="1" value={form.area_m2} onChange={e => set('area_m2', e.target.value)} required /></div>
+            <div className="form-group"><label>Tipo</label><select value={form.property_type} onChange={e => set('property_type', e.target.value)}>{PROPERTY_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></div>
+            <div className="form-group"><label>Quartos</label><input type="number" min="0" value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} /></div>
+            <div className="form-group"><label>Banheiros</label><input type="number" min="0" value={form.bathrooms} onChange={e => set('bathrooms', e.target.value)} /></div>
+            <div className="form-group"><label>Vagas</label><input type="number" min="0" value={form.parking_spaces} onChange={e => set('parking_spaces', e.target.value)} /></div>
+            <div className="form-group"><label>Latitude <small>(opcional)</small></label><input type="number" step="any" value={form.latitude} onChange={e => set('latitude', e.target.value)} /></div>
+            <div className="form-group"><label>Longitude <small>(opcional)</small></label><input type="number" step="any" value={form.longitude} onChange={e => set('longitude', e.target.value)} /></div>
           </div>
-          <form onSubmit={handleSimulate} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
-            <div className="form-group">
-              <label>Endereço completo</label>
-              <input type="text" placeholder="Rua, Número - Bairro" value={address} onChange={e => setAddress(e.target.value)} required />
-            </div>
-            <div style={{ display: 'flex', gap: '16px' }}>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Área útil (m²)</label>
-                <input type="number" placeholder="Ex: 75" value={area} onChange={e => setArea(e.target.value)} required />
-              </div>
-              <div className="form-group" style={{ flex: 1 }}>
-                <label>Quartos</label>
-                <input type="number" placeholder="Ex: 2" value={rooms} onChange={e => setRooms(e.target.value)} required />
-              </div>
-            </div>
-            <button type="submit" className="landing-btn-primary" disabled={loading} style={{ alignSelf: 'flex-start' }}>
-              {loading ? 'Calculando...' : 'Estimar Valor'}
-            </button>
-          </form>
-        </div>
-
-        {result && (
-          <div className="opp-card priority-investigar">
-            <div className="opp-card-header">
-              <h3>Resultado da Avaliação</h3>
-              <div className="opp-badges">
-                <span className="badge" style={{ background: '#EDE9FE', color: '#5B21B6' }}>
-                  Confiança: {result.confidence}%
-                </span>
-              </div>
-            </div>
-
-            <div style={{ marginTop: '24px', textAlign: 'center' }}>
-              <div style={{ fontSize: '14px', color: 'var(--muted)' }}>Valor de Venda Sugerido</div>
-              <div style={{ fontSize: '36px', fontWeight: 'bold', color: 'var(--primary)', margin: '8px 0' }}>
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(result.price)}
-              </div>
-              <div style={{ fontSize: '14px', color: 'var(--muted)' }}>
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(result.pricePerSqm)} / m²
-              </div>
-            </div>
-
-            <div className="opp-uses" style={{ marginTop: '32px' }}>
-              <div style={{ fontWeight: 600, marginBottom: '12px', fontSize: '14px' }}>Fatores de Influência (Geoespaciais)</div>
-              {result.factors.map(f => (
-                <div className="use-row" key={f.name}>
-                  <span className="use-label">{f.name}</span>
-                  <span style={{ color: f.impact.startsWith('+') ? '#15803D' : '#B91C1C', fontWeight: 600, fontSize: 13 }}>
-                    {f.impact}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          <button type="submit" className="landing-btn-primary" disabled={loading}>{loading ? 'Calculando…' : 'Calcular estimativa'}</button>
+        </form>{error && <div className="auth-error">{error}</div>}
+      </section>
+      <section className="opp-card priority-investigar valuation-result" aria-live="polite">
+        {!result ? <div className="empty-state"><h3>Informe os dados do imóvel</h3><p>A faixa de valor aparecerá aqui após o cálculo.</p></div> : <>
+          <div className="opp-card-header"><h3>Resultado da avaliação</h3><span className="badge" style={{ background: '#EDE9FE', color: '#5B21B6' }}>{result.model_status === 'lightgbm' ? 'Modelo treinado' : 'Estimativa inicial'}</span></div>
+          <div className="valuation-price"><span>Valor central estimado</span><strong>{money(result.predicted_price)}</strong><small>{money(result.price_per_m2)} / m²</small></div>
+          <div className="valuation-range"><span>Faixa de referência</span><strong>{money(result.price_low)} — {money(result.price_high)}</strong></div>
+          {result.warning && <div className="valuation-warning">{result.warning}</div>}
+          {result.explain?.length > 0 && <div className="opp-uses"><h4>Como a estimativa foi calculada</h4>{result.explain.map(item => <div className="use-row" key={item}><span className="use-label">{item}</span></div>)}</div>}
+        </>}
+      </section>
     </div>
-  )
+  </div>
 }

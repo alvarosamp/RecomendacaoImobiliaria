@@ -33,9 +33,15 @@ export function AuthProvider({ children }) {
     localStorage.setItem('user', JSON.stringify(meRes));
   };
 
-  const register = async (name, email, password) => {
-    await api.post('/auth/register', { name, email, password });
+  const register = async (name, email, password, profile) => {
+    await api.post('/auth/register', { name, email, password, profile });
     await login(email, password);
+  };
+
+  const updateProfile = async (profile) => {
+    const updatedUser = await api.patch('/auth/me/profile', { profile });
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   const logout = () => {
@@ -45,7 +51,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, updateProfile, logout }}>
       {children}
     </AuthContext.Provider>
   );

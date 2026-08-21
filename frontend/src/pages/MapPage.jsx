@@ -20,7 +20,14 @@ const POI_FILTERS = [
   { id: 'bus_stop', label: 'Onibus' },
 ]
 
-export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange, onOpenConcept }) {
+const PROFILE_OBJECTIVE = {
+  investidor: 'real_estate',
+  corretor: 'real_estate',
+  incorporadora: 'real_estate',
+  governo: 'government',
+}
+
+export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange, onOpenConcept, profile }) {
   const [priorityFilter, setPriorityFilter] = useState('')
   const [riskFilter, setRiskFilter]         = useState('')
   const [mapMode, setMapMode]               = useState('score')
@@ -34,6 +41,11 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   const [labelMode, setLabelMode]           = useState('smart')
   const cityConfig = CITY_CONFIGS.find(city => city.id === cityId) || CITY_CONFIGS[0]
   const objectiveConfig = ANALYSIS_OBJECTIVES.find(item => item.id === objectiveId) || ANALYSIS_OBJECTIVES[0]
+
+  useEffect(() => {
+    const nextObjective = PROFILE_OBJECTIVE[profile]
+    if (nextObjective) setObjectiveId(nextObjective)
+  }, [profile])
 
   const filtered = scores.filter(r => {
     if (priorityFilter && r.priority !== priorityFilter) return false

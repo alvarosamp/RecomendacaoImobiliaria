@@ -14,18 +14,14 @@ const TILE_SCALE = typeof window !== 'undefined' && window.devicePixelRatio > 1 
 
 const BASE_TILES = new TileLayer({
   id: 'base-streets',
-  data: [
-    `https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${TILE_SCALE}.png`,
-    `https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${TILE_SCALE}.png`,
-    `https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${TILE_SCALE}.png`,
-    `https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}${TILE_SCALE}.png`,
-  ],
+  // A base clara deixa ruas e bairros legiveis; as camadas analiticas ficam por cima.
+  data: `https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}${TILE_SCALE}.png`,
   minZoom: 0,
   maxZoom: 20,
   tileSize: 256,
   renderSubLayers: props => {
     const { bbox: { west, south, east, north } } = props.tile
-    return new BitmapLayer(props, {
+    return new BitmapLayer({ ...props, data: null }, {
       image: props.data,
       bounds: [west, south, east, north],
       opacity: 1,
@@ -280,7 +276,7 @@ export default function H3Map({
   const [viewState, setViewState] = useState(INITIAL_VIEW)
   const [searchPin, setSearchPin] = useState(null)
   const isNarrow = typeof window !== 'undefined' && window.innerWidth <= 900
-  const [layersOpen, setLayersOpen] = useState(!isNarrow)
+  const [layersOpen, setLayersOpen] = useState(false)
   const [rankingOpen, setRankingOpen] = useState(!isNarrow)
 
   useEffect(() => {
@@ -437,14 +433,14 @@ export default function H3Map({
       if (mode === 'zoning') return [15, 23, 42, 18]
       if (mode === 'kernel') return scoreToRgba(objectiveScore(d, objectiveConfig), 42)
       if (mode === 'validation') return validationColor(d, objectiveConfig, 76)
-      return scoreToRgba(objectiveScore(d, objectiveConfig))
+      return scoreToRgba(objectiveScore(d, objectiveConfig), 62)
     },
-    getLineColor: d => selected?.h3_id === d.h3_id ? [15, 23, 42, 255] : [255, 255, 255, 190],
-    lineWidthMinPixels: d => selected?.h3_id === d.h3_id ? 2 : 0.55,
+    getLineColor: d => selected?.h3_id === d.h3_id ? [15, 23, 42, 255] : [255, 255, 255, 82],
+    lineWidthMinPixels: d => selected?.h3_id === d.h3_id ? 2 : 0.25,
     filled: true,
     stroked: true,
     extruded: false,
-    coverage: mode === 'zoning' ? 0.38 : mode === 'kernel' ? 0.28 : mode === 'validation' ? 0.72 : 0.52,
+    coverage: mode === 'zoning' ? 0.45 : mode === 'kernel' ? 0.34 : mode === 'validation' ? 0.76 : 0.9,
     pickable: true,
     autoHighlight: true,
     highlightColor: [15, 23, 42, 48],
@@ -507,7 +503,7 @@ export default function H3Map({
     radiusUnits: 'pixels',
     getPosition: d => d.position,
     getRadius: d => Math.min(28, 8 + d.count * 1.8),
-    getFillColor: [219, 39, 119, 205],
+    getFillColor: [30, 64, 175, 205],
     getLineColor: [255, 255, 255, 235],
     getLineWidth: 2,
     onHover: info => setTooltip(info.object ? { kind: 'cluster', object: info.object, x: info.x, y: info.y } : null),
@@ -705,7 +701,7 @@ export default function H3Map({
               </div>
             ))}
             <div className="atlas-poi-legend-cluster">
-              <i style={{ background: 'rgb(219, 39, 119)', borderRadius: '50%' }} />
+              <i style={{ background: 'rgb(30, 64, 175)', borderRadius: '50%' }} />
               Agrupamento (numero = qtde.)
             </div>
           </div>
@@ -749,7 +745,7 @@ function LayersPanel({
   return (
     <div className={`atlas-floating-panel atlas-layers-panel${open ? '' : ' collapsed'}`}>
       <button className="atlas-panel-header" onClick={onToggle}>
-        <span>Cidade, objetivo &amp; filtros</span>
+        <span>Controles do mapa</span>
         <Chevron open={open} />
       </button>
       {open && (
@@ -856,7 +852,7 @@ function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, ranked
   return (
     <div className={`atlas-floating-panel atlas-ranking-panel${open ? '' : ' collapsed'}`}>
       <button className="atlas-panel-header" onClick={onToggle}>
-        <span>Cockpit territorial</span>
+        <span>Resumo da análise</span>
         <Chevron open={open} />
       </button>
       {open && (
@@ -884,11 +880,11 @@ function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, ranked
           </div>
           {cockpit?.best?.length > 0 && (
             <div className="atlas-best-cells">
-              <span>Areas para abrir primeiro</span>
-              {cockpit.best.map((cell, index) => (
-                <button key={cell.h3_id || index} type="button" title={cell.h3_id} onClick={() => onSelectCell(cell)}>
-                  <strong>#{index + 1}</strong>
-                  <span>{cell.zona || cell.primary_use || 'area sem zona'}</span>
+            <span>Melhores regiões para investigar</span>
+            {cockpit.best.map((cell, index) => (
+              <button key={cell.h3_id || index} type="button" title={cell.h3_id} onClick={() => onSelectCell(cell)}>
+                <strong>#{index + 1}</strong>
+                  <span>{cell.neighborhood || cell.zona || cell.primary_use || 'Região em análise'}</span>
                   <b>{formatNumber(objectiveScore(cell, objectiveConfig), 0)}</b>
                 </button>
               ))}
@@ -1090,9 +1086,9 @@ function buildCellDecision(cell, objectiveConfig) {
   const score = Number(cell[primaryMetric] || 0)
   const risk = String(cell.risk_level || '').toLowerCase()
   const blocked = risk === 'alto' || /bloque|vetad/i.test(cell.legal_notes || '')
-  const title = cell.zona
-    ? `${cell.zona} - ${cell.primary_use || 'uso a avaliar'}`
-    : cell.h3_id
+  const title = cell.neighborhood
+    ? `${cell.neighborhood}${cell.zona ? ` · ${cell.zona}` : ''}`
+    : cell.zona || cell.h3_id
 
   if (blocked) {
     return {

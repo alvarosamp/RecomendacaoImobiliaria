@@ -21,23 +21,29 @@ _state: dict[str, Any] = {
 FULL_STEPS: list[tuple[Command, str]] = [
     ("fetch-boundary", "Buscando limite do municipio"),
     ("build-grid", "Gerando grade H3"),
+    ("sync-official-layers", "Consolidando bairros e zoneamento oficiais"),
+    ("sync-listings", "Atualizando anúncios e preços de mercado"),
     ("fetch-pois", "Coletando POIs do OpenStreetMap"),
     ("fetch-cnes", "Buscando estabelecimentos de saude (CNES)"),
     ("build-features", "Calculando features de acessibilidade"),
     ("estimate-population", "Estimando populacao por celula (IBGE)"),
-    (("import-indices", "--csv", "data/sentinel2_indices.csv"), "Importando serie Sentinel-2 local"),
+    (("sync-sentinel2", "--months", "12"), "Coletando e importando série temporal Sentinel-2"),
     ("update-index-features", "Processando indices Sentinel-2"),
     ("score-db", "Calculando e salvando scores"),
+    (("calibrate-priorities", "--apply"), "Calibrando faixas de prioridade"),
 ]
 
 REFRESH_STEPS: list[tuple[Command, str]] = [
+    ("sync-official-layers", "Atualizando bairros e zoneamento oficiais"),
+    ("sync-listings", "Atualizando anúncios e preços de mercado"),
     ("fetch-pois", "Atualizando POIs do OpenStreetMap"),
     ("fetch-cnes", "Atualizando dados de saude (CNES)"),
     ("build-features", "Recalculando features de acessibilidade"),
     ("estimate-population", "Atualizando estimativa populacional (IBGE)"),
-    (("import-indices", "--csv", "data/sentinel2_indices.csv"), "Atualizando serie Sentinel-2 local"),
+    (("sync-sentinel2", "--months", "3"), "Atualizando série temporal Sentinel-2"),
     ("update-index-features", "Recalculando indices Sentinel-2"),
     ("score-db", "Atualizando scores das celulas"),
+    (("calibrate-priorities", "--apply"), "Recalibrando faixas de prioridade"),
 ]
 
 

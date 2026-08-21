@@ -1,0 +1,55 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{booktabs}
+\title{Detecting Urban Opportunity Areas with H3, Points of Interest, and Sentinel-2 Time Series: A Reproducible Case Study}
+\author{\IEEEauthorblockN{Alvaro Careli}\IEEEauthorblockA{Independent Researcher\\Brazil}}
+\begin{document}
+\maketitle
+\begin{abstract}
+Urban opportunity detection requires integrating service availability, accessibility, land-cover dynamics, and planning context at a spatial scale useful for action. This paper presents a reproducible framework based on H3 cells, OpenStreetMap POIs, and Sentinel-2-derived NDVI/NDBI features. The framework produces interpretable residential and commercial opportunity signals rather than an uncalibrated prediction of return. In Pouso Alegre, Brazil, the prototype integrated 711 spatial cells, 609 POIs, and 22 zoning classes. We define a temporal and spatial validation design using subsequent openings, permits, and land-use change as outcomes. The available two-date satellite sample is reported as an integration demonstration, while the full study design specifies the longer series needed for inference.
+\end{abstract}
+\begin{IEEEkeywords}urban analytics, remote sensing, opportunity detection, H3, Sentinel-2, points of interest\end{IEEEkeywords}
+
+\section{Introduction}
+Cities grow unevenly. New housing, services, and commercial activity may emerge where population, accessibility, land availability, and regulatory conditions align. Detecting such areas is difficult because the relevant signals have different geometries and update cycles. Administrative regions are too coarse for many site decisions, while parcels are not always available or comparable.
+
+We propose H3 cells as a common unit for fusing information. H3 is a hierarchical hexagonal index designed for geographic aggregation and neighbourhood analysis \cite{h3}. The resulting system identifies cells with combinations of service shortage, nearby amenities, environmental quality, and built-up change. Critically, it outputs the individual components so a user can distinguish a low-service area from a high-growth area.
+
+\section{Data and Features}
+The framework consumes three classes of observations. First, POIs represent supermarkets, pharmacies, and schools. Their counts estimate local supply, while their nearest distances express access; accessibility is a multidimensional concept and should not be reduced to a single universal measure \cite{geurs2004accessibility}. Second, Sentinel-2 provides 13 spectral bands with 10--60 m spatial resolution \cite{esaS2}. NDVI is calculated from near-infrared and red reflectance as a vegetation proxy \cite{rouse1974monitoring}; NDBI uses near-infrared and short-wave infrared reflectance as a built-up proxy \cite{zha2003ndbi}. Third, zoning and planning constraints contextualize the detected signal.
+
+For a cell $c$, the service-gap score for category $j$ is
+\begin{equation}
+G_j(c)=\max\left(0,\frac{q_j-n_j(c)}{q_j}\right),
+\end{equation}
+where $n_j(c)$ is the POI count and $q_j$ is a transparent policy target. Its accessibility score is $A_j(c)=\max(0,1-d_j(c)/t_j)$, where $d_j$ is minimum distance and $t_j$ a target distance. A commercial-gap index is a weighted sum of the three gaps.
+
+The growth index is
+\begin{equation}
+U(c)=0.45\,\widetilde{\Delta NDBI}+0.35\,\widetilde{-\Delta NDVI}+0.20\,\widetilde{NDBI},
+\end{equation}
+where tildes denote clipping to $[0,1]$. This is an interpretable heuristic, not a land-cover classifier. Its weights must be calibrated or sensitivity-tested for a target city.
+
+\section{System and Case Study}
+Data are stored in PostGIS and joined by H3 cell. The pipeline derives cell features, calculates separate residential and commercial scores, and serves rankings plus explanation records through an API. In the Pouso Alegre pilot, it generated 711 cells, ingested 609 POIs, and loaded 22 zoning classes. The system reported 395 primarily commercial cells, 222 primarily residential cells, and 94 cells requiring legal analysis.
+
+The satellite table used two observations (March and May 2025). This permits testing the ingestion, aggregation, and explanation path but cannot establish a reliable temporal trend. In addition, 311 cells lacked an assigned zone. These two facts are limitations of the current dataset, not results to be generalized. OpenStreetMap completeness should also be locally audited, as data quality can differ substantially across places \cite{haklay2010osm}.
+
+\section{Validation Design}
+The research question is: \emph{do cells with high opportunity scores subsequently exhibit independently observed urban development or service openings?} Build a monthly panel spanning at least 12--24 months, with cloud-masked Sentinel-2 composites and dated POI snapshots. Outcomes can include new business registrations, building permits, verified new POIs, or manually validated built-up change.
+
+Compare the proposed fused model against three baselines: POI gap only, remote sensing only, and a static zoning/accessibility model. For each prediction horizon, report precision@k, recall@k, average precision, AUROC when a binary outcome is appropriate, and calibration error. Use a forward-chaining split so features always precede outcomes. A spatial hold-out (e.g., grouped neighbourhood or H3 parent cell) is essential to quantify spatial leakage.
+
+An ablation table should remove each information family in turn: POIs, accessibility, NDVI/NDBI, and zoning. The expected contribution is not assumed; it is measured by the change in held-out performance and in rank stability. Confidence intervals should be generated with spatially grouped bootstrap resampling. The final manuscript must replace the following reserved fields with measured values: precision@10 = \texttt{TBD}; average precision = \texttt{TBD}; number of dated observations = \texttt{TBD}.
+
+\section{Discussion}
+Opportunity is not synonymous with investment return. A high service gap may reflect low demand, missing POI data, or a planning barrier. Conversely, growth signatures can be driven by seasonal vegetation or sensor artifacts. The framework should therefore be used to prioritize investigation, pairing scores with source dates, confidence, and legal status. Its main scientific value is a testable data-fusion design, not an assertion that a heuristic score discovers profitable sites.
+
+\section{Conclusion}
+This paper defines an explainable H3-based approach for integrating amenity, accessibility, and remote-sensing signals in urban opportunity detection. The Pouso Alegre implementation demonstrates data integration at city scale. The next step is a longitudinal, leakage-resistant evaluation against observed development outcomes, which will determine whether the proposed fusion improves over single-source baselines.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

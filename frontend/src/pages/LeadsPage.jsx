@@ -1,78 +1,32 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { createLead, fetchLeads, updateLeadStatus } from '../api'
 
-const LEADS = [
-  { id: '1', name: 'Carlos Eduardo', budget: 'R$ 800k - 1.2M', score: 92, status: 'Quente', interest: 'Pinheiros, 2 Dorms' },
-  { id: '2', name: 'Mariana Silva', budget: 'R$ 400k - 600k', score: 78, status: 'Morno', interest: 'Vila Mariana, Studio' },
-  { id: '3', name: 'Investimentos Alpha', budget: 'R$ 2M - 5M', score: 95, status: 'Quente', interest: 'Itaim Bibi, Comercial' },
-  { id: '4', name: 'Roberto Almeida', budget: 'R$ 1.5M - 2M', score: 45, status: 'Frio', interest: 'Moema, 3 Dorms' }
-]
+const STATUS = [['novo', 'Novo'], ['contatado', 'Contatado'], ['visita', 'Visita'], ['proposta', 'Proposta'], ['fechado', 'Fechado'], ['perdido', 'Perdido']]
+const emptyLead = { name: '', email: '', phone: '', budget: '', zone: '', property_type: 'casa', financing_status: 'nao_iniciado', timeline: 'pesquisando', visits_done: 0, motivation: '', source: '', returning_client: false, notes: '' }
+const labelStyle = label => label === 'Alta chance' ? { background: '#DCFCE7', color: '#15803D' } : label === 'Media chance' ? { background: '#FEF3C7', color: '#92400E' } : { background: '#F4F2EE', color: '#57534E' }
+const money = value => value ? Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) : 'Não informado'
 
 export default function LeadsPage() {
-  const [filter, setFilter] = useState('all')
-
-  const items = LEADS.filter(l => filter === 'all' || l.status.toLowerCase() === filter).sort((a, b) => b.score - a.score)
-
-  return (
-    <div className="page">
-      <div className="page-hero">
-        <div className="page-hero-eyebrow">Gestão de Clientes</div>
-        <h2>Lead Scoring</h2>
-        <p>Priorize seus clientes baseado na probabilidade de fechamento. O score analisa o perfil, orçamento e cruzamento territorial de interesses.</p>
-      </div>
-
-      <div className="filters-bar">
-        <div className="filter-group">
-          <span className="filter-group-label">Temperatura do Lead</span>
-          <div className="chip-row">
-            <button className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Todos</button>
-            <button className={`chip gold ${filter === 'quente' ? 'active' : ''}`} onClick={() => setFilter('quente')}>Quentes</button>
-            <button className={`chip orange ${filter === 'morno' ? 'active' : ''}`} onClick={() => setFilter('morno')}>Mornos</button>
-            <button className={`chip ${filter === 'frio' ? 'active' : ''}`} onClick={() => setFilter('frio')}>Frios</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="card-grid">
-        {items.map(lead => (
-          <div key={lead.id} className={`opp-card priority-${lead.status === 'Quente' ? 'alta' : lead.status === 'Morno' ? 'media' : 'baixa'}`}>
-            <div className="opp-card-header">
-              <div>
-                <div className="opp-zona">{lead.name}</div>
-                <div className="opp-cell-id">{lead.interest}</div>
-              </div>
-              <div className="opp-badges">
-                <span className="badge" style={{
-                  background: lead.status === 'Quente' ? '#F5EDD4' : lead.status === 'Morno' ? '#FEF3C7' : '#F4F2EE',
-                  color: lead.status === 'Quente' ? '#92400E' : lead.status === 'Morno' ? '#D97706' : '#57534E'
-                }}>
-                  {lead.status}
-                </span>
-              </div>
-            </div>
-
-            <div className="score-bars" style={{ marginTop: 16 }}>
-              <div className="score-row">
-                <span className="score-row-label">Prob. de Conversão</span>
-                <div className="score-track">
-                  <div className="score-fill" style={{ width: `${lead.score}%`, background: lead.status === 'Quente' ? '#C9A84C' : lead.status === 'Morno' ? '#D97706' : '#A8A29E' }} />
-                </div>
-                <span className="score-num" style={{ color: lead.status === 'Quente' ? '#C9A84C' : lead.status === 'Morno' ? '#D97706' : '#A8A29E' }}>{lead.score}</span>
-              </div>
-            </div>
-
-            <div className="opp-uses" style={{ marginTop: 16 }}>
-              <div className="use-row">
-                <span className="use-label">Orçamento estimado</span>
-                <span style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 13 }}>{lead.budget}</span>
-              </div>
-            </div>
-
-            <button className="landing-btn-outline" style={{ marginTop: 16, width: '100%', padding: '8px', fontSize: '13px' }}>
-              Ver perfil completo
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  const [leads, setLeads] = useState([]); const [filter, setFilter] = useState('all'); const [showForm, setShowForm] = useState(false); const [form, setForm] = useState(emptyLead); const [expanded, setExpanded] = useState(null); const [loading, setLoading] = useState(true); const [saving, setSaving] = useState(false); const [error, setError] = useState(null)
+  const load = () => { setLoading(true); fetchLeads().then(setLeads).catch(err => setError(err.message)).finally(() => setLoading(false)) }
+  useEffect(() => { load() }, [])
+  const visible = useMemo(() => leads.filter(lead => filter === 'all' || lead.label === filter), [leads, filter])
+  const set = (key, value) => setForm(current => ({ ...current, [key]: value }))
+  const save = async event => {
+    event.preventDefault(); setSaving(true); setError(null)
+    try { const created = await createLead({ ...form, budget: form.budget ? Number(form.budget) : null, visits_done: Number(form.visits_done) }); setLeads(current => [created, ...current].sort((a, b) => b.score - a.score)); setForm(emptyLead); setShowForm(false) } catch (err) { setError(`Não foi possível salvar o lead. ${err.message}`) } finally { setSaving(false) }
+  }
+  const changeStatus = async (lead, status) => { try { const updated = await updateLeadStatus(lead.id, status); setLeads(current => current.map(item => item.id === updated.id ? updated : item)) } catch (err) { setError(`Não foi possível atualizar o status. ${err.message}`) } }
+  return <div className="page">
+    <div className="page-hero leads-hero"><div><div className="page-hero-eyebrow">Gestão de clientes</div><h2>Lead Scoring</h2><p>Priorize contatos pela qualidade do orçamento, financiamento, prazo e sinais de intenção. O cálculo é explicável em cada lead.</p></div><button className="landing-btn-primary" onClick={() => setShowForm(current => !current)}>{showForm ? 'Cancelar cadastro' : '+ Novo lead'}</button></div>
+    {error && <div className="auth-error">{error}</div>}
+    {showForm && <section className="opp-card lead-form-card"><div className="opp-card-header"><h3>Novo lead</h3><span className="opp-cell-id">Preencha os dados disponíveis; o score será calculado ao salvar.</span></div><form onSubmit={save} className="lead-form"><Field label="Nome" required value={form.name} onChange={v => set('name', v)} /><Field label="E-mail" type="email" value={form.email} onChange={v => set('email', v)} /><Field label="Telefone" value={form.phone} onChange={v => set('phone', v)} /><Field label="Orçamento (R$)" type="number" min="0" value={form.budget} onChange={v => set('budget', v)} /><Field label="Região de interesse" value={form.zone} onChange={v => set('zone', v)} /><Select label="Imóvel" value={form.property_type} onChange={v => set('property_type', v)} options={[['casa', 'Casa'], ['apartamento', 'Apartamento'], ['comercial', 'Comercial'], ['terreno', 'Terreno']]} /><Select label="Financiamento" value={form.financing_status} onChange={v => set('financing_status', v)} options={[['nao_iniciado', 'Não iniciado'], ['em_analise', 'Em análise'], ['aprovado', 'Aprovado'], ['a_vista', 'À vista']]} /><Select label="Prazo" value={form.timeline} onChange={v => set('timeline', v)} options={[['pesquisando', 'Sem prazo'], ['3_6_meses', '3 a 6 meses'], ['1_3_meses', '1 a 3 meses'], ['imediato', 'Imediato']]} /><Field label="Visitas realizadas" type="number" min="0" value={form.visits_done} onChange={v => set('visits_done', v)} /><Select label="Motivação" value={form.motivation} onChange={v => set('motivation', v)} options={[['', 'Não informada'], ['mudanca_urgente', 'Mudança urgente'], ['primeira_moradia', 'Primeira moradia'], ['investimento', 'Investimento'], ['apenas_pesquisando', 'Apenas pesquisando']]} /><Field label="Origem" value={form.source} onChange={v => set('source', v)} /><label className="lead-checkbox"><input type="checkbox" checked={form.returning_client} onChange={e => set('returning_client', e.target.checked)} /> Cliente recorrente ou indicado</label><div className="form-group lead-notes"><label>Observações</label><textarea value={form.notes} onChange={e => set('notes', e.target.value)} /></div><button className="landing-btn-primary" disabled={saving}>{saving ? 'Salvando…' : 'Salvar e calcular score'}</button></form></section>}
+    <div className="filters-bar"><div className="filter-group"><span className="filter-group-label">Chance de conversão</span><div className="chip-row">{[['all', 'Todos'], ['Alta chance', 'Alta'], ['Media chance', 'Média'], ['Baixa chance', 'Baixa']].map(([id, label]) => <button key={id} className={`chip ${filter === id ? 'active' : ''}`} onClick={() => setFilter(id)}>{label}</button>)}</div></div></div>
+    {loading && <div className="loading"><div className="loading-spinner" />Carregando leads…</div>}
+    {!loading && visible.length === 0 && <div className="empty-state"><h3>Nenhum lead neste filtro</h3><p>Cadastre um contato para começar a priorizar os atendimentos.</p></div>}
+    <div className="card-grid">{visible.map(lead => <article key={lead.id} className="opp-card"><div className="opp-card-header"><div><div className="opp-zona">{lead.name}</div><div className="opp-cell-id">{lead.zone || 'Região não informada'} · {lead.property_type}</div></div><span className="badge" style={labelStyle(lead.label)}>{lead.label}</span></div><div className="score-row"><span className="score-row-label">Chance de conversão</span><div className="score-track"><div className="score-fill" style={{ width: `${lead.score}%`, background: lead.score >= 70 ? '#15803D' : lead.score >= 40 ? '#D97706' : '#A8A29E' }} /></div><span className="score-num">{lead.score.toFixed(0)}</span></div><div className="opp-uses"><div className="use-row"><span className="use-label">Orçamento</span><strong>{money(lead.budget)}</strong></div><div className="use-row"><span className="use-label">Prazo</span><strong>{lead.timeline.replaceAll('_', ' ')}</strong></div></div><div className="lead-actions"><select aria-label={`Status de ${lead.name}`} value={lead.status} onChange={e => changeStatus(lead, e.target.value)}>{STATUS.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select><button className="opp-details-toggle" onClick={() => setExpanded(expanded === lead.id ? null : lead.id)}>{expanded === lead.id ? 'Ocultar critérios' : 'Ver critérios'}</button></div>{expanded === lead.id && <div className="explain-list">{lead.explain.map(item => <div key={item.label}><span>{item.label}</span><strong>{item.value}</strong></div>)}</div>}</article>)}</div>
+  </div>
 }
+
+function Field({ label, onChange, ...props }) { return <div className="form-group"><label>{label}</label><input {...props} onChange={e => onChange(e.target.value)} /></div> }
+function Select({ label, value, onChange, options }) { return <div className="form-group"><label>{label}</label><select value={value} onChange={e => onChange(e.target.value)}>{options.map(([id, text]) => <option key={id} value={id}>{text}</option>)}</select></div> }

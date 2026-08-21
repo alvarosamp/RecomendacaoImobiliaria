@@ -82,6 +82,11 @@ def main() -> None:
     sentinel_parser.add_argument("--output", default="data/sentinel2_indices.csv")
     sentinel_parser.add_argument("--max-cloud", type=float, default=30.0, help="Cobertura de nuvens maxima %%.")
 
+    sentinel_sync_parser = subparsers.add_parser("sync-sentinel2", help="Coleta e importa uma série temporal mensal do Sentinel-2.")
+    sentinel_sync_parser.add_argument("--months", type=int, default=6)
+    sentinel_sync_parser.add_argument("--output", default="data/sentinel2_indices.csv")
+    sentinel_sync_parser.add_argument("--max-cloud", type=float, default=30.0)
+
     # --- anuncios reais via API ---
     ml_api_parser = subparsers.add_parser(
         "fetch-listings-ml",
@@ -100,6 +105,22 @@ def main() -> None:
     normalize_parser = subparsers.add_parser("normalize-listings", help="Normaliza CSV de portal para formato padrao.")
     normalize_parser.add_argument("--csv", required=True, help="CSV bruto de qualquer portal.")
     normalize_parser.add_argument("--output", default=None, help="CSV de saida (padrao: mesmo nome + _normalized).")
+
+    listings_sync_parser = subparsers.add_parser("import-listings", help="Normaliza e persiste anúncios reais no PostGIS.")
+    listings_sync_parser.add_argument("--csv", required=True)
+    listings_sync_parser.add_argument("--source", default="portal_csv")
+    listings_refresh_parser = subparsers.add_parser("sync-listings", help="Atualiza e persiste anúncios reais de mercado.")
+    listings_refresh_parser.add_argument("--query", default="Pouso Alegre MG")
+
+    neighborhoods_parser = subparsers.add_parser("import-neighborhoods", help="Importa polígonos oficiais de bairros e vincula o grid H3.")
+    neighborhoods_parser.add_argument("--file", default=None)
+    neighborhoods_parser.add_argument("--municipality", default="Pouso Alegre")
+    neighborhoods_parser.add_argument("--municipality-code", default="3152501")
+    neighborhoods_parser.add_argument("--source", default="oficial")
+
+    calibration_parser = subparsers.add_parser("calibrate-priorities", help="Recalibra faixas de prioridade pela distribuição atual dos scores.")
+    calibration_parser.add_argument("--apply", action="store_true")
+    subparsers.add_parser("sync-official-layers", help="Importa bairros e zoneamento oficiais quando disponíveis.")
 
     subparsers.add_parser(
         "gen-listings",
@@ -266,6 +287,34 @@ def main() -> None:
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 
+    if args.command == "import-listings":
+        from .market_data import import_listings_csv
+        print(json.dumps(import_listings_csv(args.csv, source_name=args.source), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "sync-listings":
+        from .market_data import sync_listings
+        print(json.dumps(sync_listings(args.query), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "import-neighborhoods":
+        from .neighborhood_import import default_neighborhood_file, import_neighborhoods
+        path = args.file or default_neighborhood_file()
+        result = import_neighborhoods(path, municipality=args.municipality,
+                                      municipality_code=args.municipality_code, source_name=args.source)
+        print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "calibrate-priorities":
+        from .calibration import calibrate_priorities
+        print(json.dumps(calibrate_priorities(apply=args.apply), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "sync-official-layers":
+        from .official_sync import sync_official_layers
+        print(json.dumps(sync_official_layers(), ensure_ascii=False, indent=2))
+        return
+
     if args.command == "gen-listings":
         from .listings_import import generate_realistic_listings
         path = generate_realistic_listings()
@@ -281,6 +330,20 @@ def main() -> None:
         from .official_sources import validate_official_data
         result = validate_official_data()
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "sync-sentinel2":
+        try:
+            from .data_registry import record_data_source
+            from .remote_sensing import import_indices_csv
+            from .satellite_collector import collect_time_series_for_grid
+        except ModuleNotFoundError as exc:
+            _raise_missing_dependency(exc)
+        result = collect_time_series_for_grid(args.months, args.output, args.max_cloud)
+        imported = import_indices_csv(args.output) if result.rows_written else None
+        record_data_source("sentinel2", "planetary_computer", source_uri=args.output, row_count=result.rows_written,
+                           details={"months": args.months, "scenes_processed": result.scenes_processed, "errors": result.errors})
+        print(json.dumps({"collection": result.__dict__, "import": imported.__dict__ if imported else None}, ensure_ascii=False, indent=2))
         return
 
     if args.command == "healthcheck":

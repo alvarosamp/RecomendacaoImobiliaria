@@ -26,6 +26,8 @@ engine = create_engine(settings.database_url, future=True, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+PROFILE_IDS = {"investidor", "corretor", "incorporadora", "governo"}
+
 # --- DB Models ---
 class User(Base):
     __tablename__ = "users"
@@ -48,6 +50,12 @@ class UserCreate(BaseModel):
     name: str
     email: str
     password: str
+    # Mantem compatibilidade com integracoes e contas legadas que ainda nao
+    # enviam o perfil; o frontend, por sua vez, exige a escolha explicita.
+    profile: str = "investidor"
+
+class UserProfileUpdate(BaseModel):
+    profile: str
 
 class UserLogin(BaseModel):
     email: str
@@ -115,8 +123,12 @@ def register(user_data: UserCreate, db = Depends(get_db)):
     if existing_user:
         raise HTTPException(status_code=400, detail="Email ja cadastrado")
     
+    if user_data.profile not in PROFILE_IDS:
+        raise HTTPException(status_code=422, detail="Perfil de acesso invalido")
+
     hashed_pw = get_password_hash(user_data.password)
-    db_user = User(name=user_data.name, email=user_data.email, password_hash=hashed_pw)
+    # O campo role tambem representa o perfil de uso nesta primeira versao.
+    db_user = User(name=user_data.name, email=user_data.email, password_hash=hashed_pw, role=user_data.profile)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -139,4 +151,15 @@ def login(user_data: UserLogin, db = Depends(get_db)):
 
 @router.get("/auth/me", response_model=UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.patch("/auth/me/profile", response_model=UserResponse)
+def update_my_profile(profile_data: UserProfileUpdate, current_user: User = Depends(get_current_user), db = Depends(get_db)):
+    if profile_data.profile not in PROFILE_IDS:
+        raise HTTPException(status_code=422, detail="Perfil de acesso invalido")
+
+    current_user.role = profile_data.profile
+    db.commit()
+    db.refresh(current_user)
     return current_user

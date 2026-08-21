@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from dataclasses import dataclass
 
 import pandas as pd
@@ -50,11 +51,21 @@ def _profile_row(row: dict[str, object]) -> OpportunityProfile:
 def _priority(score: float, risk: str) -> str:
     if risk == "alto":
         return "investigar"
-    if score >= 70:
+    thresholds = _priority_thresholds()
+    if score >= thresholds["high"]:
         return "alta"
-    if score >= 50:
+    if score >= thresholds["medium"]:
         return "media"
     return "baixa"
+
+
+def _priority_thresholds() -> dict[str, float]:
+    try:
+        raw = json.loads((Path("config") / "scoring_weights.json").read_text(encoding="utf-8"))
+        values = raw.get("priority_thresholds", {})
+        return {"high": float(values.get("high", 70)), "medium": float(values.get("medium", 50))}
+    except (OSError, ValueError, json.JSONDecodeError):
+        return {"high": 70.0, "medium": 50.0}
 
 
 def _risk_level(row: dict[str, object]) -> str:

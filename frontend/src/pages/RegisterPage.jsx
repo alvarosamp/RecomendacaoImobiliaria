@@ -24,7 +24,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
-      await register(name, email, password);
+      await register(name, email, password, profile);
       navigate('/app');
     } catch (err) {
       setError(err.response?.data?.detail || 'Erro ao criar conta. Tente novamente.');
@@ -154,7 +154,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               className="auth-btn"
-              disabled={loading}
+              disabled={loading || !profile}
               style={{ marginTop: 4 }}
             >
               {loading ? 'Criando conta…' : 'Solicitar acesso'}

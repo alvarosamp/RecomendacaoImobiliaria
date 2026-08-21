@@ -1,13 +1,50 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
+from pathlib import Path
 
+import numpy as np
 import pandas as pd
 from sqlalchemy import text
 
 from .config import Settings, load_settings
 from .db import db_engine
 from .decision import enrich_opportunities
+
+
+@lru_cache(maxsize=1)
+def _neighborhood_references() -> pd.DataFrame:
+    """Centros de bairros obtidos da base local de anúncios.
+
+    Enquanto a camada oficial de bairros não estiver no PostGIS, este é um
+    enriquecimento explícito de referência — não uma delimitação oficial.
+    """
+    path = Path(__file__).resolve().parents[2] / "data" / "pouso_alegre_listings.csv"
+    frame = pd.read_csv(path, usecols=["neighborhood", "lat", "lon"])
+    frame = frame.dropna(subset=["neighborhood", "lat", "lon"])
+    return frame.reset_index(drop=True)
+
+
+def _add_reference_neighborhoods(frame: pd.DataFrame) -> pd.DataFrame:
+    if frame.empty or not {"latitude", "longitude"}.issubset(frame.columns):
+        return frame
+    references = _neighborhood_references()
+    if references.empty:
+        return frame
+
+    targets = frame[["latitude", "longitude"]].to_numpy(dtype=float)
+    points = references[["lat", "lon"]].to_numpy(dtype=float)
+    # Latitude/longitude estão na mesma cidade: a menor distância quadrática
+    # é suficiente para escolher o bairro de referência mais próximo.
+    distances = ((targets[:, None, :] - points[None, :, :]) ** 2).sum(axis=2)
+    closest = distances.argmin(axis=1)
+    enriched = frame.copy()
+    existing = enriched.get("neighborhood", pd.Series(index=enriched.index, dtype=object))
+    missing = existing.isna() | (existing.astype(str).str.strip() == "")
+    enriched.loc[missing, "neighborhood"] = references.iloc[closest[missing.to_numpy()]]["neighborhood"].to_numpy()
+    enriched["neighborhood_source"] = enriched.get("neighborhood_source", pd.Series(index=enriched.index, dtype=object)).fillna("referência por anúncios próximos")
+    return enriched
 
 
 def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
@@ -32,6 +69,8 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.dist_min_school_m,
             f.dist_min_hospital_m,
             f.dist_min_park_m,
+            f.neighborhood,
+            f.neighborhood_source,
             ST_Y(ST_Centroid(g.geom)) AS latitude,
             ST_X(ST_Centroid(g.geom)) AS longitude
         FROM geo.scores s
@@ -44,7 +83,7 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
     """
     with db_engine(settings) as engine:
         frame = pd.read_sql(text(query), engine)
-    return enrich_opportunities(frame)
+    return _add_reference_neighborhoods(enrich_opportunities(frame))
 
 
 def explain_to_text(value) -> str:

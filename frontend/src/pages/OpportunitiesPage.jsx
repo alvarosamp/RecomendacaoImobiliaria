@@ -45,20 +45,10 @@ function GrowthTag({ signal }) {
   )
 }
 
-const BAIRROS_POUSO_ALEGRE = [
-  'Centro', 'Fátima', 'São João', 'Árvore Grande', 'Faisqueira', 'Primavera',
-  'Santa Rita', 'São Cristóvão', 'Belo Horizonte', 'Nova Pouso Alegre', 'Pão de Açúcar'
-]
-
-function getNeighborhood(h3Id) {
-  if (!h3Id) return 'Bairro Central'
-  // Deterministic hash based on h3Id string
-  let hash = 0;
-  for (let i = 0; i < h3Id.length; i++) {
-    hash = h3Id.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % BAIRROS_POUSO_ALEGRE.length;
-  return BAIRROS_POUSO_ALEGRE[index];
+function distanceLabel(value) {
+  const meters = Number(value)
+  if (!Number.isFinite(meters)) return 'sem dado'
+  return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`
 }
 
 function OppCard({ row, onOpenConcept }) {
@@ -68,7 +58,7 @@ function OppCard({ row, onOpenConcept }) {
   const pCfg  = PRIORITY_CONFIG[row.priority]
   const rCfg  = RISK_CONFIG[row.risk_level]
 
-  const bairroName = getNeighborhood(row.h3_id)
+  const bairroName = row.neighborhood || 'Região em análise'
 
   return (
     <div className={`opp-card priority-${row.priority || 'baixa'}`}>
@@ -76,7 +66,7 @@ function OppCard({ row, onOpenConcept }) {
       <div className="opp-card-header">
         <div>
           <div className="opp-zona">{bairroName}</div>
-          <div className="opp-cell-id">Zona: {row.zona || 'Indefinida'} • {row.h3_id?.slice(0,8)}...</div>
+          <div className="opp-cell-id">Bairro de referência • Zona {row.zona || 'não identificada'}</div>
         </div>
         <div className="opp-badges">
           {row.priority && pCfg && (
@@ -96,6 +86,13 @@ function OppCard({ row, onOpenConcept }) {
       <div className="score-bars">
         <ScoreBar label="Residencial" value={row.score_residencial} color="#1B2A4A" />
         <ScoreBar label="Comercial"   value={row.score_comercial}   color="#C9A84C" />
+      </div>
+
+      <div className="opp-context-grid">
+        <div><span>Farmácia</span><strong>{distanceLabel(row.dist_min_pharmacy_m)}</strong></div>
+        <div><span>Mercado</span><strong>{distanceLabel(row.dist_min_supermarket_m)}</strong></div>
+        <div><span>Escola</span><strong>{distanceLabel(row.dist_min_school_m)}</strong></div>
+        <div><span>Hospitais</span><strong>{row.poi_hospital_cnt ?? 0} no entorno</strong></div>
       </div>
 
       {/* Main use recommendation */}

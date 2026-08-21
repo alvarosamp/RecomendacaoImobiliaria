@@ -76,10 +76,12 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
     from sqlalchemy import text
 
     from .config import load_settings
+    from .data_registry import ensure_data_schema, record_data_source
     from .db import make_engine
 
     if settings is None:
         settings = load_settings()
+    ensure_data_schema(settings)
 
     path = _prepare_zoning_path(Path(filepath))
     if not path.exists():
@@ -168,6 +170,15 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
         ).scalar()
 
     eng.dispose()
+
+    record_data_source(
+        "zoning",
+        "official_zoning",
+        source_uri=str(path),
+        row_count=len(gdf),
+        details={"cells_assigned": int(cells_assigned or 0), "unmatched_cells": int(unmatched or 0)},
+        settings=settings,
+    )
 
     return ZoningImportResult(
         zones_imported=len(gdf),

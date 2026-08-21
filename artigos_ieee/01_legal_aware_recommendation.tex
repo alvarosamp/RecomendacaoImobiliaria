@@ -1,0 +1,63 @@
+\documentclass[conference]{IEEEtran}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\title{Legal-Aware and Explainable Spatial Recommendation for Urban Real-Estate Opportunities}
+\author{\IEEEauthorblockN{Alvaro Careli}\IEEEauthorblockA{Independent Researcher\\Brazil}}
+\begin{document}
+\maketitle
+\begin{abstract}
+Spatial recommender systems for real-estate investment often rank locations from market and urban signals while treating land-use regulation as an after-the-fact warning. This paper presents a legal-aware, explainable recommendation architecture in which regulatory compatibility is a hard eligibility constraint or an explicit score modifier. The architecture joins a hierarchical H3 grid, points of interest (POIs), Sentinel-2-derived indicators, and municipal planning rules. A preliminary deployment for Pouso Alegre, Brazil, processed 711 H3 cells, 22 planning zones, and 609 POIs. Rather than claiming predictive superiority before a labelled evaluation is available, the paper contributes a reproducible formulation, an auditable decision trace, and an evaluation protocol for measuring avoided legally infeasible recommendations. The design is applicable where transparent, reviewable decision support is required.
+\end{abstract}
+\begin{IEEEkeywords}spatial recommendation, urban planning, explainable AI, H3, land-use regulation, real estate\end{IEEEkeywords}
+
+\section{Introduction}
+Location decisions for housing and local commerce combine market demand, accessibility, environmental conditions, and regulation. These sources are heterogeneous and frequently separated across maps, listings, planning documents, and local knowledge. A purely data-driven rank can therefore identify a commercially attractive location whose intended use is prohibited or conditional. That failure is consequential: it obscures uncertainty and can turn a decision-support tool into a source of avoidable risk.
+
+This work proposes that legal compatibility should precede ranking. We implement this principle as a spatial decision pipeline that represents the territory with H3 cells, a hierarchical hexagonal grid suited to joining heterogeneous geographies \cite{h3}. The pipeline aggregates POI availability and accessibility, remote-sensing indicators, zoning, and planning status. It returns both residential and commercial scores together with their contributions, allowed/conditioned/blocked status, and human-readable factors.
+
+The contributions are: (i) a legal-aware formulation that distinguishes exclusion, conditioning, and ordinary ranking; (ii) an explainable data model for each spatial unit; and (iii) a preliminary real-city case study plus a falsifiable evaluation protocol. The present study is intentionally a systems and methodology paper: the available case-study outputs demonstrate operational integration, not a claim of causal investment performance.
+
+\section{Related Work}
+H3 provides a global, hierarchical hexagonal index that supports aggregation and neighbourhood operations across disparate spatial layers \cite{h3}. OpenStreetMap is a useful source of urban POIs, but its local completeness must be assessed because volunteered geographic information varies by place and feature type \cite{haklay2010osm}. Sentinel-2 offers multispectral observations at 10--60 m resolution \cite{esaS2}, enabling temporal indicators associated with vegetation and built-up land. NDVI \cite{rouse1974monitoring} and NDBI \cite{zha2003ndbi} are common compact representations of these signals.
+
+Explainability is commonly discussed as a post-hoc model property \cite{lundberg2017shap}. In contrast, the proposed system makes traceability structural: a recommendation carries its sources, regulatory decision, score contributions, and confidence. This is particularly important when a municipal plan is part of the decision basis.
+
+\section{Method}
+\subsection{Spatial feature model}
+For each H3 cell $c$, the feature vector contains: zone $z_c$; mean and temporal slopes of NDVI and NDBI; counts and minimum distances for supermarkets, pharmacies, and schools; and planning attributes for residential and commercial use. Accessibility is represented by an inverse distance score,
+\begin{equation}
+A(d,t)=\max(0,1-d/t),
+\end{equation}
+where $d$ is the minimum distance and $t$ is an application-defined target. Service shortage is $G(n,q)=\max(0,(q-n)/q)$, where $n$ is the observed count and $q$ a target count.
+
+The urban-growth signal combines NDBI growth, NDVI loss, and the current built-up level. Residential and commercial raw scores are weighted combinations of environmental quality, mixed accessibility, growth, and commercial shortage. The weights are external configuration rather than hidden model parameters, making scenario analysis possible.
+
+\subsection{Legal gate and explanation}
+For use $u\in\{r,c\}$, the final score is
+\begin{equation}
+S_u(c)=I_u(c)\,m_u(c)\,S^{raw}_u(c),
+\end{equation}
+where $I_u(c)$ is zero for prohibited use and one otherwise, and $m_u(c)$ is a planning multiplier. A conditioned use may receive $0<m_u(c)<1$; a prohibited use receives zero. The response stores zone, status, multiplier, legal notes, positive and negative factors, and each weighted contribution. Thus, a planner can inspect whether a result is driven by shortage, access, growth, or a regulatory condition.
+
+\section{Case Study}
+The prototype was applied to Pouso Alegre, Minas Gerais, Brazil. The municipal plan is the governing territorial instrument \cite{pousoalegre2021}. The operational snapshot processed 711 cells at H3 resolution 8, 22 loaded zoning classes, and 609 POIs. Sentinel-2 indices were available at two dates, 2025-03-01 and 2025-05-20. This short series supports pipeline verification only; it does not support strong claims about urban trends.
+
+The snapshot produced 27 medium-priority cells and no high-priority cells. It also exposed a material data-quality result: 311 of 711 cells had no zone assigned. The system therefore reports elevated uncertainty rather than treating missing legal coverage as permission. This behaviour is a central design outcome, not an error to conceal.
+
+\section{Evaluation Protocol}
+The principal evaluation asks whether the legal gate improves feasibility without unduly discarding viable candidates. Build a reference set by geocoding historic approved, denied, and conditioned development requests, then compare: (B1) a score without planning inputs; (B2) a score with planning inputs as ordinary features; and (P) the proposed gate. Report legal-infeasibility rate among top-$k$, precision for allowed uses, coverage, and the fraction of candidates sent to manual review. Stratify all metrics by zoning coverage.
+
+For explanation quality, ask domain experts to answer which evidence and rule led to each of a sampled set of recommendations. Measure agreement between the supplied trace and the reviewer decision. For robustness, vary score weights and POI completeness, then report rank correlation and changes in top-$k$. Results must include confidence intervals and a held-out temporal or spatial split when labels permit it.
+
+\section{Limitations and Ethics}
+The prototype does not replace an urbanistic or legal opinion. Zoning ingestion and legal-rule extraction must be verified against authoritative, current annexes. POI data, listings, and satellite observations may be incomplete or temporally misaligned. The system should disclose source dates, coverage, and uncertainty; it should not infer resident characteristics or use protected attributes to rank areas.
+
+\section{Conclusion}
+We presented a legal-aware spatial recommendation architecture that makes regulatory compatibility a first-class decision step. The case study establishes end-to-end feasibility with real spatial layers. A publication-ready empirical extension should execute the proposed labelled evaluation and report its results. This disciplined separation between implemented capability and unverified performance supports a credible path toward auditable urban decision support.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

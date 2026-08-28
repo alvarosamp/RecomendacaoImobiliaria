@@ -43,6 +43,9 @@ class AreaFeatures:
     residential_plan_multiplier: float = 1.0
     commercial_plan_multiplier: float = 1.0
     legal_notes: str | None = None
+    legal_articles: tuple[str, ...] = ()
+    legal_parameters: dict[str, object] = field(default_factory=dict)
+    legal_sources: tuple[dict[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -139,6 +142,9 @@ def score_area(features: AreaFeatures, config: ScoringConfig | None = None) -> S
             "residential_plan_status": features.residential_plan_status,
             "commercial_plan_status": features.commercial_plan_status,
             "legal_notes": features.legal_notes,
+            "legal_articles": list(features.legal_articles),
+            "legal_parameters": features.legal_parameters,
+            "legal_sources": list(features.legal_sources),
         },
         "main_recommendations": recommend_uses(
             supermarket_gap=supermarket_gap,

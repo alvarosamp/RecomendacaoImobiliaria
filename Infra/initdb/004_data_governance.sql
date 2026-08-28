@@ -11,5 +11,14 @@ CREATE TABLE IF NOT EXISTS ops.data_sources (
   collected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   row_count INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'ok',
-  details JSONB NOT NULL DEFAULT '{}'::jsonb
+  details JSONB NOT NULL DEFAULT '{}'::jsonb,
+  checksum_sha256 TEXT,
+  license_name TEXT,
+  schema_version TEXT,
+  legal_basis TEXT
 );
+
+ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS checksum_sha256 TEXT;
+ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS license_name TEXT;
+ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS schema_version TEXT;
+ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS legal_basis TEXT;

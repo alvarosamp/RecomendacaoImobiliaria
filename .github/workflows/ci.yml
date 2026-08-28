@@ -26,7 +26,6 @@ jobs:
 
       - name: Run ruff
         run: ruff check src/ api/ tests/ --select E,F,W --ignore E501,W503
-        continue-on-error: true
 
   # ─────────────────────────────────────────────
   # 2. Unit tests — sem banco de dados
@@ -101,7 +100,7 @@ jobs:
           sed -i 's/^MLFLOW_TRACKING_URI=.*/MLFLOW_TRACKING_URI=http:\/\/mlflow:5000/' .env
 
       - name: Build API image
-        run: docker build -f api/Dockerfile -t imobiliaria-api:ci .
+        run: docker build -f Dockerfile -t imobiliaria-api:ci .
 
       - name: Build Frontend image
         run: docker build -f frontend/Dockerfile -t imobiliaria-frontend:ci ./frontend

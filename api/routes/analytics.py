@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from functools import lru_cache
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
 
 router = APIRouter()
@@ -284,6 +284,53 @@ def zoning_geojson():
         if row["geometry"]
     ]
     return JSONResponse({"type": "FeatureCollection", "features": features})
+
+
+@router.get("/analytics/risk-susceptibility")
+def risk_susceptibility(limit: int = Query(100, ge=1, le=711)):
+    """Alertas analiticos por H3; nao representam mapa oficial de risco."""
+    from sqlalchemy import text
+    from recomendacao_imobiliaria.config import load_settings
+    from recomendacao_imobiliaria.db import make_engine
+
+    engine = make_engine(load_settings())
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT h3_id, susceptibility_score, alert_level, confidence, components, evidence, calculated_at
+                FROM geo.risk_signals
+                ORDER BY susceptibility_score DESC
+                LIMIT :limit
+            """), {"limit": limit}).mappings().all()
+    finally:
+        engine.dispose()
+    return {
+        "disclaimer": "Suscetibilidade analitica baseada nas camadas disponiveis; nao substitui mapa oficial ou laudo tecnico.",
+        "signals": [dict(row) for row in rows],
+    }
+
+
+@router.get("/analytics/official-susceptibility-geojson")
+def official_susceptibility_geojson():
+    """Carta oficial SGB/CPRM, distinta dos alertas analiticos do produto."""
+    from sqlalchemy import text
+    from recomendacao_imobiliaria.config import load_settings
+    from recomendacao_imobiliaria.db import make_engine
+
+    engine = make_engine(load_settings())
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT process_type, susceptibility_class, reference_year, source_name,
+                       ST_AsGeoJSON(geom)::json AS geometry
+                FROM geo.official_susceptibility
+            """)).mappings().all()
+    finally:
+        engine.dispose()
+    return JSONResponse({"type": "FeatureCollection", "source": "SGB/CPRM", "features": [
+        {"type": "Feature", "properties": {k: row[k] for k in ("process_type", "susceptibility_class", "reference_year", "source_name")}, "geometry": row["geometry"]}
+        for row in rows if row["geometry"]
+    ]})
 
 
 @router.get("/analytics/pois-geojson")

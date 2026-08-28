@@ -87,6 +87,20 @@ def main() -> None:
     sentinel_sync_parser.add_argument("--output", default="data/sentinel2_indices.csv")
     sentinel_sync_parser.add_argument("--max-cloud", type=float, default=30.0)
 
+    risk_input_parser = subparsers.add_parser("import-risk-inputs", help="Importa relevo, drenagem e recorrencia de agua SAR por H3.")
+    risk_input_parser.add_argument("--csv", required=True, help="CSV com h3_id e colunas opcionais slope_pct, drainage_distance_m, water_observation_rate.")
+    risk_input_parser.add_argument("--source", default="external", help="Fonte tecnica dos dados importados.")
+    subparsers.add_parser("calculate-risk-signals", help="Calcula alerta de suscetibilidade territorial por H3.")
+    dem_parser = subparsers.add_parser("collect-dem-slope", help="Coleta Copernicus DEM e gera declividade aproximada por H3.")
+    dem_parser.add_argument("--output", default="data/risk_dem_inputs.csv")
+    sar_parser = subparsers.add_parser("collect-sentinel1-water", help="Coleta Sentinel-1 RTC e estima recorrencia de agua por H3.")
+    sar_parser.add_argument("--months", type=int, default=12)
+    sar_parser.add_argument("--output", default="data/risk_sentinel1_inputs.csv")
+    subparsers.add_parser("sync-hydrology", help="Busca hidrografia OSM e calcula distancia de drenagem por H3.")
+    subparsers.add_parser("sync-official-susceptibility", help="Importa cartas oficiais de suscetibilidade do SGB/CPRM.")
+    land_cover_parser = subparsers.add_parser("collect-land-cover", help="Amostra cobertura do solo MapBiomas por celula H3.")
+    land_cover_parser.add_argument("--year", type=int, default=2024)
+
     # --- anuncios reais via API ---
     ml_api_parser = subparsers.add_parser(
         "fetch-listings-ml",
@@ -344,6 +358,46 @@ def main() -> None:
         record_data_source("sentinel2", "planetary_computer", source_uri=args.output, row_count=result.rows_written,
                            details={"months": args.months, "scenes_processed": result.scenes_processed, "errors": result.errors})
         print(json.dumps({"collection": result.__dict__, "import": imported.__dict__ if imported else None}, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "import-risk-inputs":
+        from .risk_susceptibility import import_risk_inputs_csv
+        count = import_risk_inputs_csv(args.csv, source_name=args.source)
+        print(f"Inputs de risco importados para {count} celulas H3.")
+        return
+
+    if args.command == "calculate-risk-signals":
+        from .risk_susceptibility import calculate_risk_signals
+        count = calculate_risk_signals()
+        print(f"Sinais de suscetibilidade calculados para {count} celulas H3.")
+        return
+
+    if args.command == "collect-dem-slope":
+        from .terrain_collector import collect_dem_slope_for_grid
+        path = collect_dem_slope_for_grid(args.output)
+        print(f"Declividade DEM exportada em {path}. Importe com: imobiliaria import-risk-inputs --csv {path} --source cop_dem_glo_30")
+        return
+
+    if args.command == "collect-sentinel1-water":
+        from .sentinel1_collector import collect_water_recurrence_for_grid
+        path = collect_water_recurrence_for_grid(args.output, months=args.months)
+        print(f"Recorrencia SAR exportada em {path}. Importe com: imobiliaria import-risk-inputs --csv {path} --source sentinel1_rtc")
+        return
+
+    if args.command == "sync-hydrology":
+        from .hydrology import fetch_osm_hydrology, update_drainage_distances
+        print(json.dumps({"features": fetch_osm_hydrology(), "cells": update_drainage_distances()}, ensure_ascii=False))
+        return
+
+    if args.command == "sync-official-susceptibility":
+        from .official_susceptibility import sync_sgb_susceptibility
+        count = sync_sgb_susceptibility()
+        print(f"Feicoes oficiais de suscetibilidade importadas: {count}.")
+        return
+
+    if args.command == "collect-land-cover":
+        from .land_cover import collect_mapbiomas_land_cover
+        print(f"Cobertura do solo atualizada para {collect_mapbiomas_land_cover(args.year)} celulas H3.")
         return
 
     if args.command == "healthcheck":

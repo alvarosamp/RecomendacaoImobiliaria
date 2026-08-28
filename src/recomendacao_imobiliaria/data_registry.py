@@ -66,9 +66,17 @@ def ensure_data_schema(settings: Settings | None = None) -> None:
                     collected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
                     row_count INTEGER NOT NULL DEFAULT 0,
                     status TEXT NOT NULL DEFAULT 'ok',
-                    details JSONB NOT NULL DEFAULT '{}'::jsonb
+                    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+                    checksum_sha256 TEXT,
+                    license_name TEXT,
+                    schema_version TEXT,
+                    legal_basis TEXT
                 )
             """))
+            conn.execute(text("ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS checksum_sha256 TEXT"))
+            conn.execute(text("ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS license_name TEXT"))
+            conn.execute(text("ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS schema_version TEXT"))
+            conn.execute(text("ALTER TABLE ops.data_sources ADD COLUMN IF NOT EXISTS legal_basis TEXT"))
     finally:
         engine.dispose()
 
@@ -82,6 +90,10 @@ def record_data_source(
     row_count: int = 0,
     status: str = "ok",
     details: dict[str, object] | None = None,
+    checksum_sha256: str | None = None,
+    license_name: str | None = None,
+    schema_version: str | None = None,
+    legal_basis: str | None = None,
     settings: Settings | None = None,
 ) -> None:
     ensure_data_schema(settings)
@@ -91,14 +103,20 @@ def record_data_source(
             conn.execute(
                 text("""
                     INSERT INTO ops.data_sources
-                    (dataset, source_name, source_uri, reference_date, row_count, status, details)
+                    (dataset, source_name, source_uri, reference_date, row_count, status, details,
+                     checksum_sha256, license_name, schema_version, legal_basis)
                     VALUES (:dataset, :source_name, :source_uri, :reference_date, :row_count, :status,
-                            CAST(:details AS jsonb))
+                            CAST(:details AS jsonb), :checksum_sha256, :license_name,
+                            :schema_version, :legal_basis)
                 """),
                 {
                     "dataset": dataset, "source_name": source_name, "source_uri": source_uri,
                     "reference_date": reference_date, "row_count": row_count, "status": status,
                     "details": json.dumps(details or {}, ensure_ascii=False),
+                    "checksum_sha256": checksum_sha256,
+                    "license_name": license_name,
+                    "schema_version": schema_version,
+                    "legal_basis": legal_basis,
                 },
             )
     finally:

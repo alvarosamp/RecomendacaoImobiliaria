@@ -61,6 +61,8 @@ class ConceptInput(BaseModel):
     residentialScore: float | None = None
     commercialScore: float | None = None
     riskLevel: str | None = None
+    riskConfidence: float | None = None
+    riskAlert: str | None = None
     growthSignal: float | None = None
     predictedMarketPrice: float | None = None
     exteriorImage: str | None = None
@@ -96,6 +98,18 @@ def _liquidity_factor(data: ConceptInput) -> float:
     elif growth < -0.001:
         factor -= 0.05
     return max(0.72, min(1.28, factor))
+
+
+def _risk_adjustment(data: ConceptInput) -> dict[str, object]:
+    level = (data.riskAlert or data.riskLevel or "baixo").lower()
+    confidence = float(data.riskConfidence or (0.7 if level in {"alto", "medio"} else 0.0))
+    if confidence < 0.45 or level in {"em_observacao", "dados_insuficientes"}:
+        return {"factor": 1.0, "label": "sem penalidade", "reason": "Evidencia territorial insuficiente para ajuste financeiro."}
+    if level == "alto":
+        return {"factor": 0.82, "label": "alerta alto", "reason": "Reducao por suscetibilidade territorial com confianca suficiente."}
+    if level == "medio":
+        return {"factor": 0.92, "label": "alerta medio", "reason": "Reducao preventiva para validacao tecnica complementar."}
+    return {"factor": 1.0, "label": "alerta baixo", "reason": "Sem penalidade adicional de risco territorial."}
 
 
 def _market_price_estimate(data: ConceptInput, build_area: float, total_cost: float) -> float:
@@ -170,8 +184,9 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
     potential = ((data.residentialScore or 55) * 0.55) + ((data.commercialScore or 45) * 0.35)
     if data.riskLevel == "alto":
         potential *= 0.82
-    viability = max(0, min(100, (potential * 0.72) + ((100 - min(100, occupancy)) * 0.18) + 10))
-    sale_value = _market_price_estimate(data, build_area, total)
+    risk_adjustment = _risk_adjustment(data)
+    viability = max(0, min(100, ((potential * 0.72) + ((100 - min(100, occupancy)) * 0.18) + 10) * float(risk_adjustment["factor"])))
+    sale_value = _market_price_estimate(data, build_area, total) * float(risk_adjustment["factor"])
     liquidity = _liquidity_factor(data)
     monthly_rent = sale_value * (0.0042 + (data.commercialScore or 0) / 100 * 0.0022) * liquidity
     gross_margin = (sale_value - total) / max(total, 1)
@@ -190,6 +205,7 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
         "paybackYears": round(total / max(monthly_rent * 12, 1), 1),
         "liquidityFactor": round(liquidity, 2),
         "grossMargin": round(gross_margin * 100, 1),
+        "riskAdjustment": risk_adjustment,
         "schedule": [
             {"label": "Estudo e anteprojeto", "weeks": "2-4 semanas"},
             {"label": "Projetos e aprovacoes", "weeks": "6-10 semanas"},

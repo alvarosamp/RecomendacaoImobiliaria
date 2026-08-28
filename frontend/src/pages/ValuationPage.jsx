@@ -1,19 +1,22 @@
 import { useState } from 'react'
-import { predictPrice } from '../api'
+import { compareMarket, predictPrice } from '../api'
 
 const PROPERTY_TYPES = [['apartamento', 'Apartamento'], ['casa', 'Casa'], ['comercial', 'Comercial'], ['terreno', 'Terreno']]
 const money = value => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 
 export default function ValuationPage() {
-  const [form, setForm] = useState({ reference: '', area_m2: '', bedrooms: 2, bathrooms: 1, parking_spaces: 1, property_type: 'apartamento', latitude: '', longitude: '' })
+  const [form, setForm] = useState({ reference: '', asking_price: '', area_m2: '', bedrooms: 2, bathrooms: 1, parking_spaces: 1, property_type: 'apartamento', latitude: '', longitude: '' })
   const [result, setResult] = useState(null)
+  const [market, setMarket] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const set = (field, value) => setForm(current => ({ ...current, [field]: value }))
   const handleSubmit = async event => {
-    event.preventDefault(); setLoading(true); setError(null); setResult(null)
+    event.preventDefault(); setLoading(true); setError(null); setResult(null); setMarket(null)
     try {
-      setResult(await predictPrice({ ...form, area_m2: Number(form.area_m2), bedrooms: Number(form.bedrooms), bathrooms: Number(form.bathrooms), parking_spaces: Number(form.parking_spaces), latitude: Number(form.latitude || 0), longitude: Number(form.longitude || 0) }))
+      const estimate = await predictPrice({ ...form, area_m2: Number(form.area_m2), bedrooms: Number(form.bedrooms), bathrooms: Number(form.bathrooms), parking_spaces: Number(form.parking_spaces), latitude: Number(form.latitude || 0), longitude: Number(form.longitude || 0) })
+      setResult(estimate)
+      if (form.reference && Number(form.asking_price) > 0) setMarket(await compareMarket({ neighborhood: form.reference, askingPrice: Number(form.asking_price), areaM2: Number(form.area_m2) }))
     } catch (err) { setError(`Não foi possível calcular a avaliação. ${err.message}`) } finally { setLoading(false) }
   }
   return <div className="page">
@@ -23,6 +26,7 @@ export default function ValuationPage() {
         <form onSubmit={handleSubmit} className="valuation-form">
           <div className="form-group"><label>Referência do imóvel</label><input value={form.reference} onChange={e => set('reference', e.target.value)} placeholder="Ex.: Centro, Pouso Alegre" /><small>Usada para identificação. Informe coordenadas para considerar a localização.</small></div>
           <div className="valuation-fields">
+            <div className="form-group"><label>Preço pedido <small>(opcional)</small></label><input type="number" min="1" value={form.asking_price} onChange={e => set('asking_price', e.target.value)} /></div>
             <div className="form-group"><label>Área útil (m²)</label><input type="number" min="1" value={form.area_m2} onChange={e => set('area_m2', e.target.value)} required /></div>
             <div className="form-group"><label>Tipo</label><select value={form.property_type} onChange={e => set('property_type', e.target.value)}>{PROPERTY_TYPES.map(([id, label]) => <option key={id} value={id}>{label}</option>)}</select></div>
             <div className="form-group"><label>Quartos</label><input type="number" min="0" value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} /></div>
@@ -41,6 +45,7 @@ export default function ValuationPage() {
           <div className="valuation-range"><span>Faixa de referência</span><strong>{money(result.price_low)} — {money(result.price_high)}</strong></div>
           {result.warning && <div className="valuation-warning">{result.warning}</div>}
           {result.explain?.length > 0 && <div className="opp-uses"><h4>Como a estimativa foi calculada</h4>{result.explain.map(item => <div className="use-row" key={item}><span className="use-label">{item}</span></div>)}</div>}
+          {market && <div className="valuation-warning"><strong>Mercado local: {market.status.replaceAll('_', ' ')}</strong><br />Referência {money(market.reference_price_m2)} / m² com {market.comparables} comparáveis. {market.recommendation}</div>}
         </>}
       </section>
     </div>

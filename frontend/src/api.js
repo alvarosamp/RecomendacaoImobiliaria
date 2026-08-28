@@ -38,12 +38,13 @@ export const api = { get, post, patch };
 
 export const fetchScores       = ()   => get('/scores')
 export const predictPrice      = body => post('/predict', body)
+export const compareMarket = ({ neighborhood, askingPrice, areaM2 }) => get(`/market/compare?${new URLSearchParams({ neighborhood, asking_price: askingPrice, area_m2: areaM2 })}`)
 export const fetchRuns         = ()   => get('/mlops/runs')
 export const fetchTimeseries   = ()   => get('/indices/timeseries')
 export const fetchCommerceGaps = ()   => get('/analytics/commerce-gaps')
 export const fetchTypology     = ()   => get('/analytics/typology')
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h — zoneamento/POIs mudam raramente
-const GEOJSON_CACHE_KEYS = ['cache:zoning-geojson', 'cache:pois-geojson']
+const GEOJSON_CACHE_KEYS = ['cache:zoning-geojson', 'cache:pois-geojson', 'cache:official-susceptibility-geojson']
 
 export function clearMapDataCache() {
   GEOJSON_CACHE_KEYS.forEach(key => {
@@ -69,6 +70,7 @@ async function getCached(path, cacheKey) {
 
 export const fetchZoningGeojson = ()  => getCached('/analytics/zoning-geojson', 'cache:zoning-geojson')
 export const fetchPoisGeojson   = ()  => getCached('/analytics/pois-geojson', 'cache:pois-geojson')
+export const fetchOfficialSusceptibilityGeojson = () => getCached('/analytics/official-susceptibility-geojson', 'cache:official-susceptibility-geojson')
 export const runPipeline       = ()   => post('/pipeline/run', {})
 export const refreshPipeline   = ()   => post('/pipeline/refresh', {})
 export const getPipelineStatus = ()   => get('/pipeline/status')
@@ -92,3 +94,5 @@ export const fetchLeads = (params = {}) => {
 }
 export const createLead       = body            => post('/leads', body)
 export const updateLeadStatus = (id, status)     => patch(`/leads/${id}/status`, { status })
+export const assessLegalCompatibility = ({ h3Id, intendedUse }) =>
+  get(`/legal/assess?${new URLSearchParams({ h3_id: h3Id, intended_use: intendedUse })}`)

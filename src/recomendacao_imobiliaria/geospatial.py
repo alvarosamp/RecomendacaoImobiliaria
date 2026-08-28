@@ -375,6 +375,13 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
         clean["residential_plan_multiplier"] = residential.multiplier
         clean["commercial_plan_multiplier"] = commercial.multiplier
         clean["legal_notes"] = commercial.notes if commercial.status != "allowed" else residential.notes
+        decisions = (residential, commercial)
+        clean["legal_articles"] = tuple(dict.fromkeys(article for decision in decisions for article in decision.articles))
+        clean["legal_parameters"] = {
+            "residencial": residential.parameters,
+            "comercial": commercial.parameters,
+        }
+        clean["legal_sources"] = tuple(commercial.sources or residential.sources)
         areas.append(AreaFeatures(**clean))
     return areas
 

@@ -44,6 +44,11 @@ def _add_reference_neighborhoods(frame: pd.DataFrame) -> pd.DataFrame:
     missing = existing.isna() | (existing.astype(str).str.strip() == "")
     enriched.loc[missing, "neighborhood"] = references.iloc[closest[missing.to_numpy()]]["neighborhood"].to_numpy()
     enriched["neighborhood_source"] = enriched.get("neighborhood_source", pd.Series(index=enriched.index, dtype=object)).fillna("referência por anúncios próximos")
+    listings = pd.read_csv(Path(__file__).resolve().parents[2] / "data" / "pouso_alegre_listings.csv", usecols=["price", "area_m2", "neighborhood"])
+    listings["price_per_m2"] = listings["price"] / listings["area_m2"].replace(0, np.nan)
+    medians = listings.groupby("neighborhood")["price_per_m2"].median()
+    enriched["market_price_m2"] = enriched["neighborhood"].map(medians)
+    enriched["market_comparables"] = enriched["neighborhood"].map(listings.groupby("neighborhood").size()).fillna(0).astype(int)
     return enriched
 
 
@@ -64,6 +69,14 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.poi_school_cnt,
             f.poi_hospital_cnt,
             f.poi_leisure_cnt,
+            f.pop_estimated,
+            lc.class_name AS land_cover_class,
+            lc.reference_year AS land_cover_year,
+            old_lc.class_name AS land_cover_class_2019,
+            CASE WHEN old_lc.class_name IS NOT NULL THEN old_lc.class_name || ' → ' || lc.class_name END AS land_cover_transition,
+            CASE WHEN old_lc.class_name IN ('pastagem', 'agricultura', 'outras lavouras', 'mosaico de usos')
+                       AND lc.class_name IN ('area urbanizada', 'mosaico de usos')
+                 THEN true ELSE false END AS observed_urban_expansion,
             f.dist_min_supermarket_m,
             f.dist_min_pharmacy_m,
             f.dist_min_school_m,
@@ -71,10 +84,26 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.dist_min_park_m,
             f.neighborhood,
             f.neighborhood_source,
+            r.susceptibility_score AS satellite_risk_score,
+            r.alert_level AS satellite_risk_alert,
+            r.confidence AS satellite_risk_confidence,
+            r.components AS satellite_risk_components,
+            (SELECT string_agg(DISTINCT o.process_type || ': ' || o.susceptibility_class, ' · ')
+             FROM geo.official_susceptibility o
+             WHERE ST_Intersects(o.geom, ST_Centroid(g.geom))) AS official_susceptibility,
+            CASE
+              WHEN EXISTS (SELECT 1 FROM geo.official_susceptibility o WHERE ST_Intersects(o.geom, ST_Centroid(g.geom)) AND lower(o.susceptibility_class) IN ('alta', 'alto')) THEN 'alto'
+              WHEN EXISTS (SELECT 1 FROM geo.official_susceptibility o WHERE ST_Intersects(o.geom, ST_Centroid(g.geom)) AND lower(o.susceptibility_class) IN ('média', 'medio', 'médio')) THEN 'medio'
+              WHEN EXISTS (SELECT 1 FROM geo.official_susceptibility o WHERE ST_Intersects(o.geom, ST_Centroid(g.geom))) THEN 'baixo'
+              ELSE NULL
+            END AS official_risk_level,
             ST_Y(ST_Centroid(g.geom)) AS latitude,
             ST_X(ST_Centroid(g.geom)) AS longitude
         FROM geo.scores s
         LEFT JOIN geo.features f ON f.h3_id = s.h3_id
+        LEFT JOIN geo.risk_signals r ON r.h3_id = s.h3_id
+        LEFT JOIN geo.land_cover_h3 lc ON lc.h3_id = s.h3_id
+        LEFT JOIN geo.land_cover_h3_history old_lc ON old_lc.h3_id = s.h3_id AND old_lc.reference_year = 2019
         LEFT JOIN geo.grid_h3 g ON g.h3_id = s.h3_id
         ORDER BY GREATEST(
             COALESCE(s.score_residencial, 0),

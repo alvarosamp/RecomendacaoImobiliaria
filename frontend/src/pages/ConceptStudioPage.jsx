@@ -13,6 +13,8 @@ const INITIAL = {
   residentialScore: 65,
   commercialScore: 48,
   riskLevel: 'medio',
+  riskConfidence: 0,
+  riskAlert: 'em_observacao',
   growthSignal: 0.0015,
   latitude: null,
   longitude: null,
@@ -44,6 +46,8 @@ function seedToForm(seed) {
     residentialScore: Math.round(seed.score_residencial || 0),
     commercialScore: Math.round(seed.score_comercial || 0),
     riskLevel: seed.risk_level || 'medio',
+    riskConfidence: Number(seed.satellite_risk_confidence || 0),
+    riskAlert: seed.satellite_risk_alert || 'em_observacao',
     growthSignal: Number(seed.growth_signal || seed.ndbi_slope_180 || 0),
   }
 }
@@ -235,6 +239,7 @@ export default function ConceptStudioPage({ seed = null }) {
                 <Metric label="Aluguel potencial mensal" value={money(plan.monthlyRent)} />
                 <Metric label="Ocupacao estimada" value={`${number(plan.occupancy, 1)}%`} />
               </div>
+              {plan.riskAdjustment && <div className="price-model-note"><span>Ajuste territorial: {plan.riskAdjustment.label}</span><strong>Fator {plan.riskAdjustment.factor}</strong><small>{plan.riskAdjustment.reason}</small></div>}
             </>
           )}
         </section>

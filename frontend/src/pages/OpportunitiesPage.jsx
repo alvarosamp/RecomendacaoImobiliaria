@@ -124,14 +124,37 @@ function OppCard({ row, onOpenConcept }) {
           </button>
 
           {expanded && (
-            <div className="explain-list">
-              {row.explainability.slice(0, 5).map(item => (
-                <div key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+            <>
+              <div className="explain-list">
+                {row.explainability.slice(0, 5).map(item => (
+                  <div key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="explain-list" style={{ marginTop: 10 }}>
+                <div>
+                  <span>Base legal</span>
+                  <strong>{row.legal_articles?.join(' • ') || 'Validação manual necessária'}</strong>
                 </div>
-              ))}
-            </div>
+                {Object.keys(row.legal_parameters || {}).length > 0 && (
+                  <div>
+                    <span>Parâmetros urbanísticos</span>
+                    <strong>Disponíveis para residencial e comercial</strong>
+                  </div>
+                )}
+                {row.legal_sources?.map(source => (
+                  <div key={source.url}>
+                    <span>Fonte oficial</span>
+                    <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>
+                  </div>
+                ))}
+              </div>
+              <p style={{ color: 'var(--muted)', fontSize: 11, margin: '10px 0 0' }}>
+                Análise automatizada de apoio; confirme a viabilidade no processo oficial de aprovação.
+              </p>
+            </>
           )}
         </>
       )}

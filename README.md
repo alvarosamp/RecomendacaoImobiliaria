@@ -232,6 +232,24 @@ Uma recomendacao so deve ser considerada confiavel quando apresentar:
 - nivel de risco;
 - justificativa textual.
 
+## Avaliacao
+
+O modelo de preco e acompanhado por MAE, R2 e validacao cruzada. Rankings de oportunidade devem ser avaliados com Precision@K, Recall@K, NDCG@K, Hit Rate@K e cobertura de catalogo; as funcoes reproduziveis estao em `recomendacao_imobiliaria.ranking_metrics`.
+
+## Governanca e privacidade
+
+Cada carga deve registrar fonte, data e status em `ops.data_sources`. A politica operacional de rastreabilidade e os requisitos de privacidade estao em [`docs/data_governance.md`](docs/data_governance.md).
+
+## Auditoria legal
+
+Use `GET /api/legal/assess?intended_use=comercial&h3_id=<celula>` para obter o status legal, artigos, parametros, fontes e a situacao das camadas espaciais. A consulta tambem aceita `zone` quando a celula ainda nao estiver disponivel. `GET /api/legal/annexes` mostra quais anexos oficiais fundamentam a analise.
+
+## Alerta de suscetibilidade por satelite
+
+`imobiliaria calculate-risk-signals` cria um sinal por H3 com os dados disponiveis. Series Sentinel-2 contribuem com pressao de urbanizacao (NDVI/NDBI); relevo, proximidade de drenagem e recorrencia de agua por Sentinel-1/SAR podem ser inseridos com `imobiliaria import-risk-inputs --csv arquivo.csv`. O resultado esta em `GET /api/analytics/risk-susceptibility` e e sempre um alerta analitico, nao um mapa oficial de risco.
+
+Para automatizar relevo, execute `imobiliaria collect-dem-slope`, depois importe o CSV retornado. A coleta Sentinel-1 RTC tenta token SAS anonimo automaticamente. `PC_SDK_SUBSCRIPTION_KEY` e opcional e so deve ser configurada se voce possuir uma chave para ampliar limites de uso.
+
 ## Limitacoes atuais
 
 O projeto ja reconhece o KML/KMZ oficial do PDPA e localiza anexos legais prioritarios, mas ainda precisa converter esses documentos em regras estruturadas completas e importar as geometrias em PostGIS para validar recomendacoes reais por coordenada. Enquanto essa etapa nao estiver fechada, os resultados devem ser tratados como demonstracao tecnica e apoio exploratorio, nao como parecer urbanistico ou recomendacao juridicamente validada.

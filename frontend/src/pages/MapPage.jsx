@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import H3Map from '../components/H3Map'
 import TimeSlider from '../components/TimeSlider'
-import { fetchPoisGeojson, fetchZoningGeojson } from '../api'
+import { fetchOfficialSusceptibilityGeojson, fetchPoisGeojson, fetchZoningGeojson } from '../api'
 import {
   ANALYSIS_OBJECTIVES,
   CITY_CONFIGS,
@@ -35,7 +35,8 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   const [objectiveId, setObjectiveId]       = useState(DEFAULT_OBJECTIVE_ID)
   const [zoning, setZoning]                 = useState(null)
   const [pois, setPois]                     = useState(null)
-  const [visibleLayers, setVisibleLayers]   = useState({ cells: true, zoning: true, pois: true })
+  const [officialRisk, setOfficialRisk]     = useState(null)
+  const [visibleLayers, setVisibleLayers]   = useState({ cells: true, zoning: true, pois: true, officialRisk: false })
   const [poiTypes, setPoiTypes]             = useState(['pharmacy', 'supermarket', 'school', 'clinic', 'hospital'])
   const [influenceRadius, setInfluenceRadius] = useState(900)
   const [labelMode, setLabelMode]           = useState('smart')
@@ -121,6 +122,14 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
 
   useEffect(() => {
     let active = true
+    fetchOfficialSusceptibilityGeojson()
+      .then(data => { if (active) setOfficialRisk(data) })
+      .catch(() => { if (active) setOfficialRisk({ type: 'FeatureCollection', features: [] }) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
     fetchPoisGeojson()
       .then(data => {
         if (active) setPois(data)
@@ -158,6 +167,7 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         cockpit={cockpit}
         zoning={zoning}
         pois={pois}
+        officialRisk={officialRisk}
         visibleLayers={visibleLayers}
         poiTypes={poiTypes}
         poiFilterDefs={POI_FILTERS}

@@ -10,6 +10,10 @@ const ValuationPage     = lazy(() => import('./pages/ValuationPage'))
 const ConceptPage       = lazy(() => import('./pages/ConceptStudioPage'))
 const CaseStudyPage     = lazy(() => import('./pages/CaseStudyPage'))
 const LeadsPage         = lazy(() => import('./pages/LeadsPage'))
+const ScoreExplainPage  = lazy(() => import('./pages/ScoreExplainPage'))
+const CompareAreasPage  = lazy(() => import('./pages/CompareAreasPage'))
+const ReportsPage       = lazy(() => import('./pages/ReportsPage'))
+const LegalAuditPage    = lazy(() => import('./pages/LegalAuditPage'))
 
 // ── SVG Icons ──────────────────────────────────────────
 function IconMap() {
@@ -91,6 +95,22 @@ function IconLogout() {
   )
 }
 
+function IconScore() {
+  return <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 15V9M9 15V3M15 15V6"/><path d="M1.5 15.5h15"/></svg>
+}
+
+function IconCompare() {
+  return <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3h12M3 9h12M3 15h12"/><circle cx="6" cy="3" r="1"/><circle cx="12" cy="9" r="1"/><circle cx="8" cy="15" r="1"/></svg>
+}
+
+function IconReports() {
+  return <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2h7l3 3v11H4z"/><path d="M11 2v3h3M6.5 9h5M6.5 12h5"/></svg>
+}
+
+function IconLegal() {
+  return <svg className="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 2v13M4 5h10M5.5 5 3 11h5L5.5 5ZM12.5 5 10 11h5l-2.5-6ZM5 15h8"/></svg>
+}
+
 // ── Nav groups ──────────────────────────────────────────
 const NAV_GROUPS = [
   {
@@ -106,6 +126,9 @@ const NAV_GROUPS = [
     items: [
       { id: 'valuation', label: 'Avaliar Imóvel',   Icon: IconValuation },
       { id: 'leads',     label: 'Lead Scoring',      Icon: IconLead },
+      { id: 'score',     label: 'Score Explicável',  Icon: IconScore },
+      { id: 'compare',   label: 'Comparar Áreas',    Icon: IconCompare },
+      { id: 'legal',     label: 'Auditoria Legal',   Icon: IconLegal },
     ],
   },
   {
@@ -113,6 +136,7 @@ const NAV_GROUPS = [
     items: [
       { id: 'concept',    label: 'Conceito e Obra',  Icon: IconConcept },
       { id: 'case-study', label: 'Estudo de Caso',   Icon: IconCaseStudy },
+      { id: 'reports',    label: 'Relatórios',       Icon: IconReports },
     ],
   },
 ]
@@ -121,22 +145,22 @@ const PROFILE_CONFIG = {
   investidor: {
     label: 'Investidor',
     defaultPage: 'opportunities',
-    pages: ['opportunities', 'map', 'valuation', 'case-study'],
+    pages: ['opportunities', 'map', 'valuation', 'score', 'compare', 'legal', 'reports', 'case-study'],
   },
   corretor: {
     label: 'Corretor',
     defaultPage: 'leads',
-    pages: ['leads', 'valuation', 'map', 'concept'],
+    pages: ['leads', 'valuation', 'map', 'score', 'compare', 'legal', 'reports', 'concept'],
   },
   incorporadora: {
     label: 'Incorporadora',
     defaultPage: 'opportunities',
-    pages: ['opportunities', 'map', 'concept', 'case-study'],
+    pages: ['opportunities', 'map', 'score', 'compare', 'legal', 'reports', 'concept', 'case-study'],
   },
   governo: {
     label: 'Poder Público',
     defaultPage: 'map',
-    pages: ['map', 'commerce', 'opportunities', 'case-study'],
+    pages: ['map', 'commerce', 'opportunities', 'score', 'compare', 'legal', 'reports', 'case-study'],
   },
 }
 
@@ -413,6 +437,10 @@ export default function App() {
             {page === 'leads'         && <LeadsPage />}
             {page === 'commerce'      && <CommercePage scores={scores} />}
             {page === 'valuation'     && <ValuationPage />}
+            {page === 'score'         && <ScoreExplainPage scores={scores} />}
+            {page === 'compare'       && <CompareAreasPage scores={scores} />}
+            {page === 'reports'       && <ReportsPage scores={scores} />}
+            {page === 'legal'         && <LegalAuditPage scores={scores} />}
             {page === 'concept'       && <ConceptPage seed={conceptSeed} />}
             {page === 'case-study'    && <CaseStudyPage scores={scores} />}
           </Suspense>

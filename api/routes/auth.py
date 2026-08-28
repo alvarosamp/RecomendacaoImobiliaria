@@ -1,6 +1,7 @@
 import datetime
 import logging
 import jwt
+from functools import lru_cache
 from typing import Optional
 from passlib.context import CryptContext
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,7 +14,7 @@ from recomendacao_imobiliaria.config import load_settings
 
 # --- Config & Setup ---
 settings = load_settings()
-SECRET_KEY = "super-secret-key-for-saas-platform" # Em producao, viria do .env
+SECRET_KEY = settings.jwt_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 
@@ -37,13 +38,14 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="client")
 
-# Create tables se nao existem. Nao derruba a importacao do modulo (e portanto a API
-# inteira) se o Postgres nao estiver acessivel neste momento — as rotas ja falham de
-# forma apropriada, por requisicao, via get_db/Depends quando o banco esta fora.
-try:
+@lru_cache(maxsize=1)
+def ensure_auth_schema() -> None:
+    """Cria a tabela de contas na primeira requisicao que precisa do banco.
+
+    Evita que importar a API bloqueie quando o PostGIS estiver temporariamente
+    indisponivel, algo comum em testes, healthchecks e inicializacao de containers.
+    """
     Base.metadata.create_all(bind=engine)
-except Exception as exc:
-    log.warning("Nao foi possivel criar/verificar tabelas no Postgres: %s", exc)
 
 # --- Pydantic Models ---
 class UserCreate(BaseModel):
@@ -73,6 +75,11 @@ class Token(BaseModel):
 
 # --- Utils ---
 def get_db():
+    try:
+        ensure_auth_schema()
+    except Exception as exc:
+        log.warning("Nao foi possivel criar/verificar tabelas no Postgres: %s", exc)
+        raise HTTPException(status_code=503, detail="Banco de dados indisponivel") from exc
     db = SessionLocal()
     try:
         yield db

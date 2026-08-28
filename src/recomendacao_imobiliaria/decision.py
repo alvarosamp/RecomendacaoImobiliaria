@@ -79,6 +79,26 @@ def _risk_level(row: dict[str, object]) -> str:
     ):
         return "medio"
 
+    # Triagem conservadora de cobertura: não substitui licença ou CAR, mas evita
+    # promover corpos d'água/áreas alagadas como oportunidade imobiliária.
+    cover = str(row.get("land_cover_class") or "").lower()
+    if cover in {"corpo dagua", "campo alagado"}:
+        return "alto"
+    if cover == "formacao florestal":
+        return "medio"
+
+    # A carta técnica oficial prevalece sobre a inferência analítica/satelital.
+    official_risk = str(row.get("official_risk_level") or "").lower()
+    if official_risk in {"alto", "medio"}:
+        return official_risk
+
+    satellite_alert = str(row.get("satellite_risk_alert") or "")
+    satellite_confidence = _as_float(row.get("satellite_risk_confidence"))
+    if satellite_confidence >= 0.45 and satellite_alert == "alto":
+        return "alto"
+    if satellite_confidence >= 0.45 and satellite_alert == "medio":
+        return "medio"
+
     ndvi_slope = _as_float(row.get("ndvi_slope_180"))
     ndbi_slope = _as_float(row.get("ndbi_slope_180"))
     if ndvi_slope < -0.0015 and ndbi_slope > 0.0015:
@@ -87,6 +107,11 @@ def _risk_level(row: dict[str, object]) -> str:
 
 
 def _growth_signal(row: dict[str, object]) -> str:
+    if bool(row.get("observed_urban_expansion")):
+        return "expansao urbana observada no MapBiomas (2019–2024)"
+    cover = str(row.get("land_cover_class") or "").lower()
+    if cover in {"formacao florestal", "campo alagado", "corpo dagua"}:
+        return "cobertura ambiental sensivel"
     ndvi_slope = _as_float(row.get("ndvi_slope_180"))
     ndbi_slope = _as_float(row.get("ndbi_slope_180"))
     if ndvi_slope < 0 and ndbi_slope > 0:
@@ -115,9 +140,11 @@ def _summary(
     zoning = explain.get("zoning", {}) if isinstance(explain, dict) else {}
     legal = zoning.get("legal_notes")
     legal_text = f" Plano Diretor: {legal}" if legal else ""
+    land_cover = str(row.get("land_cover_transition") or "")
+    land_text = f" Cobertura do solo: {land_cover}." if land_cover else ""
     return (
         f"Prioridade para {primary_use} com score {best_score:.1f}. "
-        f"Sinal: {growth}. Risco: {risk}. {reason}{legal_text}"
+        f"Sinal: {growth}. Risco: {risk}. {reason}{legal_text}{land_text}"
     )
 
 

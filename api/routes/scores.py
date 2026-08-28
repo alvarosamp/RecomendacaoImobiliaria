@@ -42,6 +42,9 @@ def _parse_explain(raw) -> dict:
         "recommendations":  raw.get("main_recommendations", []),
         "zona":             (raw.get("zoning") or {}).get("zona"),
         "legal_notes":      (raw.get("zoning") or {}).get("legal_notes"),
+        "legal_articles":   (raw.get("zoning") or {}).get("legal_articles", []),
+        "legal_parameters": (raw.get("zoning") or {}).get("legal_parameters", {}),
+        "legal_sources":    (raw.get("zoning") or {}).get("legal_sources", []),
     }
 
 

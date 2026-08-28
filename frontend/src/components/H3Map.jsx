@@ -61,6 +61,21 @@ const VALIDATION_LEGEND = [
   { color: '#ef4444', label: 'Restricao' },
 ]
 
+const RISK_LEGEND = [
+  { color: '#b91c1c', label: 'Alerta alto' },
+  { color: '#f59e0b', label: 'Alerta médio' },
+  { color: '#2563eb', label: 'Em observação' },
+  { color: '#94a3b8', label: 'Sem evidência' },
+]
+
+const LAND_COVER_LEGEND = [
+  { color: '#7c3aed', label: 'Expansão observada' },
+  { color: '#16a34a', label: 'Floresta / cobertura sensível' },
+  { color: '#2563eb', label: 'Água / área alagada' },
+  { color: '#ca8a04', label: 'Uso rural estável' },
+  { color: '#94a3b8', label: 'Outras transições' },
+]
+
 const POI_COLORS = {
   pharmacy: [220, 38, 38],
   supermarket: [22, 163, 74],
@@ -137,6 +152,8 @@ function legendFor(mode, selectedDate) {
   if (mode === 'kernel') return KERNEL_LEGEND
   if (mode === 'validation') return VALIDATION_LEGEND
   if (mode === 'zoning') return ZONING_LEGEND
+  if (mode === 'risk') return RISK_LEGEND
+  if (mode === 'landcover') return LAND_COVER_LEGEND
   return SCORE_LEGEND
 }
 
@@ -252,6 +269,7 @@ export default function H3Map({
   cockpit = null,
   zoning = null,
   pois = null,
+  officialRisk = null,
   visibleLayers = { cells: true, zoning: true, pois: true },
   poiTypes = [],
   poiFilterDefs = [],
@@ -400,6 +418,25 @@ export default function H3Map({
     onHover: info => setTooltip(info.object ? { kind: 'zone', object: info.object, x: info.x, y: info.y } : null),
   }), [zoning, mode])
 
+  const officialRiskLayer = useMemo(() => new GeoJsonLayer({
+    id: 'sgb-official-susceptibility',
+    data: officialRisk || { type: 'FeatureCollection', features: [] },
+    visible: !!visibleLayers.officialRisk,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    getFillColor: feature => {
+      const value = String(feature.properties?.susceptibility_class || '').toLowerCase()
+      if (value.includes('alta')) return [185, 28, 28, 92]
+      if (value.includes('média') || value.includes('media')) return [245, 158, 11, 72]
+      return [34, 197, 94, 46]
+    },
+    getLineColor: feature => String(feature.properties?.susceptibility_class || '').toLowerCase().includes('alta') ? [153, 27, 27, 210] : [161, 98, 7, 150],
+    getLineWidth: 42,
+    lineWidthMinPixels: 0.7,
+    onHover: info => setTooltip(info.object ? { kind: 'official-risk', object: info.object, x: info.x, y: info.y } : null),
+  }), [officialRisk, visibleLayers.officialRisk])
+
   const kernelLayer = useMemo(() => new HeatmapLayer({
     id: 'opportunity-kernel',
     data: kernelPoints,
@@ -431,6 +468,21 @@ export default function H3Map({
       }
       if (mode === 'growth') return growthToRgba(d)
       if (mode === 'zoning') return [15, 23, 42, 18]
+      if (mode === 'risk') {
+        const alert = String(d.satellite_risk_alert || 'dados_insuficientes')
+        if (alert === 'alto') return [185, 28, 28, 155]
+        if (alert === 'medio') return [245, 158, 11, 145]
+        if (alert === 'em_observacao') return [37, 99, 235, 125]
+        return [148, 163, 184, 70]
+      }
+      if (mode === 'landcover') {
+        if (d.observed_urban_expansion) return [124, 58, 237, 175]
+        const cover = String(d.land_cover_class || '').toLowerCase()
+        if (cover.includes('florestal') || cover.includes('campo alagado')) return [22, 163, 74, 155]
+        if (cover.includes('agua')) return [37, 99, 235, 165]
+        if (cover.includes('pastagem') || cover.includes('lavoura') || cover.includes('agricultura')) return [202, 138, 4, 135]
+        return [148, 163, 184, 105]
+      }
       if (mode === 'kernel') return scoreToRgba(objectiveScore(d, objectiveConfig), 42)
       if (mode === 'validation') return validationColor(d, objectiveConfig, 76)
       return scoreToRgba(objectiveScore(d, objectiveConfig), 62)
@@ -573,6 +625,7 @@ export default function H3Map({
     BASE_TILES,
     influenceLayer,
     visibleLayers.zoning ? zoningLayer : null,
+    officialRiskLayer,
     kernelLayer,
     visibleLayers.cells ? hexLayer : null,
     validationLayer,
@@ -646,6 +699,7 @@ export default function H3Map({
           cellCount={data.length}
           zoningCount={zoningCount}
           poiCount={filteredPois.length}
+          officialRiskCount={officialRisk?.features?.length || 0}
           poiFilterDefs={poiFilterDefs}
           poiTypes={poiTypes}
           onTogglePoiType={onTogglePoiType}
@@ -682,7 +736,7 @@ export default function H3Map({
 
       <div className="atlas-legend-group">
         <div className="atlas-legend">
-          <span>{selectedDate ? `NDVI ${selectedDate}` : mode === 'zoning' ? 'Zoneamento PDPA' : mode === 'growth' ? 'Tendencia urbana' : mode === 'kernel' ? 'Kernels de oportunidade' : mode === 'validation' ? 'Validacao 3D' : 'Score'}</span>
+          <span>{selectedDate ? `NDVI ${selectedDate}` : mode === 'zoning' ? 'Zoneamento PDPA' : mode === 'growth' ? 'Tendencia urbana' : mode === 'landcover' ? 'MapBiomas 2019–2024' : mode === 'kernel' ? 'Kernels de oportunidade' : mode === 'validation' ? 'Validacao 3D' : 'Score'}</span>
           {legend.map(item => (
             <div key={item.label}>
               <i style={{ background: item.color }} />
@@ -719,6 +773,8 @@ export default function H3Map({
 
 const MODE_LABELS = {
   score: 'Score',
+  landcover: 'Uso do solo',
+  risk: 'Alerta territorial',
   kernel: 'Kernels',
   validation: '3D',
   zoning: 'Zonas',
@@ -735,7 +791,7 @@ function Chevron({ open }) {
 
 function LayersPanel({
   open, onToggle, rawMode, onModeChange, dateActive,
-  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount,
+  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount, officialRiskCount,
   poiFilterDefs, poiTypes, onTogglePoiType,
   influenceRadius, onRadiusChange, labelMode, onLabelModeChange,
   priorityFilter, onPriorityChange, riskFilter, onRiskChange,
@@ -797,6 +853,10 @@ function LayersPanel({
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.pois} onChange={() => onToggleLayer('pois')} />
             Pontos <span>{poiCount}</span>
+          </label>
+          <label className="atlas-layer-row">
+            <input type="checkbox" checked={visibleLayers.officialRisk} onChange={() => onToggleLayer('officialRisk')} />
+            Carta oficial SGB <span>{officialRiskCount}</span>
           </label>
 
           {visibleLayers.pois && poiFilterDefs.length > 0 && (
@@ -993,9 +1053,14 @@ function SelectedPanel({ cell, objectiveConfig, onClose, onOpenConcept }) {
       <p className="atlas-decision-copy">{decision.summary}</p>
       <Metric label="Prioridade" value={cell.priority} strong />
       <Metric label="Risco" value={cell.risk_level} />
+      {cell.official_susceptibility && <Metric label="Carta oficial SGB" value={cell.official_susceptibility} />}
       <Metric label="Zona" value={cell.zona || cell.zoning?.zona || 'sem cruzamento'} />
+      <Metric label="Cobertura do solo" value={cell.land_cover_class ? `${cell.land_cover_class} (${cell.land_cover_year})` : '-'} />
+      {cell.land_cover_class_2019 && <Metric label="Cobertura em 2019" value={cell.land_cover_class_2019} />}
+      {cell.land_cover_transition && <Metric label="Transição observada" value={cell.land_cover_transition} />}
       <Metric label="Score residencial" value={formatNumber(cell.score_residencial)} />
       <Metric label="Score comercial" value={formatNumber(cell.score_comercial)} />
+      <Metric label="Referência de mercado" value={cell.market_price_m2 ? `R$ ${formatNumber(cell.market_price_m2, 0)} / m² (${cell.market_comparables} comparáveis)` : '-'} />
       <Metric label="NDVI 90d" value={formatNumber(cell.ndvi_mean_90, 3)} />
       <Metric label="NDBI 90d" value={formatNumber(cell.ndbi_mean_90, 3)} />
       <Metric label="Confianca" value={formatPercent(cell.confidence)} />
@@ -1056,6 +1121,9 @@ function downloadAreaReport(cell, objectiveConfig, decision, factors, explainabi
     `- Confianca: ${formatPercent(cell.confidence)}`,
     `- NDVI 90d: ${formatNumber(cell.ndvi_mean_90, 3)}`,
     `- NDBI 90d: ${formatNumber(cell.ndbi_mean_90, 3)}`,
+    `- Cobertura do solo: ${cell.land_cover_class || '-' } (${cell.land_cover_year || '-'})`,
+    `- Cobertura em 2019: ${cell.land_cover_class_2019 || '-'}`,
+    `- Transição observada: ${cell.land_cover_transition || '-'}`,
     '',
     '## Fatores',
     ...(factors.length ? factors.map(item => `- ${item}`) : ['- Sem fatores destacados nos dados atuais.']),
@@ -1067,6 +1135,10 @@ function downloadAreaReport(cell, objectiveConfig, decision, factors, explainabi
     '',
     '## Observacao legal',
     cell.legal_notes || 'Sem nota legal especifica para esta celula.',
+    '',
+    '## Fontes territoriais',
+    '- MapBiomas Brasil, Coleção 10: cobertura e uso do solo (2019 e 2024).',
+    '- Serviço Geológico do Brasil (SGB/CPRM): carta de suscetibilidade, quando aplicável.',
     '',
     'Gerado pela plataforma de inteligencia territorial.',
   ]
@@ -1135,6 +1207,16 @@ function Tooltip({ tooltip }) {
       <div className="atlas-tooltip" style={style}>
         <strong>{props.zona || 'Zona'}</strong>
         <span>{props.observacoes || 'Zoneamento oficial'}</span>
+      </div>
+    )
+  }
+  if (kind === 'official-risk') {
+    const props = object.properties || {}
+    return (
+      <div className="atlas-tooltip" style={style}>
+        <strong>SGB/CPRM · {props.susceptibility_class || 'classe não informada'}</strong>
+        <span>{props.process_type || 'Suscetibilidade territorial'}</span>
+        <span>{props.reference_year || 'Ano não informado'}</span>
       </div>
     )
   }

@@ -12,7 +12,10 @@
 - `geo.zoning`: zoneamento urbano.
 - `geo.overlays`: restricoes e camadas especiais.
 - `public.regs`: base textual do Plano Diretor e leis relacionadas.
+- `ops.data_sources`: linhagem, situacao e metadados de cada fonte carregada.
 
 ## Principio
 
 Tudo que entra no score deve ser auditavel. A ferramenta precisa armazenar tanto o resultado quanto os fatores que levaram a recomendacao.
+
+Consulte `docs/data_governance.md` para os campos obrigatorios de rastreabilidade e o tratamento de dados pessoais.

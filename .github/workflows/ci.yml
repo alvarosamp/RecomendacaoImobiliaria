@@ -82,13 +82,65 @@ jobs:
           path: coverage.xml
 
   # ─────────────────────────────────────────────
-  # 3. Build Docker images (só no push para main)
+  # 3. Integração — PostGIS real, KML e cruzamento espacial H3
+  # ─────────────────────────────────────────────
+  integration-postgis:
+    name: Integration (PostGIS + zoning)
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      PG_HOST: localhost
+      PG_PORT: "5433"
+      PG_DB: imobiliaria_integration
+      PG_USER: integration
+      PG_PASS: integration-only
+      RUN_POSTGIS_INTEGRATION: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install spatial and Python dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libgdal-dev gdal-bin libspatialindex-dev
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -r requirements-api.txt
+
+      - name: Start real PostGIS database
+        run: |
+          cp .env.example .env
+          docker compose up -d db
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T db pg_isready -U "$PG_USER" -d "$PG_DB"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs db
+          exit 1
+
+      - name: Run zoning integration test
+        run: pytest tests/integration/test_postgis_zoning.py -v --tb=short
+
+      - name: Database logs on failure
+        if: failure()
+        run: docker compose logs db
+
+  # ─────────────────────────────────────────────
+  # 4. Build Docker images (só no push para main)
   # ─────────────────────────────────────────────
   docker-build:
     name: Docker Build Check
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: test
+    needs: [test, integration-postgis]
 
     steps:
       - uses: actions/checkout@v4

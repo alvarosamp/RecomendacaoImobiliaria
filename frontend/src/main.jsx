@@ -34,7 +34,7 @@ function GuestOnly({ children }) {
     return (
       <div className="loading" style={{height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <div className="loading-spinner" />
-        Carregando sessÃ£oâ€¦
+        Carregando sessão…
       </div>
     );
   }

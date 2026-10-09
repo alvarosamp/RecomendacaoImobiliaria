@@ -261,12 +261,20 @@ def _tune_lgbm(
 # Public API
 # ---------------------------------------------------------------------------
 
+DEMO_LISTINGS_CSV = "pouso_alegre_listings.csv"  # gerado por `gen-listings` (sintético)
+
+
+def _guess_data_kind(csv_path: str) -> str:
+    return "demo" if Path(csv_path).name == DEMO_LISTINGS_CSV else "csv"
+
+
 def train_price_model(
     csv_path: str,
     model_path: str = "models/price_model.joblib",
     target: str = DEFAULT_TARGET,
     enrich: bool = True,
     n_trials: int = 50,
+    data_kind: str | None = None,
 ) -> TrainResult:
     """Train a LightGBM price model with Optuna tuning and k-fold CV.
 
@@ -331,6 +339,13 @@ def train_price_model(
             "encoder": encoder,
             "cat_idx": cat_idx,
             "target": target,
+            # Proveniência: a API avisa quando o modelo não foi treinado com anúncios reais.
+            "training_source": {
+                "kind": data_kind or _guess_data_kind(csv_path),
+                "csv": str(csv_path),
+                "rows": int(len(frame)),
+                "trained_at": pd.Timestamp.now(tz="UTC").isoformat(),
+            },
         },
         output,
     )

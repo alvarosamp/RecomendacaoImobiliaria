@@ -145,6 +145,7 @@ def score_area(features: AreaFeatures, config: ScoringConfig | None = None) -> S
             "legal_articles": list(features.legal_articles),
             "legal_parameters": features.legal_parameters,
             "legal_sources": list(features.legal_sources),
+            "validation_status": "validated_official" if features.zona else "pending_zoning",
         },
         "main_recommendations": recommend_uses(
             supermarket_gap=supermarket_gap,
@@ -201,7 +202,7 @@ def _confidence(features: AreaFeatures, config: ScoringConfig) -> float:
         value += config.confidence_weights["has_accessibility"]
     if features.zona:
         value += config.confidence_weights["has_zoning"]
-    if features.residential_plan_status != "blocked" and features.commercial_plan_status != "blocked":
+    if features.zona and features.residential_plan_status != "blocked" and features.commercial_plan_status != "blocked":
         value += config.confidence_weights["allowed_by_plan"]
     return clamp(value)
 

@@ -1,0 +1,111 @@
+name: ri-hostinger-20261005-a10dda
+services:
+  db:
+    image: alvarocareli/ri-hostinger-a10dda-db:20261005-v1
+    platform: linux/amd64
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${PG_DB:?Defina PG_DB}
+      POSTGRES_USER: ${PG_USER:?Defina PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS:?Defina PG_PASS}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks: [app]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+  api:
+    image: alvarocareli/ri-hostinger-a10dda-api:20261005-v1
+    platform: linux/amd64
+    restart: unless-stopped
+    init: true
+    environment:
+      APP_ENV: production
+      PG_HOST: db
+      PG_PORT: "5432"
+      PG_DB: ${PG_DB:?Defina PG_DB}
+      PG_USER: ${PG_USER:?Defina PG_USER}
+      PG_PASS: ${PG_PASS:?Defina PG_PASS}
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_IMAGE_MODEL: ${HF_IMAGE_MODEL:-black-forest-labs/FLUX.1-schnell}
+      HF_IMAGE_PROVIDER: ${HF_IMAGE_PROVIDER:-auto}
+      ML_ACCESS_TOKEN: ${ML_ACCESS_TOKEN:-}
+      CITY_NAME: ${CITY_NAME:-Pouso Alegre, Minas Gerais, Brazil}
+      CITY_LAT: ${CITY_LAT:--22.230278}
+      CITY_LON: ${CITY_LON:--45.948889}
+      H3_RES: ${H3_RES:-8}
+      MODEL_PATH: /app/models/price_model.joblib
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Defina MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD}
+    volumes:
+      - data:/app/storage
+      - models:/app/models
+      - cache:/app/cache
+      - output:/app/output
+    networks: [app]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8000/health]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+  frontend:
+    image: alvarocareli/ri-hostinger-a10dda-frontend:20261005-v1
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-18087}:80"
+    networks: [app]
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+  minio:
+    image: alvarocareli/ri-hostinger-a10dda-minio:20261005-v1
+    platform: linux/amd64
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Defina MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Defina MINIO_ROOT_PASSWORD}
+    volumes:
+      - objects:/data
+    networks: [app]
+  mlflow:
+    image: alvarocareli/ri-hostinger-a10dda-mlflow:20261005-v1
+    platform: linux/amd64
+    restart: unless-stopped
+    volumes:
+      - tracking:/mlflow
+    networks: [app]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=5)"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+networks:
+  app: {}
+volumes:
+  postgres: {}
+  data: {}
+  models: {}
+  cache: {}
+  output: {}
+  objects: {}
+  tracking: {}

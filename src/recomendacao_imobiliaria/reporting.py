@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-from functools import lru_cache
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -13,42 +11,62 @@ from .db import db_engine
 from .decision import enrich_opportunities
 
 
-@lru_cache(maxsize=1)
-def _neighborhood_references() -> pd.DataFrame:
-    """Centros de bairros obtidos da base local de anúncios.
-
-    Enquanto a camada oficial de bairros não estiver no PostGIS, este é um
-    enriquecimento explícito de referência — não uma delimitação oficial.
-    """
-    path = Path(__file__).resolve().parents[2] / "data" / "pouso_alegre_listings.csv"
-    frame = pd.read_csv(path, usecols=["neighborhood", "lat", "lon"])
-    frame = frame.dropna(subset=["neighborhood", "lat", "lon"])
-    return frame.reset_index(drop=True)
+MARKET_RADIUS_M = 1000
 
 
 def _add_reference_neighborhoods(frame: pd.DataFrame) -> pd.DataFrame:
+    """Nomeia o bairro das células sem bairro oficial importado em ``geo.neighborhoods``.
+
+    Usa a camada de referência do mapa (Correios/ViaCEP + OpenStreetMap). Antes o
+    nome vinha do anúncio mais próximo do CSV local, que é sintético.
+    """
     if frame.empty or not {"latitude", "longitude"}.issubset(frame.columns):
         return frame
-    references = _neighborhood_references()
-    if references.empty:
-        return frame
+    from .osm_neighborhoods import resolve_neighborhoods
 
-    targets = frame[["latitude", "longitude"]].to_numpy(dtype=float)
-    points = references[["lat", "lon"]].to_numpy(dtype=float)
-    # Latitude/longitude estão na mesma cidade: a menor distância quadrática
-    # é suficiente para escolher o bairro de referência mais próximo.
-    distances = ((targets[:, None, :] - points[None, :, :]) ** 2).sum(axis=2)
-    closest = distances.argmin(axis=1)
     enriched = frame.copy()
     existing = enriched.get("neighborhood", pd.Series(index=enriched.index, dtype=object))
-    missing = existing.isna() | (existing.astype(str).str.strip() == "")
-    enriched.loc[missing, "neighborhood"] = references.iloc[closest[missing.to_numpy()]]["neighborhood"].to_numpy()
-    enriched["neighborhood_source"] = enriched.get("neighborhood_source", pd.Series(index=enriched.index, dtype=object)).fillna("referência por anúncios próximos")
-    listings = pd.read_csv(Path(__file__).resolve().parents[2] / "data" / "pouso_alegre_listings.csv", usecols=["price", "area_m2", "neighborhood"])
-    listings["price_per_m2"] = listings["price"] / listings["area_m2"].replace(0, np.nan)
-    medians = listings.groupby("neighborhood")["price_per_m2"].median()
-    enriched["market_price_m2"] = enriched["neighborhood"].map(medians)
-    enriched["market_comparables"] = enriched["neighborhood"].map(listings.groupby("neighborhood").size()).fillna(0).astype(int)
+    missing = (existing.isna() | (existing.astype(str).str.strip() == "")).to_numpy()
+    if missing.any():
+        rows = enriched.loc[missing]
+        resolved = resolve_neighborhoods(rows["longitude"].astype(float), rows["latitude"].astype(float))
+        enriched.loc[missing, "neighborhood"] = [name for name, _ in resolved]
+        enriched.loc[missing, "neighborhood_source"] = [source for _, source in resolved]
+    return enriched
+
+
+def _add_market_reference(frame: pd.DataFrame, settings: Settings) -> pd.DataFrame:
+    """Mediana de R$/m² de anúncios reais (``market.listings``) a até 1 km da célula.
+
+    Sem anúncios reais importados, os campos ficam vazios: não há referência de mercado.
+    """
+    enriched = frame.copy()
+    enriched["market_price_m2"] = np.nan
+    enriched["market_comparables"] = 0
+    if frame.empty or not {"latitude", "longitude"}.issubset(frame.columns):
+        return enriched
+    query = """
+        SELECT ST_Y(geom) AS lat, ST_X(geom) AS lon, price_per_m2
+          FROM market.listings
+         WHERE geom IS NOT NULL AND price_per_m2 > 0
+    """
+    try:
+        with db_engine(settings) as engine:
+            listings = pd.read_sql(text(query), engine)
+    except Exception:
+        return enriched
+    if listings.empty:
+        return enriched
+    lat0 = np.radians(float(frame["latitude"].mean()))
+    cells = np.column_stack([frame["longitude"].to_numpy(float) * 111320 * np.cos(lat0), frame["latitude"].to_numpy(float) * 110540])
+    points = np.column_stack([listings["lon"].to_numpy(float) * 111320 * np.cos(lat0), listings["lat"].to_numpy(float) * 110540])
+    prices = listings["price_per_m2"].to_numpy(float)
+    distances = np.sqrt(((cells[:, None, :] - points[None, :, :]) ** 2).sum(axis=2))
+    for index, row in enumerate(distances):
+        near = prices[row <= MARKET_RADIUS_M]
+        if near.size:
+            enriched.iat[index, enriched.columns.get_loc("market_price_m2")] = float(np.median(near))
+            enriched.iat[index, enriched.columns.get_loc("market_comparables")] = int(near.size)
     return enriched
 
 
@@ -60,6 +78,7 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             s.score_residencial,
             s.score_comercial,
             s.explain_json,
+            s.updated_at AS score_updated_at,
             f.ndvi_mean_90,
             f.ndvi_slope_180,
             f.ndbi_mean_90,
@@ -98,13 +117,26 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
               ELSE NULL
             END AS official_risk_level,
             ST_Y(ST_Centroid(g.geom)) AS latitude,
-            ST_X(ST_Centroid(g.geom)) AS longitude
+            ST_X(ST_Centroid(g.geom)) AS longitude,
+            zs.source_name AS zoning_source_name,
+            zs.source_uri AS zoning_source_uri,
+            zs.reference_date AS zoning_reference_date,
+            zs.collected_at AS zoning_collected_at,
+            zs.reference_label AS zoning_reference_label
         FROM geo.scores s
         LEFT JOIN geo.features f ON f.h3_id = s.h3_id
         LEFT JOIN geo.risk_signals r ON r.h3_id = s.h3_id
         LEFT JOIN geo.land_cover_h3 lc ON lc.h3_id = s.h3_id
         LEFT JOIN geo.land_cover_h3_history old_lc ON old_lc.h3_id = s.h3_id AND old_lc.reference_year = 2019
         LEFT JOIN geo.grid_h3 g ON g.h3_id = s.h3_id
+        LEFT JOIN LATERAL (
+            SELECT source_name, source_uri, reference_date, collected_at,
+                   details ->> 'reference_label' AS reference_label
+              FROM ops.data_sources
+             WHERE dataset = 'zoning' AND status = 'ok'
+             ORDER BY collected_at DESC
+             LIMIT 1
+        ) zs ON true
         ORDER BY GREATEST(
             COALESCE(s.score_residencial, 0),
             COALESCE(s.score_comercial, 0)
@@ -112,7 +144,7 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
     """
     with db_engine(settings) as engine:
         frame = pd.read_sql(text(query), engine)
-    return _add_reference_neighborhoods(enrich_opportunities(frame))
+    return _add_market_reference(_add_reference_neighborhoods(enrich_opportunities(frame)), settings)
 
 
 def explain_to_text(value) -> str:

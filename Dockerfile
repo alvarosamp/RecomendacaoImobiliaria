@@ -1,7 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgdal-dev gdal-bin libgeos-dev libproj-dev curl \
+    curl libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -12,8 +12,14 @@ RUN pip install --no-cache-dir -r requirements-api.txt
 COPY src/ src/
 COPY api/ api/
 COPY config/ config/
+COPY data/official/bairros/osm_bairros_pouso_alegre.geojson data/official/bairros/cep_bairros_pouso_alegre.geojson data/official/bairros/
 
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app/src \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
 
 EXPOSE 8000
 

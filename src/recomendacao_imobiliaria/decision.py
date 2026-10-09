@@ -37,7 +37,11 @@ def _profile_row(row: dict[str, object]) -> OpportunityProfile:
     priority = _priority(best_score, risk)
     summary = _summary(row, primary_use, best_score, growth, risk)
     legal_status = _legal_status(row)
+    if legal_status == "pendente":
+        priority = "investigar"
+        primary_use = "validacao territorial"
     if legal_status == "bloqueado":
+        priority = "investigar"
         primary_use = "analise legal"
     return OpportunityProfile(
         h3_id=h3_id,
@@ -71,6 +75,8 @@ def _priority_thresholds() -> dict[str, float]:
 def _risk_level(row: dict[str, object]) -> str:
     explain = _parse_explain(row.get("explain_json"))
     zoning = explain.get("zoning", {}) if isinstance(explain, dict) else {}
+    if not zoning.get("zona"):
+        return "nao_classificado"
     if zoning and (not zoning.get("residential_allowed", True) or not zoning.get("commercial_allowed", True)):
         return "alto"
     if zoning and (
@@ -151,6 +157,8 @@ def _summary(
 def _legal_status(row: dict[str, object]) -> str:
     explain = _parse_explain(row.get("explain_json"))
     zoning = explain.get("zoning", {}) if isinstance(explain, dict) else {}
+    if not zoning.get("zona"):
+        return "pendente"
     statuses = {
         str(zoning.get("residential_plan_status", "allowed")),
         str(zoning.get("commercial_plan_status", "allowed")),

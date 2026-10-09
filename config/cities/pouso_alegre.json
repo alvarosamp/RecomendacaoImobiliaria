@@ -15,7 +15,7 @@
     "government"
   ],
   "data_sources": {
-    "zoning": "data/sample_zoning.geojson",
+    "zoning": "data/official/pdpa/zoneamento_pdpa.kml",
     "properties": "data/sample_properties.csv",
     "listings": "data/pouso_alegre_listings.csv",
     "remote_sensing": "data/sentinel2_indices.csv",
@@ -32,9 +32,9 @@
     "boundary": "implemented",
     "h3_grid": "implemented",
     "pois": "implemented",
-    "zoning": "partial",
+    "zoning": "official_imported",
     "remote_sensing": "partial",
-    "legal_rules": "partial",
+    "legal_rules": "structured_conservative",
     "price_model": "baseline"
   }
 }

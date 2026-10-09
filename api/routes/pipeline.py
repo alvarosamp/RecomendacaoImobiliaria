@@ -4,7 +4,9 @@ import asyncio
 import sys
 from typing import Any
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+
+from .auth import require_admin
 
 router = APIRouter()
 
@@ -21,7 +23,6 @@ _state: dict[str, Any] = {
 FULL_STEPS: list[tuple[Command, str]] = [
     ("fetch-boundary", "Buscando limite do municipio"),
     ("build-grid", "Gerando grade H3"),
-    ("sync-official-layers", "Consolidando bairros e zoneamento oficiais"),
     ("sync-listings", "Atualizando anúncios e preços de mercado"),
     ("fetch-pois", "Coletando POIs do OpenStreetMap"),
     ("fetch-cnes", "Buscando estabelecimentos de saude (CNES)"),
@@ -29,6 +30,7 @@ FULL_STEPS: list[tuple[Command, str]] = [
     ("sync-official-susceptibility", "Atualizando carta oficial SGB/CPRM"),
     (("collect-land-cover", "--year", "2024"), "Atualizando cobertura do solo MapBiomas"),
     ("build-features", "Calculando features de acessibilidade"),
+    ("sync-official-layers", "Consolidando bairros e zoneamento oficiais"),
     ("estimate-population", "Estimando populacao por celula (IBGE)"),
     (("sync-sentinel2", "--months", "12"), "Coletando e importando série temporal Sentinel-2"),
     ("update-index-features", "Processando indices Sentinel-2"),
@@ -38,7 +40,6 @@ FULL_STEPS: list[tuple[Command, str]] = [
 ]
 
 REFRESH_STEPS: list[tuple[Command, str]] = [
-    ("sync-official-layers", "Atualizando bairros e zoneamento oficiais"),
     ("sync-listings", "Atualizando anúncios e preços de mercado"),
     ("fetch-pois", "Atualizando POIs do OpenStreetMap"),
     ("fetch-cnes", "Atualizando dados de saude (CNES)"),
@@ -46,6 +47,7 @@ REFRESH_STEPS: list[tuple[Command, str]] = [
     ("sync-official-susceptibility", "Atualizando carta oficial SGB/CPRM"),
     (("collect-land-cover", "--year", "2024"), "Atualizando uso do solo MapBiomas"),
     ("build-features", "Recalculando features de acessibilidade"),
+    ("sync-official-layers", "Atualizando bairros e zoneamento oficiais"),
     ("estimate-population", "Atualizando estimativa populacional (IBGE)"),
     (("sync-sentinel2", "--months", "3"), "Atualizando série temporal Sentinel-2"),
     ("update-index-features", "Recalculando indices Sentinel-2"),
@@ -95,7 +97,7 @@ async def _run_steps(steps: list[tuple[Command, str]]) -> None:
     _state["success"] = True
 
 
-@router.post("/pipeline/run", status_code=202)
+@router.post("/pipeline/run", status_code=202, dependencies=[Depends(require_admin)])
 async def run_pipeline(background_tasks: BackgroundTasks):
     """Pipeline completo: usar na primeira execucao ou para reset total."""
     if _state["running"]:
@@ -105,7 +107,7 @@ async def run_pipeline(background_tasks: BackgroundTasks):
     return {"status": "accepted", "mode": "full", "total_steps": len(FULL_STEPS)}
 
 
-@router.post("/pipeline/refresh", status_code=202)
+@router.post("/pipeline/refresh", status_code=202, dependencies=[Depends(require_admin)])
 async def refresh_pipeline(background_tasks: BackgroundTasks):
     """Atualizacao rapida: atualiza POIs, features e scores sem refazer o grid."""
     if _state["running"]:
@@ -115,7 +117,7 @@ async def refresh_pipeline(background_tasks: BackgroundTasks):
     return {"status": "accepted", "mode": "refresh", "total_steps": len(REFRESH_STEPS)}
 
 
-@router.post("/pipeline/reset", status_code=200)
+@router.post("/pipeline/reset", status_code=200, dependencies=[Depends(require_admin)])
 async def reset_pipeline_state():
     """Reseta o estado do pipeline."""
     if _state["running"]:

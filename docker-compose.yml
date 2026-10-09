@@ -1,3 +1,8 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Stack de DESENVOLVIMENTO — expõe todas as portas em localhost para facilitar
+# depuração (pgAdmin, MinIO console, MLflow UI, API). NÃO use este arquivo em
+# um host com IP público: use docker-compose.prod.yml para isso.
+# ─────────────────────────────────────────────────────────────────────────────
 services:
 
   # ── banco de dados ──────────────────────────────────────────────────────────
@@ -13,6 +18,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./Infra/initdb:/docker-entrypoint-initdb.d
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${PG_USER} -d ${PG_DB}"]
       interval: 10s
@@ -35,6 +41,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+    profiles: [tools]
 
   # ── object storage ──────────────────────────────────────────────────────────
   minio:
@@ -49,6 +57,8 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
+    restart: unless-stopped
+    profiles: [tools]
 
   # ── mlops ───────────────────────────────────────────────────────────────────
   mlflow:
@@ -61,6 +71,7 @@ services:
     volumes:
       - mlflow_data:/mlflow
     restart: unless-stopped
+    profiles: [tools]
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(3); s.connect(('localhost',5000)); s.close()"]
       interval: 15s
@@ -86,13 +97,12 @@ services:
       PG_PASS: ${PG_PASS}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MODEL_PATH: ${MODEL_PATH}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
       HF_TOKEN: ${HF_TOKEN}
     ports:
       - "8001:8000"
     depends_on:
       db:
-        condition: service_healthy
-      mlflow:
         condition: service_healthy
     volumes:
       - ./models:/app/models

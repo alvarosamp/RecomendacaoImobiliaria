@@ -286,6 +286,41 @@ def zoning_geojson():
     return JSONResponse({"type": "FeatureCollection", "features": features})
 
 
+@router.get("/analytics/neighborhoods-geojson")
+def neighborhoods_geojson():
+    """Bairros para rotular o mapa: polígonos oficiais importados, senão a camada OSM versionada."""
+    from recomendacao_imobiliaria.osm_neighborhoods import load_neighborhoods
+
+    try:
+        from sqlalchemy import text
+        from recomendacao_imobiliaria.config import load_settings
+        from recomendacao_imobiliaria.db import make_engine
+
+        engine = make_engine(load_settings())
+        try:
+            with engine.connect() as conn:
+                rows = conn.execute(text("""
+                    SELECT name, source_name,
+                           ST_X(ST_PointOnSurface(geom)) AS label_lon,
+                           ST_Y(ST_PointOnSurface(geom)) AS label_lat,
+                           ST_AsGeoJSON(geom)::json AS geometry
+                    FROM geo.neighborhoods
+                    WHERE geom IS NOT NULL
+                """)).mappings().all()
+        finally:
+            engine.dispose()
+    except Exception:
+        rows = []
+    if rows:
+        return JSONResponse({"type": "FeatureCollection", "source": "oficial", "features": [
+            {"type": "Feature", "properties": {"name": row["name"], "kind": "bairro", "source": row["source_name"],
+                                               "label_lon": row["label_lon"], "label_lat": row["label_lat"]},
+             "geometry": row["geometry"]}
+            for row in rows if row["geometry"]
+        ]})
+    return JSONResponse(load_neighborhoods())
+
+
 @router.get("/analytics/risk-susceptibility")
 def risk_susceptibility(limit: int = Query(100, ge=1, le=711)):
     """Alertas analiticos por H3; nao representam mapa oficial de risco."""

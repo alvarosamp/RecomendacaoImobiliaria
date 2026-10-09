@@ -1,19 +1,21 @@
 import { useState, useEffect, useCallback, useRef, Suspense, lazy, useContext } from 'react'
 import SetupScreen from './components/SetupScreen'
-import { clearMapDataCache, fetchScores, fetchTimeseries } from './api'
+import { clearMapDataCache, fetchNeighborhoodsGeojson, fetchScores, fetchTimeseries, getPipelineStatus, refreshPipeline } from './api'
+import { withNeighborhoods } from './utils/neighborhoods'
 import { AuthContext } from './contexts/AuthContext'
 
 const MapPage           = lazy(() => import('./pages/MapPage'))
 const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
-const CommercePage      = lazy(() => import('./pages/CommercePage'))
-const ValuationPage     = lazy(() => import('./pages/ValuationPage'))
-const ConceptPage       = lazy(() => import('./pages/ConceptStudioPage'))
-const CaseStudyPage     = lazy(() => import('./pages/CaseStudyPage'))
-const LeadsPage         = lazy(() => import('./pages/LeadsPage'))
 const ScoreExplainPage  = lazy(() => import('./pages/ScoreExplainPage'))
 const CompareAreasPage  = lazy(() => import('./pages/CompareAreasPage'))
 const ReportsPage       = lazy(() => import('./pages/ReportsPage'))
 const LegalAuditPage    = lazy(() => import('./pages/LegalAuditPage'))
+const CommercePage = lazy(() => import('./pages/CommercePage'))
+const ValuationPage = lazy(() => import('./pages/ValuationPage'))
+const LeadsPage = lazy(() => import('./pages/LeadsPage'))
+const ConceptStudioPage = lazy(() => import('./pages/ConceptStudioPage'))
+const CaseStudyPage = lazy(() => import('./pages/CaseStudyPage'))
+const INDEPENDENT_PAGES = ['leads', 'valuation', 'concept']
 
 // ── SVG Icons ──────────────────────────────────────────
 function IconMap() {
@@ -114,29 +116,24 @@ function IconLegal() {
 // ── Nav groups ──────────────────────────────────────────
 const NAV_GROUPS = [
   {
-    label: 'Explorar',
+    label: 'Jornada de análise',
     items: [
-      { id: 'map',      label: 'Mapa da Cidade',     Icon: IconMap },
-      { id: 'opportunities', label: 'Oportunidades',  Icon: IconOpp },
-      { id: 'commerce', label: 'Comércios Faltantes', Icon: IconCommerce },
+      { id: 'opportunities', label: '1. Oportunidades', Icon: IconOpp },
+      { id: 'map', label: '2. Confirmar no mapa', Icon: IconMap },
+      { id: 'legal', label: '3. Validar uso', Icon: IconLegal },
+      { id: 'score', label: '4. Entender score', Icon: IconScore },
+      { id: 'compare', label: '5. Comparar áreas', Icon: IconCompare },
+      { id: 'reports', label: '6. Gerar relatório', Icon: IconReports },
     ],
   },
   {
-    label: 'Analisar',
+    label: 'Ferramentas',
     items: [
-      { id: 'valuation', label: 'Avaliar Imóvel',   Icon: IconValuation },
-      { id: 'leads',     label: 'Lead Scoring',      Icon: IconLead },
-      { id: 'score',     label: 'Score Explicável',  Icon: IconScore },
-      { id: 'compare',   label: 'Comparar Áreas',    Icon: IconCompare },
-      { id: 'legal',     label: 'Auditoria Legal',   Icon: IconLegal },
-    ],
-  },
-  {
-    label: 'Criar',
-    items: [
-      { id: 'concept',    label: 'Conceito e Obra',  Icon: IconConcept },
-      { id: 'case-study', label: 'Estudo de Caso',   Icon: IconCaseStudy },
-      { id: 'reports',    label: 'Relatórios',       Icon: IconReports },
+      { id: 'leads', label: 'CRM de leads', Icon: IconLead },
+      { id: 'valuation', label: 'Avaliação de imóveis', Icon: IconValuation },
+      { id: 'concept', label: 'Estúdio de conceitos', Icon: IconConcept },
+      { id: 'commerce', label: 'Oportunidades comerciais', Icon: IconCommerce },
+      { id: 'case-study', label: 'Estudo de caso', Icon: IconCaseStudy },
     ],
   },
 ]
@@ -145,22 +142,22 @@ const PROFILE_CONFIG = {
   investidor: {
     label: 'Investidor',
     defaultPage: 'opportunities',
-    pages: ['opportunities', 'map', 'valuation', 'score', 'compare', 'legal', 'reports', 'case-study'],
+    pages: ['opportunities', 'map', 'legal', 'score', 'compare', 'reports', 'valuation', 'case-study'],
   },
   corretor: {
     label: 'Corretor',
-    defaultPage: 'leads',
-    pages: ['leads', 'valuation', 'map', 'score', 'compare', 'legal', 'reports', 'concept'],
+    defaultPage: 'opportunities',
+    pages: ['opportunities', 'map', 'legal', 'score', 'compare', 'reports', 'leads', 'valuation', 'concept'],
   },
   incorporadora: {
     label: 'Incorporadora',
     defaultPage: 'opportunities',
-    pages: ['opportunities', 'map', 'score', 'compare', 'legal', 'reports', 'concept', 'case-study'],
+    pages: ['opportunities', 'map', 'legal', 'score', 'compare', 'reports', 'concept', 'case-study'],
   },
   governo: {
     label: 'Poder Público',
-    defaultPage: 'map',
-    pages: ['map', 'commerce', 'opportunities', 'score', 'compare', 'legal', 'reports', 'case-study'],
+    defaultPage: 'opportunities',
+    pages: ['opportunities', 'map', 'legal', 'score', 'compare', 'reports', 'commerce', 'case-study'],
   },
 }
 
@@ -193,7 +190,7 @@ function RefreshStatus({ status, onDismiss }) {
   )
 }
 
-function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus, onRefresh, onDismissRefresh, user, profile, onProfileChange }) {
+function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus, onRefresh, onDismissRefresh, user, profile, onProfileChange, isOpen, onClose }) {
   const userData = user || {}
   const navigation = getNavigation(profile)
 
@@ -206,12 +203,13 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${isOpen ? ' mobile-open' : ''}`}>
       {/* Brand */}
       <div className="sidebar-brand">
         <div className="sidebar-logo-row">
           <div className="sidebar-logo-badge">Ur</div>
           <div className="sidebar-brand-name">Urbia</div>
+          <button className="sidebar-close" onClick={onClose} aria-label="Fechar menu">×</button>
         </div>
         <div className="sidebar-brand-sub">
           <span className="sidebar-city-dot" />
@@ -228,8 +226,8 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
               <button
                 key={item.id}
                 className={`nav-item${page === item.id ? ' active' : ''}`}
-                onClick={() => setPage(item.id)}
-                disabled={isEmpty}
+                onClick={() => { setPage(item.id); onClose?.() }}
+                disabled={isEmpty && !INDEPENDENT_PAGES.includes(item.id)}
               >
                 <item.Icon />
                 {item.label}
@@ -253,24 +251,12 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
           </button>
         </div>
 
-        <label className="profile-switcher-label" htmlFor="profile-switcher">Modo de trabalho</label>
-        <select
-          id="profile-switcher"
-          className="profile-switcher"
-          value={profile}
-          onChange={event => onProfileChange(event.target.value)}
-        >
-          {Object.entries(PROFILE_CONFIG).map(([id, config]) => (
-            <option key={id} value={id}>{config.label}</option>
-          ))}
-        </select>
-
         {!loading && !error && scores.length > 0 && (
           <>
             <div className="sidebar-stats">
               {scores.length} áreas · {scores.filter(r => r.priority === 'alta').length} alta prioridade
             </div>
-            <button
+            {userData.is_admin && <button
               className="sidebar-refresh-btn"
               onClick={onRefresh}
               disabled={refreshStatus === 'running'}
@@ -280,7 +266,7 @@ function Sidebar({ page, setPage, scores, isEmpty, loading, error, refreshStatus
                 <path d="M11 2.5V5H8.5"/>
               </svg>
               Atualizar dados
-            </button>
+            </button>}
             <RefreshStatus status={refreshStatus} onDismiss={onDismissRefresh} />
           </>
         )}
@@ -298,6 +284,7 @@ export default function App() {
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState(null)
   const [refreshStatus, setRefreshStatus] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const refreshRef = useRef(null)
 
   const [timeDates, setTimeDates]       = useState([])
@@ -307,8 +294,8 @@ export default function App() {
 
   const loadScores = useCallback(() => {
     setLoading(true)
-    fetchScores()
-      .then(setScores)
+    Promise.all([fetchScores(), fetchNeighborhoodsGeojson().catch(() => null)])
+      .then(([rows, neighborhoods]) => setScores(withNeighborhoods(rows, neighborhoods)))
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
@@ -336,7 +323,7 @@ export default function App() {
     if (refreshStatus === 'running') return
     setRefreshStatus('running')
     try {
-      await fetch('/api/pipeline/refresh', { method: 'POST' })
+      await refreshPipeline()
     } catch {
       setRefreshStatus('error')
       return
@@ -344,7 +331,7 @@ export default function App() {
     clearInterval(refreshRef.current)
     refreshRef.current = setInterval(async () => {
       try {
-        const s = await fetch('/api/pipeline/status').then(r => r.json())
+        const s = await getPipelineStatus()
         if (s.done) {
           clearInterval(refreshRef.current)
           setRefreshStatus(s.success ? 'done' : 'error')
@@ -370,6 +357,7 @@ export default function App() {
     setTimeLoaded(false)
   }
 
+  const requiresTerritorialData = !INDEPENDENT_PAGES.includes(page)
   const isEmpty = !loading && !error && scores.length === 0
   const openConcept = row => {
     if (!PROFILE_CONFIG[profile].pages.includes('concept')) return
@@ -389,6 +377,15 @@ export default function App() {
 
   return (
     <div className="layout">
+      <button
+        className="mobile-menu-trigger"
+        onClick={() => setSidebarOpen(true)}
+        aria-label="Abrir menu"
+        aria-expanded={sidebarOpen}
+      >
+        <span /><span /><span />
+      </button>
+      {sidebarOpen && <button className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-label="Fechar menu" />}
       <Sidebar
         page={page}
         setPage={setPage}
@@ -402,6 +399,8 @@ export default function App() {
         user={user}
         profile={profile}
         onProfileChange={handleProfileChange}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       <main className="main">
@@ -413,14 +412,15 @@ export default function App() {
         )}
         {error && <div className="error-msg">Erro: {error}</div>}
 
-        {isEmpty && (
+        {isEmpty && requiresTerritorialData && (
           <SetupScreen
+            isAdmin={!!user?.is_admin}
             onComplete={handleSetupComplete}
             onRefreshDone={handleRefreshDone}
           />
         )}
 
-        {!loading && !error && scores.length > 0 && (
+        {!loading && !error && (scores.length > 0 || !requiresTerritorialData) && (
           <Suspense fallback={<div className="loading"><div className="loading-spinner" />Carregando módulo…</div>}>
             {page === 'map' && (
               <MapPage
@@ -434,15 +434,15 @@ export default function App() {
               />
             )}
             {page === 'opportunities' && <OpportunitiesPage scores={scores} onOpenConcept={PROFILE_CONFIG[profile].pages.includes('concept') ? openConcept : undefined} />}
-            {page === 'leads'         && <LeadsPage />}
-            {page === 'commerce'      && <CommercePage scores={scores} />}
-            {page === 'valuation'     && <ValuationPage />}
             {page === 'score'         && <ScoreExplainPage scores={scores} />}
             {page === 'compare'       && <CompareAreasPage scores={scores} />}
             {page === 'reports'       && <ReportsPage scores={scores} />}
             {page === 'legal'         && <LegalAuditPage scores={scores} />}
-            {page === 'concept'       && <ConceptPage seed={conceptSeed} />}
-            {page === 'case-study'    && <CaseStudyPage scores={scores} />}
+            {page === 'leads' && <LeadsPage />}
+            {page === 'valuation' && <ValuationPage />}
+            {page === 'concept' && <ConceptStudioPage seed={conceptSeed} />}
+            {page === 'commerce' && <CommercePage />}
+            {page === 'case-study' && <CaseStudyPage scores={scores} />}
           </Suspense>
         )}
       </main>

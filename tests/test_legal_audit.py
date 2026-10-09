@@ -8,7 +8,7 @@ class LegalAuditTest(unittest.TestCase):
         audit = build_legal_audit("ZPA", "comercial")
 
         self.assertEqual(audit.status, "blocked")
-        self.assertIn("Art. 30", audit.articles)
+        self.assertIn("Anexo 8 - Quadro 4C", audit.articles)
         self.assertTrue(audit.sources)
 
     def test_blocking_spatial_overlay_overrides_zone(self):

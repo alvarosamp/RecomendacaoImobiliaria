@@ -1,0 +1,37 @@
+[
+  {
+    "image": "alvarocareli/ri-hostinger-a10dda-api:20261005-v1",
+    "digest": "sha256:647d0795c3c58d3ead9860c3c70c0cfac9d1fa24820aaf203df82bce586719d9",
+    "platform_digest": "sha256:25f6d9bf43749cc30906ef2d249b1d57c35d56e59f121e1f950327503216ae0c",
+    "architecture": "linux/amd64",
+    "anonymous_manifest_and_all_layers": true
+  },
+  {
+    "image": "alvarocareli/ri-hostinger-a10dda-frontend:20261005-v1",
+    "digest": "sha256:92b7029ee2843bf307512e2ae79971c89438f3f614526b3de8409bc468c3dacd",
+    "platform_digest": "sha256:9627833e4cff90899836efeecaad1e539f53f15b26b61d156845db1972b189fa",
+    "architecture": "linux/amd64",
+    "anonymous_manifest_and_all_layers": true
+  },
+  {
+    "image": "alvarocareli/ri-hostinger-a10dda-db:20261005-v1",
+    "digest": "sha256:b51ff7a96cd89570c340901b0fe2ef8c752cc31e0f6ab02d8b1c8eb75862c986",
+    "platform_digest": "sha256:68fb842414c7bdfc5da61ce949b2d6eb85ae815c3b79c4101f24f356a2a0a2e3",
+    "architecture": "linux/amd64",
+    "anonymous_manifest_and_all_layers": true
+  },
+  {
+    "image": "alvarocareli/ri-hostinger-a10dda-mlflow:20261005-v1",
+    "digest": "sha256:f80766ce8582f19f68eeeb3794daa86f495237ca04a2a18860ae64db8b04f6cf",
+    "platform_digest": "sha256:c4bbfa7e995507f919a9af9db187d25888434289ba8d77fdd4b36f987b8d2b05",
+    "architecture": "linux/amd64",
+    "anonymous_manifest_and_all_layers": true
+  },
+  {
+    "image": "alvarocareli/ri-hostinger-a10dda-minio:20261005-v1",
+    "digest": "sha256:e4e9488a253d6302b5610f5e599eaab8667596a1707adeb3c087a899239850b5",
+    "platform_digest": "sha256:e4e9488a253d6302b5610f5e599eaab8667596a1707adeb3c087a899239850b5",
+    "architecture": "linux/amd64",
+    "anonymous_manifest_and_all_layers": true
+  }
+]

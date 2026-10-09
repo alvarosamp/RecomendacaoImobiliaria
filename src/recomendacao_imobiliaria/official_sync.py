@@ -19,4 +19,10 @@ def sync_official_layers() -> dict[str, object]:
         result["zoning"] = import_zoning_file(path).__dict__
     except (FileNotFoundError, ValueError) as exc:
         record_data_source("zoning", "official_zoning", status="waiting_source", details={"expected": "data/official/zoneamento_oficial.*", "reason": str(exc)})
+    from sqlalchemy import text
+    from .config import load_settings
+    from .db import db_engine
+    with db_engine(load_settings()) as engine:
+        with engine.begin() as conn:
+            conn.execute(text("SELECT geo.refresh_materialized()"))
     return result

@@ -1,187 +1,172 @@
 {
-  "city": "Pouso Alegre, Minas Gerais, Brazil",
-  "lei": "Lei Ordinaria 6476/2021",
+  "city": "Pouso Alegre, Minas Gerais, Brasil",
+  "lei": "Lei Ordinaria 6.476/2021 - Plano Diretor",
+  "rules_version": "2026-09-pdpa-anexos",
   "legal_sources": [
-    {
-      "title": "Lei Ordinaria 6476/2021 - Plano Diretor de Pouso Alegre",
-      "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"
-    },
-    {
-      "title": "Legislacao urbanistica municipal - Camara Municipal de Pouso Alegre",
-      "url": "https://www.cmpa.mg.gov.br/"
-    }
+    {"title": "Lei Ordinaria 6.476/2021 - Plano Diretor", "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"},
+    {"title": "Anexo 6, Quadro 2 - Parametros de ocupacao do solo", "url": "https://pousoalegre.mg.gov.br/uploads/66476a657ac1a.pdf"},
+    {"title": "Anexo 8, Quadro 4C - Usos permitidos na MDU", "url": "https://pousoalegre.mg.gov.br/uploads/679b784403aba.pdf"},
+    {"title": "Anexo 9, Quadros 7 e 8 - Incomodidade e instalacao", "url": "https://pousoalegre.mg.gov.br/uploads/66476b20c4ac5.pdf"}
   ],
   "rules": {
     "ZC": {
-      "label": "Zona Mista Central",
-      "residencial": "allowed",
-      "comercial": "allowed",
-      "servicos_bairro": "allowed",
-      "industrial": "conditioned",
-      "articles": ["Art. 12", "Art. 40 (EIV acima de 4.000 m²)", "Art. 45 (Outorga Onerosa)"],
-      "parameters": {
-        "ca_basico": 2.0,
-        "ca_maximo": 4.0,
-        "to_maxima_pct": 70,
-        "gabarito_max_pavimentos": 12,
-        "recuo_frontal_m": 3
-      },
-      "notes": "Area central/mista. Aceita residencial, comercial e servicos. Coef. basico 2,0, maximo 4,0. EIV obrigatorio acima de 4.000 m². Outorga Onerosa disponivel ate CA 4,0."
+      "label": "Zonas Centrais",
+      "residencial": "allowed", "comercial": "allowed", "servicos_bairro": "allowed", "misto": "allowed", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C", "Anexo 9 - Quadros 7 e 8"],
+      "parameters": {"ca_basico": 2.5, "ca_maximo_range": [4.0, 5.0], "taxa_ocupacao_max_range": [0.8, 0.9], "taxa_permeabilidade_min_range": [0.1, 0.15], "gabarito_max_m": 75, "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Usos residenciais e nao residenciais admitidos; atividades devem respeitar classe de risco, incomodidade, instalacao e a macroarea incidente."
     },
-    "ZM": {
-      "label": "Zona Mista",
-      "residencial": "allowed",
-      "comercial": "allowed",
-      "servicos_bairro": "allowed",
-      "industrial": "conditioned",
-      "articles": ["Art. 13", "Art. 40 (EIV acima de 4.000 m²)"],
-      "parameters": {
-        "ca_basico": 1.5,
-        "ca_maximo": 3.0,
-        "to_maxima_pct": 60,
-        "recuo_frontal_m": 3
-      },
-      "notes": "Uso misto urbano. CA basico 1,5, maximo 3,0. Comercio e servicos devem ser checados contra incomodidade e parametros locais."
+    "ZER": {
+      "label": "Zonas Exclusivamente Residenciais",
+      "residencial": "conditioned", "comercial": "blocked", "servicos_bairro": "blocked", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"ca_basico": 2.0, "ca_maximo": 2.5, "taxa_ocupacao_max": 0.6, "taxa_permeabilidade_min": 0.25, "gabarito_max_m": 10, "altura_divisa_max_m": 13},
+      "notes": "A categoria residencial ampla e condicionada porque o quadro admite residencia unifamiliar e restringe tipologias multifamiliares; usos nao residenciais nao sao admitidos."
     },
     "ZM1": {
-      "label": "Zona Mista 1",
-      "residencial": "allowed",
-      "comercial": "allowed",
-      "servicos_bairro": "allowed",
-      "industrial": "conditioned",
-      "articles": ["Art. 14", "Art. 40 (EIV)"],
-      "parameters": {
-        "ca_basico": 1.5,
-        "ca_maximo": 2.5,
-        "to_maxima_pct": 60,
-        "recuo_frontal_m": 3
-      },
-      "notes": "Uso misto com maior cautela para impacto de vizinhanca. CA maximo 2,5."
+      "label": "Zona Mista de Adensamento Restrito",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [2.2, 3.0], "taxa_ocupacao_max": 0.75, "taxa_permeabilidade_min_range": [0.15, 0.2], "gabarito_max_m": 10, "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Adensamento restrito. Tipologias residenciais e atividades nao residenciais dependem da classe de uso e das restricoes especificas do Quadro 4B."
     },
     "ZM2": {
-      "label": "Zona Mista 2",
-      "residencial": "allowed",
-      "comercial": "allowed",
-      "servicos_bairro": "allowed",
-      "industrial": "conditioned",
-      "articles": ["Art. 14", "Art. 40 (EIV)"],
-      "parameters": {
-        "ca_basico": 1.5,
-        "ca_maximo": 2.5,
-        "to_maxima_pct": 60,
-        "recuo_frontal_m": 3
-      },
-      "notes": "Uso misto com verificacao de parametros urbanisticos. Mesmos indices de ZM1."
+      "label": "Zona Mista de Baixa Densidade",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [2.5, 3.5], "taxa_ocupacao_max_range": [0.75, 0.8], "taxa_permeabilidade_min_range": [0.1, 0.2], "gabarito_max_m": 15, "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Uso misto de baixa densidade; uso nao residencial depende da atividade, classe de risco e macroarea."
+    },
+    "ZM3": {
+      "label": "Zona Mista de Media Densidade",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [3.0, 4.5], "taxa_ocupacao_max_range": [0.75, 0.85], "taxa_permeabilidade_min_range": [0.1, 0.15], "gabarito_max_m": 45, "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Uso misto de media densidade; a atividade nao residencial deve ser cruzada com os Quadros 4B, 7 e 8."
+    },
+    "ZM4": {
+      "label": "Zona Mista de Alta Densidade",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C"],
+      "parameters": {"ca_basico": 2.5, "ca_maximo_range": [4.0, 5.0], "taxa_ocupacao_max_range": [0.75, 0.9], "taxa_permeabilidade_min_range": [0.1, 0.15], "gabarito_max_m": 75, "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Alta densidade. Uso nao residencial e condicionado a classe de risco, incomodidade e macroarea."
     },
     "ZMV": {
-      "label": "Zona Mista Vertical",
-      "residencial": "allowed",
-      "comercial": "allowed",
-      "servicos_bairro": "allowed",
-      "industrial": "conditioned",
-      "articles": ["Art. 15", "Art. 40 (EIV obrigatorio acima de 4.000 m²)", "Art. 45 (Outorga Onerosa)"],
-      "parameters": {
-        "ca_basico": 2.0,
-        "ca_maximo": 5.0,
-        "to_maxima_pct": 65,
-        "gabarito_max_pavimentos": 16,
-        "recuo_frontal_m": 5
-      },
-      "notes": "Zona de adensamento controlado. CA maximo 5,0. Gabarito maximo 16 pavimentos. EIV obrigatorio acima de 4.000 m²."
-    },
-    "ZEIS": {
-      "label": "Zona Especial de Interesse Social",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "blocked",
-      "articles": ["Art. 18", "Art. 19 (Regularizacao Fundiaria)", "Art. 20 (ATHIS)"],
-      "parameters": {
-        "ca_maximo": 1.5,
-        "to_maxima_pct": 60,
-        "lote_minimo_m2": 100
-      },
-      "notes": "Prioridade para habitacao de interesse social. Regularizacao fundiaria e urbanizacao garantidas pelo municipio. Uso comercial condicionado a compatibilidade habitacional."
-    },
-    "ZEU": {
-      "label": "Zona de Expansao Urbana",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "conditioned",
-      "articles": ["Art. 22", "Art. 23 (Plano de Ocupacao obrigatorio)", "Art. 60 (Parcelamento)"],
-      "parameters": {
-        "ca_maximo": 2.0,
-        "to_maxima_pct": 50,
-        "area_verde_minima_pct": 20,
-        "lote_minimo_m2": 125
-      },
-      "notes": "Expansao urbana exige Plano de Ocupacao com diretrizes viarias e infraestrutura. Minimo 20% de areas verdes e institucionais no parcelamento."
-    },
-    "ZPA": {
-      "label": "Zona de Preservacao Ambiental",
-      "residencial": "blocked",
-      "comercial": "blocked",
-      "servicos_bairro": "blocked",
-      "industrial": "blocked",
-      "articles": ["Art. 30", "Art. 31 (APP - Lei Federal 12.651/2012)"],
-      "parameters": {},
-      "notes": "APP e remanescentes de Mata Atlantica. Vedada qualquer construcao. Licenca ambiental estadual para pesquisa e ecoturismo."
-    },
-    "ZEPAM": {
-      "label": "Zona Especial de Protecao Ambiental",
-      "residencial": "blocked",
-      "comercial": "blocked",
-      "servicos_bairro": "blocked",
-      "industrial": "blocked",
-      "articles": ["Art. 35", "Art. 36 (Corredor Ecologico)", "Art. 37 (Pagamento por Servicos Ambientais)"],
-      "parameters": {},
-      "notes": "Zona de transicao ambiental. Reflorestamento e corredores ecologicos. Proprietarios podem aderir a PSA."
+      "label": "Zona Mista de Verticalizacao",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [3.0, 6.0], "taxa_ocupacao_max_range": [0.8, 0.9], "taxa_permeabilidade_min_range": [0.1, 0.15], "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Verticalizacao e usos nao residenciais admitidos conforme tipologia, risco, via e macroarea; os parametros nao podem ser reduzidos a um unico indice."
     },
     "ZEP": {
-      "label": "Zona Especial de Projetos",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "conditioned",
-      "articles": ["Art. 48", "Art. 49 (Projeto Urbano Especifico obrigatorio)"],
-      "parameters": {},
-      "notes": "Demanda Projeto Urbano Especifico, EIV e compatibilidade local. Parametros definidos caso a caso."
+      "label": "Zonas de Empreendimentos de Porte",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadros 4B e 4C", "Anexo 9 - Quadros 7 e 8"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [3.0, 4.0], "taxa_ocupacao_max_range": [0.75, 0.9], "taxa_permeabilidade_min_range": [0.1, 0.15], "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Zona voltada a empreendimentos de porte. Exige verificacao da classe de risco, impacto, circulacao, incomodidade e parametros da macroarea."
     },
-    "AIC": {
-      "label": "Area de Interesse Cultural",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "blocked",
-      "articles": ["Art. 50", "Art. 51 (Conselho do Patrimonio Cultural)", "Art. 52 (IPHAN/IEPHA)"],
-      "parameters": {},
-      "notes": "Centro historico e edificacoes inventariadas. Intervencoes aprovadas pelo Conselho do Patrimonio. Industrial vedado."
+    "ZEEP": {
+      "label": "Zonas de Expansao de Empreendimentos de Porte",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Anexo 8 - Quadro 4C", "Art. 90", "Anexo 9 - Quadros 7 e 8"],
+      "parameters": {"requires_macroarea_check": true, "requires_impact_study": true},
+      "notes": "Area vazia destinada a empreendimentos nao residenciais de porte. Ocupacao e parcelamento exigem verificacoes urbanisticas, ambientais e de impacto."
     },
-    "AIU": {
-      "label": "Area de Interesse Urbanistico",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "conditioned",
-      "articles": ["Art. 53", "Art. 40 (EIV)"],
-      "parameters": {},
-      "notes": "Exige leitura de diretrizes urbanisticas especificas definidas em decreto."
+    "ZEU": {
+      "label": "Zonas de Expansao Urbana",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "conditioned",
+      "articles": ["Mapa 4 - Zoneamento Urbano", "Lei 6.476/2021 - regras de parcelamento", "Anexo 8 - Quadro 4C"],
+      "parameters": {"requires_parceling_check": true, "requires_environmental_check": true},
+      "notes": "Ocupacao condicionada as regras de parcelamento, infraestrutura, APPs e areas non aedificandi."
     },
-    "AIUA": {
-      "label": "Area de Interesse Urbanistico Ambiental",
-      "residencial": "conditioned",
-      "comercial": "conditioned",
-      "servicos_bairro": "conditioned",
-      "industrial": "blocked",
-      "articles": ["Art. 55", "Art. 56 (Plano de Intervencao obrigatorio)", "Art. 57 (Estudo de Estabilidade)"],
-      "parameters": {},
-      "notes": "Fundos de vale e encostas. Plano de Intervencao integrado obrigatorio. Novos parcelamentos condicionados a estudo de drenagem e estabilidade."
+    "ZEIS1": {
+      "label": "ZEIS 1 - Interesse Social Consolidada",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"ca_basico": 2.5, "ca_maximo": 3.0, "taxa_ocupacao_max": 0.85, "taxa_permeabilidade_min": 0.1, "gabarito_max_m": 15, "altura_divisa_max_m": 13},
+      "notes": "Prioridade habitacional de interesse social consolidada. Uso nao residencial deve ser compativel com a finalidade social e as restricoes do anexo."
+    },
+    "ZEIS2": {
+      "label": "ZEIS 2 - Interesse Social Nova",
+      "residencial": "allowed", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo": 3.0, "taxa_ocupacao_max_range": [0.85, 0.9], "taxa_permeabilidade_min_range": [0.1, 0.15], "altura_divisa_max_m": 13, "requires_macroarea_check": true},
+      "notes": "Vazios destinados a habitacao de interesse social e moradia popular. Outros usos sao complementares e condicionados."
+    },
+    "ZERF": {
+      "label": "Zonas Especiais de Regularizacao Fundiaria",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C", "Arts. 64 e 66"],
+      "parameters": {"ca_basico_range": [2.0, 2.5], "ca_maximo_range": [3.0, 4.0], "requires_regularization_check": true},
+      "notes": "Area sujeita a regularizacao fundiaria. Qualquer recomendacao depende da situacao dominial, urbanistica e do projeto de regularizacao."
+    },
+    "ZEPEC2": {
+      "label": "ZEPEC 2 - Equipamentos de Esporte e Lazer",
+      "residencial": "blocked", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"ca_basico": 2.5, "ca_maximo": 3.0, "taxa_ocupacao_max": 0.8, "taxa_permeabilidade_min": 0.1, "requires_council_approval": true},
+      "notes": "Area de preservacao cultural destinada a esporte e lazer. Somente usos compativeis, com licenciamento e aprovacao dos orgaos competentes."
+    },
+    "ZEPEC3": {
+      "label": "ZEPEC 3 - Interesse Turistico",
+      "residencial": "conditioned", "comercial": "conditioned", "servicos_bairro": "conditioned", "misto": "conditioned", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"requires_cultural_check": true, "requires_macroarea_check": true},
+      "notes": "Area de interesse paisagistico e turistico. Intervencoes dependem de compatibilidade cultural, paisagistica e do trecho especifico."
+    },
+    "ZEPU1": {
+      "label": "ZEPU 1 - Parques Urbanos",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "conditioned", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"requires_specific_urban_project": true, "requires_environmental_licensing": true},
+      "notes": "Area reservada a projeto urbano de parque, lazer e cultura. Nao deve ser ranqueada como oportunidade imobiliaria comum."
+    },
+    "ZEPU2": {
+      "label": "ZEPU 2 - Resiliencia Urbana",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "conditioned", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"requires_specific_urban_project": true, "requires_resilience_infrastructure": true},
+      "notes": "Uso e ocupacao vinculados a infraestrutura de resiliencia e amortecimento de enchentes; bloqueada para recomendacao imobiliaria automatica."
+    },
+    "ZEPU3": {
+      "label": "ZEPU 3 - Mobilidade Urbana",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "conditioned", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"requires_specific_urban_project": true, "reserved_for_transport": true},
+      "notes": "Area destinada a infraestrutura e operacao de transportes. Nao deve ser ranqueada como oportunidade imobiliaria comum."
+    },
+    "ZEPAM1": {
+      "label": "ZEPAM 1 - Preservacao Permanente",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "blocked", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C"],
+      "parameters": {"environmental_restriction": true},
+      "notes": "Zona de preservacao permanente. Coeficientes do anexo existem apenas para transferencia do direito de construir; ocupacao imobiliaria automatica bloqueada."
+    },
+    "ZEPAM2": {
+      "label": "ZEPAM 2 - Unidades de Conservacao",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "blocked", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C", "Plano de manejo da unidade"],
+      "parameters": {"environmental_restriction": true, "requires_management_plan": true},
+      "notes": "Unidade de conservacao sujeita a legislacao ambiental e plano de manejo. Recomendacao imobiliaria automatica bloqueada."
+    },
+    "ZEPAM3": {
+      "label": "ZEPAM 3 - Areas de Risco de Desastres",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "blocked", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo IX - Mapa 6 - Riscos"],
+      "parameters": {"disaster_risk_restriction": true},
+      "notes": "Zona sujeita a inundacao ou outro risco de desastre. Bloqueada para recomendacao automatica ate estudo tecnico e decisao oficial especifica."
+    },
+    "ZEPAM4": {
+      "label": "ZEPAM 4 - Amortecimento de Unidade de Conservacao",
+      "residencial": "blocked", "comercial": "blocked", "servicos_bairro": "blocked", "misto": "blocked", "industrial": "blocked",
+      "articles": ["Anexo 6 - Quadro 2", "Anexo 8 - Quadro 4C", "Plano de manejo da unidade"],
+      "parameters": {"environmental_restriction": true, "buffer_zone": true},
+      "notes": "Zona de amortecimento ambiental. Recomendacao imobiliaria automatica bloqueada ate compatibilizacao com o plano de manejo e licenciamento."
     }
   },
   "unknown_zone_policy": {
     "status": "conditioned",
-    "articles": [],
-    "notes": "Zona nao mapeada. Exige validacao manual no Plano Diretor e na lei de uso e ocupacao do solo."
+    "articles": ["Validacao cartografica e consulta aos anexos vigentes"],
+    "notes": "Zona ausente ou nao estruturada. A celula nao pode receber prioridade alta e exige validacao manual antes de qualquer decisao."
   }
 }

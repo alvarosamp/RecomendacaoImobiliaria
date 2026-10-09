@@ -10,7 +10,6 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-import requests
 from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -322,24 +321,16 @@ def generate_image(payload: ImageRequest):
         }
 
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    url = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}"
     try:
-        response = requests.post(
-            url,
-            headers={"Authorization": f"Bearer {token}", "Accept": "image/png"},
-            json={
-                "inputs": prompt,
-                "parameters": {
-                    "negative_prompt": "texto ilegivel, baixa resolucao, deformado, perspectiva impossivel, pessoas distorcidas",
-                    "num_inference_steps": 24,
-                    "guidance_scale": 7,
-                    "width": 1024,
-                    "height": 768,
-                },
-            },
+        from huggingface_hub import InferenceClient
+        client = InferenceClient(
+            provider=os.getenv("HF_IMAGE_PROVIDER", "auto"),
+            api_key=token,
             timeout=120,
         )
-    except requests.RequestException as exc:
+        image = client.text_to_image(prompt, model=HF_MODEL, width=1024, height=768)
+        image.save(path, format="PNG")
+    except Exception as exc:
         return {
             "status": "provider_error",
             "model": HF_MODEL,
@@ -347,19 +338,8 @@ def generate_image(payload: ImageRequest):
             "prompt": prompt,
             "image": None,
             "remainingToday": max(0, DAILY_LIMIT - used),
-            "message": f"Falha ao chamar Hugging Face: {exc}",
+            "message": f"Falha ao chamar Hugging Face: {str(exc)[:500]}",
         }
-    if not response.ok:
-        return {
-            "status": "provider_error",
-            "model": HF_MODEL,
-            "view": payload.view,
-            "prompt": prompt,
-            "image": None,
-            "remainingToday": max(0, DAILY_LIMIT - used),
-            "message": response.text[:500],
-        }
-    path.write_bytes(response.content)
     usage[today] = used + 1
     _save_usage(usage)
     return {

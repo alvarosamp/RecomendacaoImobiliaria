@@ -91,29 +91,58 @@ export default function LandingPage() {
           <div className="landing-hero-bg" />
           <div className="landing-hex-bg" />
 
-          <div className="landing-hero-eyebrow">Inteligência territorial</div>
+          <div className="landing-hero-grid">
+            <div className="landing-hero-copy">
+              <div className="landing-hero-eyebrow">Inteligência territorial</div>
 
-          <h1>
-            Decida com dados<br />
-            onde <em>realmente</em><br />
-            vale investir.
-          </h1>
+              <h1>
+                Decida com dados<br />
+                onde <em>realmente</em><br />
+                vale investir.
+              </h1>
 
-          <p className="landing-hero-desc">
-            Urbia combina mapas urbanos, Plano Diretor, sensoriamento remoto e
-            dados de mercado para mostrar o potencial real de cada área de qualquer cidade.
-          </p>
+              <p className="landing-hero-desc">
+                Urbia combina mapas urbanos, Plano Diretor, sensoriamento remoto e
+                dados de mercado para mostrar o potencial territorial de cada área de Pouso Alegre.
+              </p>
 
-          <div className="landing-hero-actions">
-            <Link to="/register" className="landing-hero-btn-primary">
-              Acessar a plataforma
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 8h10M9 4l4 4-4 4"/>
-              </svg>
-            </Link>
-            <Link to="/login" className="landing-hero-btn-secondary">
-              Já tenho conta
-            </Link>
+              <div className="landing-hero-actions">
+                <Link to="/register" className="landing-hero-btn-primary">
+                  Explorar oportunidades
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 8h10M9 4l4 4-4 4"/>
+                  </svg>
+                </Link>
+                <a href="#funcionalidades" className="landing-hero-btn-secondary">
+                  Conhecer a plataforma
+                </a>
+              </div>
+            </div>
+
+            <div className="landing-product-preview" aria-label="Prévia do mapa de inteligência territorial">
+              <div className="preview-toolbar">
+                <div className="preview-brand"><span>Ur</span> Visão territorial</div>
+                <div className="preview-status"><i /> Dados atualizados</div>
+              </div>
+              <div className="preview-body">
+                <div className="preview-map">
+                  <div className="preview-search">⌕ &nbsp; Florianópolis, SC</div>
+                  <div className="preview-hex hex-a">92</div>
+                  <div className="preview-hex hex-b">87</div>
+                  <div className="preview-hex hex-c">74</div>
+                  <div className="preview-hex hex-d">81</div>
+                  <div className="preview-map-label">Potencial territorial</div>
+                </div>
+                <div className="preview-panel">
+                  <span className="preview-kicker">Melhor oportunidade</span>
+                  <strong>Centro expandido</strong>
+                  <div className="preview-score"><b>92</b><span>/ 100<br />alto potencial</span></div>
+                  <div className="preview-metric"><span>Valorização estimada</span><b>+18,4%</b></div>
+                  <div className="preview-metric"><span>Risco regulatório</span><b className="safe">Baixo</b></div>
+                  <div className="preview-bars"><i /><i /><i /><i /></div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <StatBar />

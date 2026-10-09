@@ -40,7 +40,7 @@ function seedToForm(seed) {
     floors: seed.score_comercial > seed.score_residencial ? 3 : 2,
     typology: seed.score_comercial > seed.score_residencial ? 'uso misto' : 'casa',
     zone: seed.zona || seed.zone || '',
-    neighborhood: seed.zona || '',
+    neighborhood: seed.neighborhood || '',
     latitude: seed.latitude ?? null,
     longitude: seed.longitude ?? null,
     residentialScore: Math.round(seed.score_residencial || 0),

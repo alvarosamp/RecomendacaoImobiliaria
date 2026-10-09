@@ -1,33 +1,19 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import DeckGL from '@deck.gl/react'
-import { BitmapLayer, ColumnLayer, GeoJsonLayer, H3HexagonLayer, HeatmapLayer, PolygonLayer, ScatterplotLayer, TextLayer, TileLayer } from 'deck.gl'
+import { ColumnLayer, GeoJsonLayer, H3HexagonLayer, HeatmapLayer, PolygonLayer, ScatterplotLayer, TextLayer } from 'deck.gl'
 import { FlyToInterpolator } from '@deck.gl/core'
+import { CollisionFilterExtension, PathStyleExtension } from '@deck.gl/extensions'
 import { cellToLatLng } from 'h3-js'
+import VectorBasemap, { BASEMAPS } from './VectorBasemap'
 
 const CITY = { longitude: -45.9489, latitude: -22.2303 }
 const INITIAL_VIEW = { ...CITY, zoom: 12, pitch: 0, bearing: 0 }
 
 const POI_LABEL_MIN_ZOOM = 15
 const INFLUENCE_MIN_ZOOM = 10.8
-
-const TILE_SCALE = typeof window !== 'undefined' && window.devicePixelRatio > 1 ? '@2x' : ''
-
-const BASE_TILES = new TileLayer({
-  id: 'base-streets',
-  // A base clara deixa ruas e bairros legiveis; as camadas analiticas ficam por cima.
-  data: `https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}${TILE_SCALE}.png`,
-  minZoom: 0,
-  maxZoom: 20,
-  tileSize: 256,
-  renderSubLayers: props => {
-    const { bbox: { west, south, east, north } } = props.tile
-    return new BitmapLayer({ ...props, data: null }, {
-      image: props.data,
-      bounds: [west, south, east, north],
-      opacity: 1,
-    })
-  },
-})
+const NEIGHBORHOOD_MIN_ZOOM = 12.6
+const LABEL_FONT = 'Inter, "Segoe UI", system-ui, sans-serif'
+const EMPTY_COLLECTION = { type: 'FeatureCollection', features: [] }
 
 const SCORE_LEGEND = [
   { color: '#15803d', label: 'Alto' },
@@ -98,11 +84,13 @@ const POI_LABELS = {
   bus_stop: 'Onibus',
 }
 
+// Faixas fracas ficam mais transparentes para as melhores áreas se destacarem
+// sem esconder ruas e nomes do mapa base.
 function scoreToRgba(score, alpha = 96) {
   if (score >= 70) return [21, 128, 61, alpha]
-  if (score >= 50) return [202, 138, 4, alpha]
-  if (score >= 30) return [234, 88, 12, alpha]
-  return [185, 28, 28, alpha]
+  if (score >= 50) return [202, 138, 4, Math.round(alpha * 0.8)]
+  if (score >= 30) return [234, 88, 12, Math.round(alpha * 0.55)]
+  return [185, 28, 28, Math.round(alpha * 0.4)]
 }
 
 function growthToRgba(row, alpha = 110) {
@@ -270,7 +258,10 @@ export default function H3Map({
   zoning = null,
   pois = null,
   officialRisk = null,
-  visibleLayers = { cells: true, zoning: true, pois: true },
+  neighborhoods = null,
+  basemap = 'streets',
+  onBasemapChange = () => {},
+  visibleLayers = { cells: true, zoning: true, pois: true, neighborhoods: true },
   poiTypes = [],
   poiFilterDefs = [],
   mode = 'score',
@@ -437,6 +428,69 @@ export default function H3Map({
     onHover: info => setTooltip(info.object ? { kind: 'official-risk', object: info.object, x: info.x, y: info.y } : null),
   }), [officialRisk, visibleLayers.officialRisk])
 
+  const basemapTheme = BASEMAPS[basemap]?.theme || 'light'
+
+  const neighborhoodShapes = useMemo(() => ({
+    type: 'FeatureCollection',
+    features: (neighborhoods?.features || []).filter(f => f.geometry?.type !== 'Point'),
+  }), [neighborhoods])
+
+  const neighborhoodLabels = useMemo(() => (neighborhoods?.features || [])
+    .filter(f => f.properties?.label_lon != null && f.properties?.label_lat != null)
+    .map(f => ({
+      name: f.properties.name,
+      kind: f.properties.kind,
+      position: [f.properties.label_lon, f.properties.label_lat],
+    })), [neighborhoods])
+
+  const showQuadrants = viewState.zoom < NEIGHBORHOOD_MIN_ZOOM
+  const darkBase = basemapTheme === 'dark'
+
+  const neighborhoodLayer = useMemo(() => new GeoJsonLayer({
+    id: 'neighborhood-boundaries',
+    data: neighborhoodShapes || EMPTY_COLLECTION,
+    visible: !!visibleLayers.neighborhoods,
+    pickable: false,
+    filled: false,
+    stroked: true,
+    getLineColor: f => f.properties?.kind === 'quadrante'
+      ? (darkBase ? [255, 255, 255, showQuadrants ? 150 : 0] : [30, 41, 59, showQuadrants ? 120 : 0])
+      : (darkBase ? [255, 255, 255, showQuadrants ? 0 : 150] : [71, 85, 105, showQuadrants ? 0 : (f.properties?.approximate ? 95 : 150)]),
+    getLineWidth: f => f.properties?.kind === 'quadrante' ? 2 : 1.4,
+    lineWidthUnits: 'pixels',
+    getDashArray: f => f.properties?.kind === 'quadrante' ? [6, 4] : [4, 3],
+    dashJustified: true,
+    extensions: [new PathStyleExtension({ dash: true })],
+    updateTriggers: { getLineColor: [showQuadrants, darkBase] },
+  }), [neighborhoodShapes, visibleLayers.neighborhoods, showQuadrants, darkBase])
+
+  const neighborhoodLabelLayer = useMemo(() => new TextLayer({
+    id: 'neighborhood-labels',
+    data: neighborhoodLabels.filter(d => (d.kind === 'quadrante') === showQuadrants),
+    visible: !!visibleLayers.neighborhoods,
+    pickable: false,
+    getPosition: d => d.position,
+    getText: d => (showQuadrants ? d.name.replace(/^Quadrante\s+/i, '') : d.name).toUpperCase(),
+    getSize: showQuadrants ? 12 : viewState.zoom >= 15 ? 13 : 11,
+    getColor: darkBase ? [255, 255, 255, 240] : [30, 41, 59, 225],
+    characterSet: 'auto',
+    fontFamily: LABEL_FONT,
+    fontWeight: 700,
+    fontSettings: { sdf: true, fontSize: 64, buffer: 6 },
+    outlineWidth: 4,
+    outlineColor: darkBase ? [15, 23, 42, 220] : [255, 255, 255, 235],
+    lineHeight: 1.1,
+    maxWidth: 9,
+    wordBreak: 'break-word',
+    getTextAnchor: 'middle',
+    getAlignmentBaseline: 'center',
+    extensions: [new CollisionFilterExtension()],
+    collisionEnabled: true,
+    getCollisionPriority: d => (d.kind === 'bairro' ? 2 : 1),
+    collisionTestProps: { sizeScale: 1.6 },
+    updateTriggers: { getText: [showQuadrants], getColor: [darkBase] },
+  }), [neighborhoodLabels, visibleLayers.neighborhoods, showQuadrants, darkBase, viewState.zoom >= 15])
+
   const kernelLayer = useMemo(() => new HeatmapLayer({
     id: 'opportunity-kernel',
     data: kernelPoints,
@@ -485,7 +539,7 @@ export default function H3Map({
       }
       if (mode === 'kernel') return scoreToRgba(objectiveScore(d, objectiveConfig), 42)
       if (mode === 'validation') return validationColor(d, objectiveConfig, 76)
-      return scoreToRgba(objectiveScore(d, objectiveConfig), 62)
+      return scoreToRgba(objectiveScore(d, objectiveConfig), 150)
     },
     getLineColor: d => selected?.h3_id === d.h3_id ? [15, 23, 42, 255] : [255, 255, 255, 82],
     lineWidthMinPixels: d => selected?.h3_id === d.h3_id ? 2 : 0.25,
@@ -570,6 +624,7 @@ export default function H3Map({
     getText: d => d.label,
     getSize: 12,
     getColor: [255, 255, 255, 255],
+    fontFamily: LABEL_FONT,
     fontWeight: 800,
   }), [poiClusters, viewState.zoom])
 
@@ -581,13 +636,18 @@ export default function H3Map({
     getPosition: feature => feature.geometry.coordinates,
     getText: feature => shortPoiName(feature.properties?.name),
     getSize: viewState.zoom >= 16 ? 12 : 11,
-    getColor: [15, 23, 42, 245],
-    getPixelOffset: [0, 16],
-    background: true,
-    getBackgroundColor: [255, 255, 255, 226],
-    backgroundPadding: [5, 2],
-    fontFamily: '"Segoe UI", sans-serif',
-    fontWeight: 700,
+    getColor: feature => [...(POI_COLORS[poiType(feature)] || [15, 23, 42]).map(c => Math.round(c * 0.72)), 255],
+    getPixelOffset: [0, 10],
+    characterSet: 'auto',
+    fontFamily: LABEL_FONT,
+    fontWeight: 600,
+    fontSettings: { sdf: true, fontSize: 64, buffer: 6 },
+    outlineWidth: 4,
+    outlineColor: [255, 255, 255, 240],
+    extensions: [new CollisionFilterExtension()],
+    collisionEnabled: true,
+    collisionGroup: 'poi-labels',
+    getCollisionPriority: feature => poiImportance(feature),
     maxWidth: 96,
     getTextAnchor: 'middle',
     getAlignmentBaseline: 'top',
@@ -622,13 +682,14 @@ export default function H3Map({
   const legend = legendFor(mode, selectedDate)
   const zoningCount = zoning?.features?.length || 0
   const layers = [
-    BASE_TILES,
     influenceLayer,
     visibleLayers.zoning ? zoningLayer : null,
     officialRiskLayer,
     kernelLayer,
     visibleLayers.cells ? hexLayer : null,
+    neighborhoodLayer,
     validationLayer,
+    neighborhoodLabelLayer,
     visibleLayers.pois ? clusterLayer : null,
     visibleLayers.pois ? clusterLabelLayer : null,
     visibleLayers.pois ? poiLayer : null,
@@ -637,7 +698,8 @@ export default function H3Map({
   ].filter(Boolean)
 
   return (
-    <div className="atlas-map-shell">
+    <div className={`atlas-map-shell${darkBase ? ' dark-base' : ''}`}>
+      <VectorBasemap viewState={viewState} basemap={basemap} part="base" />
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: next }) => setViewState(next)}
@@ -645,6 +707,7 @@ export default function H3Map({
         layers={layers}
         getCursor={({ isDragging, isHovering }) => isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab'}
       />
+      <VectorBasemap viewState={viewState} basemap={basemap} part="labels" />
 
       <AddressSearch
         viewbox={cityConfig?.searchViewbox}
@@ -700,6 +763,7 @@ export default function H3Map({
           zoningCount={zoningCount}
           poiCount={filteredPois.length}
           officialRiskCount={officialRisk?.features?.length || 0}
+          neighborhoodCount={neighborhoodLabels.filter(d => d.kind !== 'quadrante').length}
           poiFilterDefs={poiFilterDefs}
           poiTypes={poiTypes}
           onTogglePoiType={onTogglePoiType}
@@ -726,6 +790,20 @@ export default function H3Map({
             onOpenConcept={onOpenConcept}
           />
         )}
+      </div>
+
+      <div className={`atlas-basemap-switch${darkBase ? ' dark' : ''}`} role="group" aria-label="Mapa base">
+        {Object.entries(BASEMAPS).map(([key, item]) => (
+          <button
+            key={key}
+            type="button"
+            className={basemap === key ? 'active' : ''}
+            aria-pressed={basemap === key}
+            onClick={() => onBasemapChange(key)}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       <div className="atlas-zoom-controls">
@@ -765,7 +843,10 @@ export default function H3Map({
       {tooltip && <Tooltip tooltip={tooltip} />}
 
       <div className="atlas-map-attribution">
-        © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions" target="_blank" rel="noreferrer">CARTO</a>
+        <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a>
+        {' · © '}<a href="https://www.openmaptiles.org/" target="_blank" rel="noreferrer">OpenMapTiles</a>
+        {' · © '}<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>
+        {basemap === 'satellite' && <>{' · Imagens © '}<a href="https://www.esri.com/" target="_blank" rel="noreferrer">Esri</a>, Maxar, Earthstar</>}
       </div>
     </div>
   )
@@ -791,7 +872,7 @@ function Chevron({ open }) {
 
 function LayersPanel({
   open, onToggle, rawMode, onModeChange, dateActive,
-  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount, officialRiskCount,
+  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount, officialRiskCount, neighborhoodCount,
   poiFilterDefs, poiTypes, onTogglePoiType,
   influenceRadius, onRadiusChange, labelMode, onLabelModeChange,
   priorityFilter, onPriorityChange, riskFilter, onRiskChange,
@@ -845,6 +926,10 @@ function LayersPanel({
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.cells} onChange={() => onToggleLayer('cells')} />
             Celulas <span>{cellCount}</span>
+          </label>
+          <label className="atlas-layer-row">
+            <input type="checkbox" checked={!!visibleLayers.neighborhoods} onChange={() => onToggleLayer('neighborhoods')} />
+            Bairros <span>{neighborhoodCount}</span>
           </label>
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.zoning} onChange={() => onToggleLayer('zoning')} />
@@ -1051,6 +1136,12 @@ function SelectedPanel({ cell, objectiveConfig, onClose, onOpenConcept }) {
         <span>{decision.label}</span>
       </div>
       <p className="atlas-decision-copy">{decision.summary}</p>
+      {cell.neighborhood && (
+        <Metric
+          label={cell.neighborhood_source === 'cep' ? 'Bairro (Correios)' : 'Bairro'}
+          value={cell.neighborhood_source === 'proximidade' ? `${cell.neighborhood} (aprox.)` : cell.neighborhood}
+        />
+      )}
       <Metric label="Prioridade" value={cell.priority} strong />
       <Metric label="Risco" value={cell.risk_level} />
       {cell.official_susceptibility && <Metric label="Carta oficial SGB" value={cell.official_susceptibility} />}
@@ -1105,6 +1196,7 @@ function downloadAreaReport(cell, objectiveConfig, decision, factors, explainabi
     `# Relatorio territorial - ${decision.title}`,
     '',
     `Objetivo: ${objectiveConfig?.label || 'Analise territorial'}`,
+    `Bairro: ${cell.neighborhood || '-'}`,
     `Celula H3: ${cell.h3_id || '-'}`,
     `Score principal: ${decision.score}`,
     `Decisao: ${decision.label}`,
@@ -1242,7 +1334,8 @@ function Tooltip({ tooltip }) {
     const label = tone === 'good' ? 'Viavel' : tone === 'watch' ? 'Validar dados' : tone === 'danger' ? 'Restricao' : 'Baixa prioridade'
     return (
       <div className="atlas-tooltip" style={style}>
-        <strong>{object.zona || object.h3_id}</strong>
+        <strong>{object.neighborhood || object.zona || 'Área em análise'}</strong>
+        {object.neighborhood && object.zona && <span>Zona {object.zona}</span>}
         <span>{label}</span>
         <span>Score: {formatNumber(Math.max(Number(object.score_residencial || 0), Number(object.score_comercial || 0)))}</span>
       </div>
@@ -1250,7 +1343,8 @@ function Tooltip({ tooltip }) {
   }
   return (
     <div className="atlas-tooltip" style={style}>
-      <strong>{object.h3_id}</strong>
+      <strong>{object.neighborhood || object.zona || 'Área em análise'}</strong>
+      {object.neighborhood && object.zona && <span>Zona {object.zona}</span>}
       <span>Residencial: {formatNumber(object.score_residencial)}</span>
       <span>Comercial: {formatNumber(object.score_comercial)}</span>
     </div>

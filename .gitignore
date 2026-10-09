@@ -130,6 +130,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.prod
 config/.env
 config/.env.local
 .venv
@@ -207,3 +208,9 @@ mlruns/
 *.keras
 
 .env
+
+hostinger.env
+hostinger.test.env
+
+# cache bruto do ViaCEP (regerável)
+data/official/bairros/viacep_cache.json

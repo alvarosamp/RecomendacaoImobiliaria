@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import re
 import zipfile
@@ -16,6 +17,7 @@ class ZoningImportResult:
     cells_assigned: int
     unmatched_cells: int
     source_file: str
+    source_sha256: str
 
 
 @dataclasses.dataclass
@@ -139,7 +141,7 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
             conn.execute(
                 text(
                     "INSERT INTO geo.zoning (zona, observacoes, geom) "
-                    "VALUES (:zona, :obs, ST_SetSRID(ST_GeomFromGeoJSON(:geom), 4326))"
+                    "VALUES (:zona, :obs, ST_Multi(ST_SetSRID(ST_GeomFromGeoJSON(:geom), 4326)))"
                 ),
                 {
                     "zona": row["zona"],
@@ -154,16 +156,37 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
             "ALTER TABLE geo.features ADD COLUMN IF NOT EXISTS zona VARCHAR(32)"
         ))
 
+        # Atribuicao deterministica: o centro da celula prevalece e, em
+        # fronteiras, vence a zona com maior area de intersecao. Limpar antes
+        # evita manter uma zona antiga quando a camada oficial muda.
+        conn.execute(text("UPDATE geo.features SET zona = NULL"))
         result = conn.execute(text(
             """
             UPDATE geo.features f
-            SET zona = z.zona
-            FROM geo.zoning z
-            JOIN geo.grid_h3 g ON ST_Intersects(ST_Centroid(g.geom), z.geom)
-            WHERE g.h3_id = f.h3_id
+            SET zona = chosen.zona
+            FROM (
+                SELECT g.h3_id,
+                       COALESCE(
+                         (SELECT zc.zona
+                            FROM geo.zoning zc
+                           WHERE ST_Covers(zc.geom, ST_PointOnSurface(g.geom))
+                           ORDER BY ST_Area(ST_Intersection(g.geom, zc.geom)::geography) DESC,
+                                    zc.zona
+                           LIMIT 1),
+                         (SELECT zi.zona
+                            FROM geo.zoning zi
+                           WHERE ST_Intersects(g.geom, zi.geom)
+                           ORDER BY ST_Area(ST_Intersection(g.geom, zi.geom)::geography) DESC,
+                                    zi.zona
+                           LIMIT 1)
+                       ) AS zona
+                  FROM geo.grid_h3 g
+            ) chosen
+            WHERE chosen.h3_id = f.h3_id
+              AND chosen.zona IS NOT NULL
             """
         ))
-        cells_assigned = result.rowcount
+        cells_assigned = int(result.rowcount or 0)
 
         unmatched = conn.execute(
             text("SELECT COUNT(*) FROM geo.features WHERE zona IS NULL")
@@ -171,12 +194,22 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
 
     eng.dispose()
 
+    checksum = hashlib.sha256(path.read_bytes()).hexdigest()
     record_data_source(
         "zoning",
-        "official_zoning",
+        "Prefeitura de Pouso Alegre - KML oficial",
         source_uri=str(path),
         row_count=len(gdf),
-        details={"cells_assigned": int(cells_assigned or 0), "unmatched_cells": int(unmatched or 0)},
+        details={
+            "cells_assigned": cells_assigned,
+            "unmatched_cells": int(unmatched or 0),
+            "official": True,
+            "reference_label": "Zoneamento urbano vigente 2024",
+            "zone_codes": sorted(gdf["zona"].astype(str).unique().tolist()),
+        },
+        checksum_sha256=checksum,
+        schema_version="pdpa-kml-v1",
+        legal_basis="Lei Ordinaria 6.476/2021 e anexos do Plano Diretor de Pouso Alegre",
         settings=settings,
     )
 
@@ -185,6 +218,7 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
         cells_assigned=cells_assigned,
         unmatched_cells=int(unmatched or 0),
         source_file=str(path),
+        source_sha256=checksum,
     )
 
 

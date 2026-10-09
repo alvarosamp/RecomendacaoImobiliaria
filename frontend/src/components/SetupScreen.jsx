@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { getPipelineStatus, refreshPipeline, resetPipeline, runPipeline } from '../api'
 
 const STEP_COLORS = {
   pending: '#A8A29E',
@@ -62,7 +63,7 @@ function StepRow({ step, index, total }) {
   )
 }
 
-export default function SetupScreen({ onComplete, onRefreshDone }) {
+export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone }) {
   const [phase, setPhase] = useState('idle') // idle | running | done | error
   const [steps, setSteps] = useState([])
   const [mode, setMode] = useState(null)
@@ -76,8 +77,7 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
   }
 
   useEffect(() => {
-    fetch('/api/pipeline/status')
-      .then(r => r.json())
+    getPipelineStatus()
       .then(s => {
         if (s.running) {
           setPhase('running')
@@ -94,7 +94,7 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
   const startPolling = () => {
     intervalRef.current = setInterval(async () => {
       try {
-        const s = await fetch('/api/pipeline/status').then(r => r.json())
+        const s = await getPipelineStatus()
         setSteps([...s.steps])
         if (s.done) {
           stopPolling()
@@ -113,9 +113,9 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
   const launch = async (endpoint) => {
     setPhase('running')
     setSteps([])
-    setMode(endpoint === '/api/pipeline/run' ? 'full' : 'refresh')
+    setMode(endpoint === 'run' ? 'full' : 'refresh')
     try {
-      await fetch(endpoint, { method: 'POST' })
+      await (endpoint === 'run' ? runPipeline() : refreshPipeline())
       startPolling()
     } catch {
       setPhase('error')
@@ -150,9 +150,13 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
             </ul>
           </div>
 
-          <button className="setup-btn" onClick={() => launch('/api/pipeline/run')}>
-            Inicializar dados
-          </button>
+          {isAdmin ? (
+            <button className="setup-btn" onClick={() => launch('run')}>
+              Inicializar dados
+            </button>
+          ) : (
+            <p className="setup-desc">Os dados ainda não foram carregados. Peça a um administrador da plataforma para inicializá-los.</p>
+          )}
         </div>
       </div>
     )
@@ -225,14 +229,14 @@ export default function SetupScreen({ onComplete, onRefreshDone }) {
           ))}
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <button className="setup-btn" onClick={() => launch('/api/pipeline/run')}>
+          <button className="setup-btn" onClick={() => launch('run')}>
             Tentar novamente
           </button>
           <button
             className="setup-btn"
             style={{ background: '#78716C' }}
             onClick={async () => {
-              await fetch('/api/pipeline/reset', { method: 'POST' })
+              await resetPipeline().catch(() => {})
               setPhase('idle'); setSteps([])
             }}
           >

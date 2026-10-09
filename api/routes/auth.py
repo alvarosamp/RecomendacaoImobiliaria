@@ -38,6 +38,11 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="client")
 
+    @property
+    def is_admin(self) -> bool:
+        # role "admin" é legado; ADMIN_EMAILS sobrevive à troca de perfil (que reescreve role).
+        return self.role == "admin" or (self.email or "").lower() in settings.admin_emails
+
 @lru_cache(maxsize=1)
 def ensure_auth_schema() -> None:
     """Cria a tabela de contas na primeira requisicao que precisa do banco.
@@ -68,6 +73,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: str
+    is_admin: bool = False
 
 class Token(BaseModel):
     access_token: str
@@ -120,6 +126,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db = Depends(get_db)):
     if user is None:
         raise credentials_exception
     return user
+
+
+def require_admin(current_user: User = Depends(get_current_user)):
+    if not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acao restrita a administradores")
+    return current_user
 
 # --- Routes ---
 router = APIRouter()

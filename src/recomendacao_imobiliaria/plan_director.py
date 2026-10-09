@@ -96,6 +96,7 @@ def normalize_zone(zone: str | None) -> str | None:
         "ZONA EXPANSAO": "ZEU",
         "RESTRICAO AMBIENTAL": "ZEPAM1",
         "ZONA DE PRESERVACAO AMBIENTAL": "ZEPAM1",
+        "ZPA": "ZEPAM1",
         "ZONA ESPECIAL DE INTERESSE SOCIAL": "ZEIS",
     }
     return aliases.get(raw, aliases.get(value, value))
@@ -158,6 +159,10 @@ def normalize_use(intended_use: str) -> str:
         "creche": "servicos_bairro",
         "servico": "servicos_bairro",
         "servicos": "servicos_bairro",
+        "institucional": "servicos_bairro",
+        "uso_institucional": "servicos_bairro",
+        "misto": "misto",
+        "uso_misto": "misto",
         "industrial": "industrial",
         "industria": "industrial",
     }

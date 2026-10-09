@@ -18,3 +18,32 @@ Quando a Prefeitura disponibilizar uma camada GeoJSON, GeoPackage, Shapefile ou 
 - `bairros_oficiais.gpkg`
 
 O importador registra a fonte, filtra Pouso Alegre pelo código IBGE `3152501` e substitui as referências aproximadas por nomes oficiais apenas para células cobertas por polígonos.
+
+## Camada de referência OpenStreetMap
+
+Enquanto não houver camada oficial, o mapa usa `osm_bairros_pouso_alegre.geojson`
+(limites de bairro, quadrantes e pontos de bairro do OSM, licença ODbL) para rotular
+o mapa e nomear as células H3. Polígonos importados em `geo.neighborhoods` têm
+prioridade sobre ela no endpoint `/api/analytics/neighborhoods-geojson`.
+
+Atualizar:
+
+```powershell
+$env:PYTHONPATH='src'
+python -m recomendacao_imobiliaria.cli fetch-osm-neighborhoods
+```
+
+## Bairros dos Correios (área estimada)
+
+`cep_bairros_pouso_alegre.geojson` cruza as ruas do OSM com o bairro que os Correios
+(ViaCEP) atribuem a cada logradouro e divide a área urbana entre os bairros. É a camada
+principal do mapa porque usa os mesmos nomes de endereços e anúncios; as áreas são
+estimativas (`approximate: true`). Limites desenhados no OSM valem por cima dela.
+
+Regerar (o cache do ViaCEP pode ficar em disco externo):
+
+```powershell
+$env:PYTHONPATH='src'
+$env:VIACEP_CACHE='D:\Imobiliaria\bairros_cache\viacep_cache.json'
+python -m recomendacao_imobiliaria.cli build-cep-neighborhoods
+```

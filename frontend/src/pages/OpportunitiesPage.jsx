@@ -51,6 +51,12 @@ function distanceLabel(value) {
   return meters < 1000 ? `${Math.round(meters)} m` : `${(meters / 1000).toFixed(1)} km`
 }
 
+function dateLabel(value) {
+  if (!value) return 'data não informada'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('pt-BR')
+}
+
 function OppCard({ row, onOpenConcept }) {
   const [expanded, setExpanded] = useState(false)
   const score = Math.max(row.score_residencial || 0, row.score_comercial || 0)
@@ -111,6 +117,12 @@ function OppCard({ row, onOpenConcept }) {
       <div className="opp-card-footer">
         <GrowthTag signal={row.growth_signal} />
         <span className="opp-score-label">Score {score.toFixed(0)}/100</span>
+      </div>
+
+      <div className={`data-trust ${row.validation_status === 'validated_official' ? 'verified' : 'pending'}`}>
+        <strong>{row.validation_status === 'validated_official' ? '✓ Zona oficial cruzada com H3' : '⚠ Validação territorial pendente'}</strong>
+        <span>Confiança {row.confidence_label || 'baixa'} · atualização {dateLabel(row.score_updated_at)}</span>
+        <span>{row.zoning_source_name || 'Fonte de zoneamento não registrada'}{row.zoning_reference_label ? ` · ${row.zoning_reference_label}` : ''}</span>
       </div>
 
       {/* Details toggle */}
@@ -206,8 +218,8 @@ export default function OpportunitiesPage({ scores, onOpenConcept }) {
         <div className="page-hero-eyebrow">Ranqueamento territorial</div>
         <h2>Oportunidades de Investimento</h2>
         <p>
-          Áreas rankeadas por potencial residencial e comercial, com justificativa
-          baseada em dados. Clique em uma área para ver os fatores explicativos.
+          Áreas rankeadas por potencial residencial e comercial, já cruzadas com
+          o zoneamento oficial. Siga a jornada até a validação legal antes de decidir.
         </p>
         <div className="page-hero-stats">
           <div className="page-hero-stat">

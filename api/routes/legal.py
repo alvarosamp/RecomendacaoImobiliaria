@@ -22,7 +22,7 @@ def _spatial_context(h3_id: str) -> tuple[str | None, list[dict[str, object]], b
             if cell is None:
                 raise HTTPException(status_code=404, detail="Celula H3 nao encontrada")
             zone = conn.execute(
-                text("SELECT zona FROM geo.v_h3_zona WHERE h3_id = :h3_id LIMIT 1"),
+                text("SELECT zona FROM geo.features WHERE h3_id = :h3_id"),
                 {"h3_id": h3_id},
             ).scalar()
             overlay_count = conn.execute(text("SELECT COUNT(*) FROM geo.overlays")).scalar() or 0

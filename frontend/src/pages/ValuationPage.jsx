@@ -40,12 +40,14 @@ export default function ValuationPage() {
       </section>
       <section className="opp-card priority-investigar valuation-result" aria-live="polite">
         {!result ? <div className="empty-state"><h3>Informe os dados do imóvel</h3><p>A faixa de valor aparecerá aqui após o cálculo.</p></div> : <>
-          <div className="opp-card-header"><h3>Resultado da avaliação</h3><span className="badge" style={{ background: '#EDE9FE', color: '#5B21B6' }}>{result.model_status === 'lightgbm' ? 'Modelo treinado' : 'Estimativa inicial'}</span></div>
+          <div className="opp-card-header"><h3>Resultado da avaliação</h3><span className="badge" style={{ background: '#EDE9FE', color: '#5B21B6' }}>{result.data_quality === 'real' ? 'Modelo com anúncios reais' : result.data_quality === 'demo' ? 'Modelo demonstrativo' : 'Estimativa genérica'}</span></div>
           <div className="valuation-price"><span>Valor central estimado</span><strong>{money(result.predicted_price)}</strong><small>{money(result.price_per_m2)} / m²</small></div>
           <div className="valuation-range"><span>Faixa de referência</span><strong>{money(result.price_low)} — {money(result.price_high)}</strong></div>
           {result.warning && <div className="valuation-warning">{result.warning}</div>}
           {result.explain?.length > 0 && <div className="opp-uses"><h4>Como a estimativa foi calculada</h4>{result.explain.map(item => <div className="use-row" key={item}><span className="use-label">{item}</span></div>)}</div>}
-          {market && <div className="valuation-warning"><strong>Mercado local: {market.status.replaceAll('_', ' ')}</strong><br />Referência {money(market.reference_price_m2)} / m² com {market.comparables} comparáveis. {market.recommendation}</div>}
+          {market && (market.status === 'sem_dados'
+            ? <div className="valuation-warning"><strong>Sem referência de mercado</strong><br />{market.recommendation}</div>
+            : <div className="valuation-warning"><strong>Mercado local: {market.status.replaceAll('_', ' ')}</strong><br />Referência {money(market.reference_price_m2)} / m² com {market.comparables} anúncios reais ({market.scope === 'bairro' ? 'no bairro' : 'no município'}). {market.recommendation}</div>)}
         </>}
       </section>
     </div>

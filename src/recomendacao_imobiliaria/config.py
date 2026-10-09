@@ -20,6 +20,8 @@ class Settings:
     app_env: str = "development"
     jwt_secret: str = "development-only-change-me"
     cors_origins: tuple[str, ...] = ("http://localhost:5173", "http://localhost:3000")
+    # Contas que podem disparar o pipeline de dados (e-mails, minúsculos).
+    admin_emails: tuple[str, ...] = ()
 
     @property
     def database_url(self) -> str:
@@ -54,4 +56,7 @@ def load_settings(env_file: str | None = None) -> Settings:
         app_env=os.getenv("APP_ENV", Settings.app_env).lower(),
         jwt_secret=os.getenv("JWT_SECRET", Settings.jwt_secret),
         cors_origins=cors_origins,
+        admin_emails=tuple(
+            email.strip().lower() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()
+        ),
     )

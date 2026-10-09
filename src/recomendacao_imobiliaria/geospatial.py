@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import pandas as pd
@@ -327,17 +328,22 @@ def score_database(settings: Settings | None = None) -> int:
     return len(features)
 
 
-def run_mvp_pipeline(settings: Settings | None = None) -> dict[str, int]:
+def run_mvp_pipeline(settings: Settings | None = None) -> dict[str, object]:
     settings = settings or load_settings()
     fetch_city_boundary(settings)
     grid_count = build_h3_grid(settings)
     poi_count = fetch_osm_pois(settings)
     feature_count = build_features(settings)
+    # O zoneamento depende de grid/features e deve existir antes do score.
+    from .zoning_import import default_zoning_file, import_zoning_file
+
+    zoning = import_zoning_file(default_zoning_file(), settings=settings)
     score_count = score_database(settings)
     return {
         "grid_h3": grid_count,
         "pois": poi_count,
         "features": feature_count,
+        "zoning": dataclasses.asdict(zoning),
         "scores": score_count,
     }
 
@@ -346,7 +352,7 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
     query = """
         SELECT
             f.h3_id,
-            z.zona,
+            f.zona,
             f.ndvi_mean_90,
             f.ndvi_slope_180,
             f.ndbi_mean_90,
@@ -360,7 +366,7 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
             COALESCE(NOT ('residencial' = ANY(z.usos_vetados)), true) AS residential_allowed,
             COALESCE(NOT ('comercial' = ANY(z.usos_vetados)), true) AS commercial_allowed
         FROM geo.features f
-        LEFT JOIN geo.v_h3_zona z ON z.h3_id = f.h3_id
+        LEFT JOIN geo.zoning z ON z.zona = f.zona
     """
     frame = pd.read_sql(query, engine)
     areas = []

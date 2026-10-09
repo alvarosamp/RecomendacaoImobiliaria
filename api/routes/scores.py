@@ -15,6 +15,8 @@ def _clean(val):
             return None
     except (TypeError, ValueError):
         pass
+    if hasattr(val, "isoformat"):
+        return val.isoformat()
     return val
 
 
@@ -45,6 +47,7 @@ def _parse_explain(raw) -> dict:
         "legal_articles":   (raw.get("zoning") or {}).get("legal_articles", []),
         "legal_parameters": (raw.get("zoning") or {}).get("legal_parameters", {}),
         "legal_sources":    (raw.get("zoning") or {}).get("legal_sources", []),
+        "validation_status": (raw.get("zoning") or {}).get("validation_status", "pending_zoning"),
     }
 
 
@@ -114,6 +117,11 @@ def get_scores():
         explain_raw = r.pop("explain_json", None)
         record = _sanitise(r)
         record.update(_parse_explain(explain_raw))
+        record["confidence_label"] = (
+            "alta" if (record.get("confidence") or 0) >= 0.8
+            else "media" if (record.get("confidence") or 0) >= 0.55
+            else "baixa"
+        )
         record["explainability"] = _build_explainability(record)
         rows.append(record)
     return rows

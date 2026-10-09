@@ -77,3 +77,24 @@ def _number(value):
 
 def _row_hash(row: dict[str, object]) -> str:
     return hashlib.sha256(json.dumps(row, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def export_listings_csv(output_csv: str, settings=None) -> dict[str, object]:
+    """Exporta os anúncios reais de ``market.listings`` no formato de treino do modelo de preço."""
+    active_settings = settings or load_settings()
+    engine = make_engine(active_settings)
+    try:
+        frame = pd.read_sql(text("""
+            SELECT source_name, external_id, price, area_m2, property_type, neighborhood,
+                   ST_Y(geom) AS lat, ST_X(geom) AS lon,
+                   NULLIF(raw ->> 'bedrooms', '')::numeric AS bedrooms,
+                   NULLIF(raw ->> 'bathrooms', '')::numeric AS bathrooms,
+                   NULLIF(raw ->> 'parking_spaces', '')::numeric AS parking_spaces
+              FROM market.listings
+             WHERE price > 0 AND area_m2 > 0
+        """), engine)
+    finally:
+        engine.dispose()
+    Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
+    frame.to_csv(output_csv, index=False)
+    return {"output": output_csv, "rows": len(frame), "sources": frame["source_name"].value_counts().to_dict()}

@@ -8,8 +8,19 @@ function getHeaders() {
   };
 }
 
+// Token ausente/expirado em rota protegida: limpa a sessão e volta ao login.
+// Rotas /auth ficam de fora (401 no login significa só senha errada).
+function checkSession(res, path) {
+  if (res.status === 401 && !path.startsWith('/auth/') && localStorage.getItem('token')) {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    window.location.href = '/login'
+  }
+}
+
 async function get(path) {
   const res = await fetch(`${BASE}${path}`, { headers: getHeaders() })
+  checkSession(res, path)
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.json()
 }
@@ -20,6 +31,7 @@ async function post(path, body) {
     headers: getHeaders(),
     body: JSON.stringify(body),
   })
+  checkSession(res, path)
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.json()
 }
@@ -30,6 +42,7 @@ async function patch(path, body) {
     headers: getHeaders(),
     body: JSON.stringify(body),
   })
+  checkSession(res, path)
   if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
   return res.json()
 }
@@ -44,7 +57,7 @@ export const fetchTimeseries   = ()   => get('/indices/timeseries')
 export const fetchCommerceGaps = ()   => get('/analytics/commerce-gaps')
 export const fetchTypology     = ()   => get('/analytics/typology')
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h — zoneamento/POIs mudam raramente
-const GEOJSON_CACHE_KEYS = ['cache:zoning-geojson', 'cache:pois-geojson', 'cache:official-susceptibility-geojson']
+const GEOJSON_CACHE_KEYS = ['cache:zoning-geojson', 'cache:pois-geojson', 'cache:official-susceptibility-geojson', 'cache:neighborhoods-geojson']
 
 export function clearMapDataCache() {
   GEOJSON_CACHE_KEYS.forEach(key => {
@@ -71,9 +84,11 @@ async function getCached(path, cacheKey) {
 export const fetchZoningGeojson = ()  => getCached('/analytics/zoning-geojson', 'cache:zoning-geojson')
 export const fetchPoisGeojson   = ()  => getCached('/analytics/pois-geojson', 'cache:pois-geojson')
 export const fetchOfficialSusceptibilityGeojson = () => getCached('/analytics/official-susceptibility-geojson', 'cache:official-susceptibility-geojson')
+export const fetchNeighborhoodsGeojson = () => getCached('/analytics/neighborhoods-geojson', 'cache:neighborhoods-geojson')
 export const runPipeline       = ()   => post('/pipeline/run', {})
 export const refreshPipeline   = ()   => post('/pipeline/refresh', {})
 export const getPipelineStatus = ()   => get('/pipeline/status')
+export const resetPipeline     = ()   => post('/pipeline/reset', {})
 export const analyzeConcept    = body => post('/concept/analyze', body)
 export const generateConceptImage = body => post('/concept/generate-image', body)
 export const downloadConceptReport = async body => {

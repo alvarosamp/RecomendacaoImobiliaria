@@ -30,6 +30,20 @@ BASE_PRICE_M2 = {
 }
 
 
+DEMO_MODEL_WARNING = (
+    "Modelo treinado com anúncios demonstrativos (sintéticos), não com o mercado real. "
+    "Use apenas como ilustração; para avaliar, importe anúncios reais e retreine (train-price --from-db)."
+)
+
+
+def _training_warning(bundle: dict) -> str | None:
+    """Aviso de proveniência: modelos antigos (sem registro) foram treinados com dados sintéticos."""
+    source = bundle.get("training_source") or {}
+    if source.get("kind") in (None, "demo"):
+        return DEMO_MODEL_WARNING
+    return None
+
+
 def _fallback_price(req: PredictRequest) -> dict:
     base = BASE_PRICE_M2.get(req.property_type, 4300)
     area = max(req.area_m2, 1)
@@ -53,6 +67,7 @@ def _fallback_price(req: PredictRequest) -> dict:
             "ajuste por quartos, banheiros, vagas e localizacao",
             "treine o LightGBM para substituir esta estimativa por modelo supervisionado",
         ],
+        "data_quality": "generic",
     }
 
 
@@ -99,13 +114,19 @@ def predict(req: PredictRequest):
 
         X = df[numeric_features + categorical_features].values.astype(float)
         price = float(model.predict(X)[0])
-        return {
+        warning = _training_warning(bundle)
+        result = {
             "predicted_price": round(price, 2),
             "price_low": round(price * 0.88, 2),
             "price_high": round(price * 1.12, 2),
             "price_per_m2": round(price / max(req.area_m2, 1), 2),
             "model_status": "lightgbm",
+            "data_quality": "demo" if warning else "real",
+            "training_source": bundle.get("training_source"),
         }
+        if warning:
+            result["warning"] = warning
+        return result
     except Exception:
         # Modelo treinado presente no disco, mas dependencia (ex.: lightgbm) ou
         # arquivo indisponivel neste ambiente — degrada para a estimativa hedonica

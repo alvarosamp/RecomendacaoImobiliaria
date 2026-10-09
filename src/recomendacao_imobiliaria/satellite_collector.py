@@ -12,6 +12,8 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 
+INDEX_COLUMNS = ["h3_id", "date", "ndvi", "ndbi", "bai", "cloud_pct"]
+
 _REQUIRED_PACKAGES = ("pystac_client", "planetary_computer", "stackstac", "rioxarray")
 
 
@@ -163,7 +165,7 @@ def collect_sentinel2_indices(
     if not items:
         print("Sem cenas Sentinel-2 no periodo com cobertura de nuvens aceitavel.")
         Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame().to_csv(output_csv, index=False)
+        pd.DataFrame(columns=INDEX_COLUMNS).to_csv(output_csv, index=False)
         return SatelliteCollectResult(
             h3_cells=len(h3_ids),
             scenes_processed=0,
@@ -276,7 +278,7 @@ def collect_sentinel2_indices(
     if uncovered:
         log.info("%d celulas H3 sem cobertura de tiles.", uncovered)
 
-    df = pd.DataFrame(list(best_rows.values()))
+    df = pd.DataFrame(list(best_rows.values()), columns=INDEX_COLUMNS)
     if not df.empty:
         df = df.sort_values(["h3_id", "date"])
 
@@ -366,9 +368,14 @@ def collect_time_series_for_grid(
         rows += result.rows_written
         errors.extend(result.errors)
         if temporary.exists() and temporary.stat().st_size:
-            frames.append(pd.read_csv(temporary))
+            try:
+                frame = pd.read_csv(temporary)
+            except pd.errors.EmptyDataError:
+                frame = pd.DataFrame(columns=INDEX_COLUMNS)
+            if not frame.empty:
+                frames.append(frame)
         temporary.unlink(missing_ok=True)
-    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=INDEX_COLUMNS)
     if not combined.empty:
         combined = combined.drop_duplicates(subset=["h3_id", "date"], keep="last").sort_values(["h3_id", "date"])
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)

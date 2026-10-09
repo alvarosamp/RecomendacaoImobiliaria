@@ -44,7 +44,8 @@ def main() -> None:
 
     # --- ML de precos ---
     train_parser = subparsers.add_parser("train-price", help="Treina modelo inicial de preco.")
-    train_parser.add_argument("--csv", required=True, help="CSV com anuncios/imoveis.")
+    train_parser.add_argument("--csv", default=None, help="CSV com anuncios/imoveis.")
+    train_parser.add_argument("--from-db", action="store_true", help="Treina com os anuncios reais de market.listings.")
     train_parser.add_argument("--model-path", default="models/price_model.joblib")
     train_parser.add_argument("--trials", type=int, default=50, help="Numero de trials Optuna para tuning.")
     train_parser.add_argument("--no-enrich", action="store_true", help="Nao enriquecer com PostGIS.")
@@ -132,6 +133,15 @@ def main() -> None:
     neighborhoods_parser.add_argument("--municipality-code", default="3152501")
     neighborhoods_parser.add_argument("--source", default="oficial")
 
+    osm_neighborhoods_parser = subparsers.add_parser("fetch-osm-neighborhoods", help="Baixa bairros/quadrantes do OpenStreetMap para rotular o mapa.")
+    osm_neighborhoods_parser.add_argument("--municipality", default="Pouso Alegre")
+    osm_neighborhoods_parser.add_argument("--output", default=None)
+
+    cep_neighborhoods_parser = subparsers.add_parser("build-cep-neighborhoods", help="Estima áreas de bairro cruzando ruas do OSM com bairros dos Correios (ViaCEP).")
+    cep_neighborhoods_parser.add_argument("--municipality", default="Pouso Alegre")
+    cep_neighborhoods_parser.add_argument("--uf", default="MG")
+    cep_neighborhoods_parser.add_argument("--cache", default=None, help="Arquivo de cache do ViaCEP (padrão: $VIACEP_CACHE ou data/official/bairros).")
+
     calibration_parser = subparsers.add_parser("calibrate-priorities", help="Recalibra faixas de prioridade pela distribuição atual dos scores.")
     calibration_parser.add_argument("--apply", action="store_true")
     subparsers.add_parser("sync-official-layers", help="Importa bairros e zoneamento oficiais quando disponíveis.")
@@ -170,11 +180,22 @@ def main() -> None:
             from .ml import train_price_model
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
+        if args.from_db:
+            from .market_data import export_listings_csv
+            exported = export_listings_csv(args.csv or "data/processed/market_listings_train.csv")
+            if exported["rows"] < 50:
+                raise SystemExit(f"Apenas {exported['rows']} anuncios reais em market.listings; importe mais antes de treinar.")
+            csv_path, data_kind = exported["output"], "real"
+        elif args.csv:
+            csv_path, data_kind = args.csv, None
+        else:
+            raise SystemExit("Informe --csv ou --from-db.")
         result = train_price_model(
-            args.csv,
+            csv_path,
             model_path=args.model_path,
             enrich=not args.no_enrich,
             n_trials=args.trials,
+            data_kind=data_kind,
         )
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
@@ -317,6 +338,16 @@ def main() -> None:
         result = import_neighborhoods(path, municipality=args.municipality,
                                       municipality_code=args.municipality_code, source_name=args.source)
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "fetch-osm-neighborhoods":
+        from .osm_neighborhoods import DEFAULT_OUTPUT, fetch_osm_neighborhoods
+        print(json.dumps(fetch_osm_neighborhoods(args.municipality, args.output or DEFAULT_OUTPUT), ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "build-cep-neighborhoods":
+        from .cep_neighborhoods import DEFAULT_CACHE, build_cep_neighborhoods
+        print(json.dumps(build_cep_neighborhoods(args.municipality, args.uf, cache=args.cache or DEFAULT_CACHE), ensure_ascii=False, indent=2))
         return
 
     if args.command == "calibrate-priorities":

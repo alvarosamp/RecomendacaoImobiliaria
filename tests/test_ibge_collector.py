@@ -12,9 +12,9 @@ class SidraParsingTest(unittest.TestCase):
 
         fake_response = [
             {"D1C": "header", "V": "Total"},  # cabeçalho
-            {"D1C": "315180005000001", "V": "456"},
-            {"D1C": "315180005000002", "V": "789"},
-            {"D1C": "315180005000003", "V": "nao informado"},  # invalid value
+            {"D1C": "315250105000001", "V": "456"},
+            {"D1C": "315250105000002", "V": "789"},
+            {"D1C": "315250105000003", "V": "nao informado"},  # invalid value
         ]
 
         mock_resp = MagicMock()
@@ -27,9 +27,9 @@ class SidraParsingTest(unittest.TestCase):
             result = _fetch_setor_population()
 
         # header row and invalid value must be ignored
-        self.assertEqual(result.get("315180005000001"), 456)
-        self.assertEqual(result.get("315180005000002"), 789)
-        self.assertNotIn("315180005000003", result)
+        self.assertEqual(result.get("315250105000001"), 456)
+        self.assertEqual(result.get("315250105000002"), 789)
+        self.assertNotIn("315250105000003", result)
 
     def test_municipality_population_fallback(self):
         from unittest.mock import patch

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from functools import lru_cache
 
 from fastapi import APIRouter, Query
 from fastapi.responses import JSONResponse
@@ -124,7 +123,6 @@ def _load_features():
 
 def _compute_typology(df):
     """KMeans on spatial features → typology label per cell."""
-    import numpy as np
     try:
         from sklearn.preprocessing import StandardScaler
         from sklearn.cluster import KMeans
@@ -175,7 +173,7 @@ def _build_reasons(row, cfg: dict, typology: str) -> list[str]:
     reasons.append(f"Zoneamento: {zona} — usos permitidos: {cfg['zoning']}")
     pop = row.get("pop_estimated")
     if pop and not math.isnan(float(pop or 0)):
-        reasons.append(f"Estimativa de {int(pop):,} moradores na célula (IBGE Censo 2022)")
+        reasons.append(f"Estimativa de {int(pop):,} moradores na célula; distribuição modelada, não contagem observada")
     score_res = row.get("score_residencial")
     if score_res and not math.isnan(score_res):
         reasons.append(f"Score residencial: {score_res:.0f}/100 (potencial de moradores)")

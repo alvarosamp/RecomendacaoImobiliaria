@@ -1,0 +1,439 @@
+{
+  "reference_date": "2026-10-10",
+  "data_kind": "demo_fixture",
+  "endpoints": [
+    {
+      "path": "/api/auth/register",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/auth/login",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/auth/me",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/auth/me/profile",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "path": "/api/scores",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/predict",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/mlops/runs",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/indices/timeseries",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/pipeline/run",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/pipeline/refresh",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/pipeline/reset",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/pipeline/status",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/commerce-gaps",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/typology",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/zoning-geojson",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/neighborhoods-geojson",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/risk-susceptibility",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/official-susceptibility-geojson",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/analytics/pois-geojson",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/concept/analyze",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/concept/generate-image",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/concept/report",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/leads",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/leads/{lead_id}/status",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "path": "/api/legal/assess",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/legal/annexes",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/market/compare",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/health",
+      "methods": [
+        "GET"
+      ]
+    }
+  ],
+  "scores": [
+    {
+      "h3_id": "demo-norte-01",
+      "score_residencial": 34.72,
+      "score_comercial": 34.04,
+      "explain": {
+        "growth_signal": 0.4805,
+        "environmental_quality": 0.71,
+        "commercial_gap": 0.625,
+        "mixed_access": 0.3715,
+        "confidence": 1.0,
+        "contributions": {
+          "commercial": {
+            "commercial_gap": 0.2812,
+            "growth": 0.1682,
+            "mixed_access": 0.0743,
+            "plan_multiplier": 0.65
+          },
+          "residential": {
+            "environmental_quality": 0.284,
+            "mixed_access": 0.13,
+            "growth": 0.1201,
+            "plan_multiplier": 0.65
+          }
+        },
+        "positive_factors": [
+          "sinal de crescimento urbano",
+          "boa qualidade ambiental relativa",
+          "carencia relevante de servicos"
+        ],
+        "negative_factors": [
+          "uso condicionado pelo Plano Diretor"
+        ],
+        "zoning": {
+          "zona": "Zona de Expansao Urbana",
+          "residential_allowed": true,
+          "commercial_allowed": true,
+          "residential_plan_status": "conditioned",
+          "commercial_plan_status": "conditioned",
+          "legal_notes": "Zona de expansao urbana exige validacao de infraestrutura e diretrizes do Plano Diretor.",
+          "legal_articles": [],
+          "legal_parameters": {},
+          "legal_sources": [],
+          "validation_status": "validated_official"
+        },
+        "main_recommendations": [
+          {
+            "use": "mercado",
+            "why": "baixa oferta de mercados/supermercados na celula ou entorno"
+          },
+          {
+            "use": "farmacia",
+            "why": "baixa oferta de farmacias e servicos de conveniencia"
+          }
+        ]
+      }
+    },
+    {
+      "h3_id": "demo-centro-01",
+      "score_residencial": 59.42,
+      "score_comercial": 25.72,
+      "explain": {
+        "growth_signal": 0.2535,
+        "environmental_quality": 0.59,
+        "commercial_gap": 0.0,
+        "mixed_access": 0.8424,
+        "confidence": 1.0,
+        "contributions": {
+          "commercial": {
+            "commercial_gap": 0.0,
+            "growth": 0.0887,
+            "mixed_access": 0.1685,
+            "plan_multiplier": 1.0
+          },
+          "residential": {
+            "environmental_quality": 0.236,
+            "mixed_access": 0.2948,
+            "growth": 0.0634,
+            "plan_multiplier": 1.0
+          }
+        },
+        "positive_factors": [
+          "boa acessibilidade a equipamentos"
+        ],
+        "negative_factors": [
+          "baixa carencia comercial detectada"
+        ],
+        "zoning": {
+          "zona": "Zona Central",
+          "residential_allowed": true,
+          "commercial_allowed": true,
+          "residential_plan_status": "allowed",
+          "commercial_plan_status": "allowed",
+          "legal_notes": null,
+          "legal_articles": [],
+          "legal_parameters": {},
+          "legal_sources": [],
+          "validation_status": "validated_official"
+        },
+        "main_recommendations": []
+      }
+    },
+    {
+      "h3_id": "demo-sul-01",
+      "score_residencial": 0.0,
+      "score_comercial": 0.0,
+      "explain": {
+        "growth_signal": 0.0365,
+        "environmental_quality": 0.855,
+        "commercial_gap": 1.0,
+        "mixed_access": 0.0,
+        "confidence": 0.9,
+        "contributions": {
+          "commercial": {
+            "commercial_gap": 0.45,
+            "growth": 0.0128,
+            "mixed_access": 0.0,
+            "plan_multiplier": 0.0
+          },
+          "residential": {
+            "environmental_quality": 0.342,
+            "mixed_access": 0.0,
+            "growth": 0.0091,
+            "plan_multiplier": 0.0
+          }
+        },
+        "positive_factors": [
+          "boa qualidade ambiental relativa",
+          "carencia relevante de servicos"
+        ],
+        "negative_factors": [
+          "baixo sinal de crescimento recente",
+          "acessibilidade limitada aos servicos medidos",
+          "uso bloqueado ou vetado pela regra legal/zoneamento"
+        ],
+        "zoning": {
+          "zona": "Restricao Ambiental",
+          "residential_allowed": false,
+          "commercial_allowed": false,
+          "residential_plan_status": "blocked",
+          "commercial_plan_status": "blocked",
+          "legal_notes": "Area ambiental ou restritiva deve bloquear recomendacao de construcao.",
+          "legal_articles": [],
+          "legal_parameters": {},
+          "legal_sources": [],
+          "validation_status": "validated_official"
+        },
+        "main_recommendations": [
+          {
+            "use": "nenhum",
+            "why": "O zoneamento informado veta ou nao permite uso comercial."
+          }
+        ]
+      }
+    }
+  ],
+  "risk_no_evidence": {
+    "susceptibility_score": 0.0,
+    "alert_level": "dados_insuficientes",
+    "confidence": 0.0,
+    "components": {},
+    "evidence": {
+      "type": "suscetibilidade_analitica"
+    }
+  },
+  "legal_cases": [
+    {
+      "zone": "ZEPAM",
+      "use": "residential",
+      "status": "blocked",
+      "multiplier": 0.0,
+      "label": "Zona nao cadastrada",
+      "notes": "Zona ambiental oficial do PDPA. Recomendacoes imobiliarias devem ser bloqueadas ate validacao ambiental especifica.",
+      "articles": [
+        "Validacao cartografica e consulta aos anexos vigentes"
+      ],
+      "parameters": {},
+      "sources": [
+        {
+          "title": "Lei Ordinaria 6.476/2021 - Plano Diretor",
+          "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"
+        },
+        {
+          "title": "Anexo 6, Quadro 2 - Parametros de ocupacao do solo",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476a657ac1a.pdf"
+        },
+        {
+          "title": "Anexo 8, Quadro 4C - Usos permitidos na MDU",
+          "url": "https://pousoalegre.mg.gov.br/uploads/679b784403aba.pdf"
+        },
+        {
+          "title": "Anexo 9, Quadros 7 e 8 - Incomodidade e instalacao",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476b20c4ac5.pdf"
+        }
+      ]
+    },
+    {
+      "zone": "ZM",
+      "use": "residential",
+      "status": "conditioned",
+      "multiplier": 0.65,
+      "label": "Zona nao cadastrada",
+      "notes": "Zona urbana identificada no KML oficial. Aplicar quadros de usos permitidos, incomodidade e parametros urbanisticos.",
+      "articles": [
+        "Validacao cartografica e consulta aos anexos vigentes"
+      ],
+      "parameters": {},
+      "sources": [
+        {
+          "title": "Lei Ordinaria 6.476/2021 - Plano Diretor",
+          "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"
+        },
+        {
+          "title": "Anexo 6, Quadro 2 - Parametros de ocupacao do solo",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476a657ac1a.pdf"
+        },
+        {
+          "title": "Anexo 8, Quadro 4C - Usos permitidos na MDU",
+          "url": "https://pousoalegre.mg.gov.br/uploads/679b784403aba.pdf"
+        },
+        {
+          "title": "Anexo 9, Quadros 7 e 8 - Incomodidade e instalacao",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476b20c4ac5.pdf"
+        }
+      ]
+    },
+    {
+      "zone": "UNKNOWN",
+      "use": "commercial",
+      "status": "conditioned",
+      "multiplier": 0.65,
+      "label": "Zona nao cadastrada",
+      "notes": "Zona ausente ou nao estruturada. A celula nao pode receber prioridade alta e exige validacao manual antes de qualquer decisao.",
+      "articles": [
+        "Validacao cartografica e consulta aos anexos vigentes"
+      ],
+      "parameters": {},
+      "sources": [
+        {
+          "title": "Lei Ordinaria 6.476/2021 - Plano Diretor",
+          "url": "https://www.legislador.com.br/legisladorweb.asp?ID=122&WCI=LeiTexto&aaLei=2021&inEspecieLei=1&nrLei=6476"
+        },
+        {
+          "title": "Anexo 6, Quadro 2 - Parametros de ocupacao do solo",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476a657ac1a.pdf"
+        },
+        {
+          "title": "Anexo 8, Quadro 4C - Usos permitidos na MDU",
+          "url": "https://pousoalegre.mg.gov.br/uploads/679b784403aba.pdf"
+        },
+        {
+          "title": "Anexo 9, Quadros 7 e 8 - Incomodidade e instalacao",
+          "url": "https://pousoalegre.mg.gov.br/uploads/66476b20c4ac5.pdf"
+        }
+      ]
+    }
+  ],
+  "source_commit": "4f3e3360",
+  "snapshot_stage": "first_lot; numerical scoring/risk/legal modules unchanged",
+  "configuration_checksums": {
+    "config\\scoring_weights.json": "8fed0fb704e28df2c13da09729b5cb415a2c4ed8957eaef8bce80678cd8f7636",
+    "config\\plan_director_pouso_alegre.json": "b98da3acdd5fc77b25a53e2b762bb81e90881cfa7b0d3dc66b3f82cdc23a1ecf",
+    "config\\cities\\pouso_alegre.json": "3636a6896f74fc70b527cb3e8f292094ef3b1f2115c4191fc62013e10f6944fd"
+  }
+}

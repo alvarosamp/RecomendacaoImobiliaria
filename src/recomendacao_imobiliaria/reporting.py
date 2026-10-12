@@ -9,6 +9,7 @@ from sqlalchemy import text
 from .config import Settings, load_settings
 from .db import db_engine
 from .decision import enrich_opportunities
+from .municipality import MUNICIPALITY
 
 
 MARKET_RADIUS_M = 1000
@@ -89,6 +90,14 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.poi_hospital_cnt,
             f.poi_leisure_cnt,
             f.pop_estimated,
+            CASE WHEN ps.status = 'ok' AND ps.details ->> 'municipality_code' = :municipality_code
+                      AND ps.details ->> 'quality' = 'estimated'
+                      AND ps.details ->> 'method' IS NOT NULL
+                      AND ps.row_count = (SELECT COUNT(*) FROM geo.features WHERE pop_estimated IS NOT NULL)
+                 THEN 'estimated' ELSE 'unverified' END AS population_quality,
+            ps.source_name AS population_source,
+            ps.details ->> 'method' AS population_method,
+            ps.details ->> 'reference_year' AS population_reference_year,
             lc.class_name AS land_cover_class,
             lc.reference_year AS land_cover_year,
             old_lc.class_name AS land_cover_class_2019,
@@ -137,13 +146,18 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
              ORDER BY collected_at DESC
              LIMIT 1
         ) zs ON true
+        LEFT JOIN LATERAL (
+            SELECT source_name, status, row_count, details FROM ops.data_sources
+            WHERE dataset = 'h3_population'
+            ORDER BY collected_at DESC, id DESC LIMIT 1
+        ) ps ON true
         ORDER BY GREATEST(
             COALESCE(s.score_residencial, 0),
             COALESCE(s.score_comercial, 0)
         ) DESC
     """
     with db_engine(settings) as engine:
-        frame = pd.read_sql(text(query), engine)
+        frame = pd.read_sql(text(query), engine, params={"municipality_code": MUNICIPALITY.ibge_code})
     return _add_market_reference(_add_reference_neighborhoods(enrich_opportunities(frame)), settings)
 
 

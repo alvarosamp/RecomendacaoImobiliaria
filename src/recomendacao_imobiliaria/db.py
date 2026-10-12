@@ -9,9 +9,10 @@ from sqlalchemy.engine import Engine
 from .config import Settings, load_settings
 
 
-def make_engine(settings: Settings | None = None) -> Engine:
+def make_engine(settings: Settings | None = None, *, connect_timeout: int | None = None) -> Engine:
     settings = settings or load_settings()
-    return create_engine(settings.database_url, future=True, pool_pre_ping=True)
+    options = {"connect_timeout": connect_timeout} if connect_timeout is not None else {}
+    return create_engine(settings.database_url, future=True, pool_pre_ping=True, connect_args=options)
 
 
 @contextmanager

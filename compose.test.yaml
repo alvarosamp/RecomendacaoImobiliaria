@@ -1,0 +1,78 @@
+# Validacao local isolada; nao utiliza .env nem volumes de desenvolvimento/producao.
+services:
+  db:
+    image: postgis/postgis:15-3.5
+    environment:
+      POSTGRES_DB: urbia_docker_test
+      POSTGRES_USER: urbia_test
+      POSTGRES_PASSWORD: isolated-docker-test-only
+    volumes:
+      - test_db:/var/lib/postgresql/data
+      - ./Infra/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -h 127.0.0.1 -U urbia_test -d urbia_docker_test]
+      interval: 3s
+      timeout: 3s
+      retries: 100
+
+  api:
+    image: urbia-api:docker-test-lote01
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: production
+      PG_HOST: db
+      PG_PORT: '5432'
+      PG_DB: urbia_docker_test
+      PG_USER: urbia_test
+      PG_PASS: isolated-docker-test-only
+      JWT_SECRET: isolated-docker-validation-secret-2026-lote01
+      ADMIN_EMAILS: admin@urbia.test
+      CORS_ORIGINS: http://localhost
+      HF_TOKEN: ''
+      MODEL_PATH: /tmp/no-price-model.joblib
+    ports:
+      - '127.0.0.1::8000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: urbia-frontend:docker-test-lote01
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    ports:
+      - '127.0.0.1::80'
+    depends_on:
+      - api
+
+  tests:
+    image: urbia-api:docker-test-lote01
+    profiles: [checks]
+    user: root
+    working_dir: /app
+    environment:
+      APP_ENV: development
+      PG_HOST: db
+      PG_PORT: '5432'
+      PG_DB: urbia_docker_test
+      PG_USER: urbia_test
+      PG_PASS: isolated-docker-test-only
+      JWT_SECRET: isolated-docker-validation-secret-2026-lote01
+      RUN_POSTGIS_INTEGRATION: '1'
+      PYTHONPATH: /app/src:/app
+    volumes:
+      - ./tests:/app/tests:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./data/official/pdpa:/app/data/official/pdpa:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: [/bin/sh, -c]
+    command:
+      - pip install --no-cache-dir pytest httpx && python -m pytest tests/ -q --tb=short --basetemp=/tmp/pytest-urbia
+
+volumes:
+  test_db:

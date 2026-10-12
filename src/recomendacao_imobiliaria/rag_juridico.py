@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
 import logging
 from pathlib import Path
+from urllib.parse import urlsplit
+
+from .config import load_settings
+from .municipality import MUNICIPALITY
 
 log = logging.getLogger(__name__)
 
@@ -18,15 +23,70 @@ class RagAnswer:
     answer: str
     sources: list[dict]
     model: str
+    source_kind: str = "validated_corpus"
+    warning: str | None = None
 
 
-def _load_corpus(corpus_path: Path | None = None) -> list[dict]:
-    """Load article corpus. Falls back to built-in articles if file not found."""
-    path = corpus_path or _CORPUS_PATH
-    if path.exists():
-        with open(path, encoding="utf-8") as fh:
-            return json.load(fh)
-    return _builtin_corpus()
+class LegalSourceUnavailable(ValueError):
+    """Corpus ausente, sem aprovacao ou diferente da versao verificada."""
+
+
+def _corpus_context(corpus_path: Path | None = None, *, demo: bool = False) -> tuple[list[dict], dict]:
+    if demo:
+        if load_settings().app_env in {"production", "prod"}:
+            raise LegalSourceUnavailable("Corpus juridico demonstrativo nao permitido em producao.")
+        if corpus_path is not None:
+            raise LegalSourceUnavailable("--demo usa somente o corpus embutido, sem arquivo externo.")
+        corpus = _builtin_corpus()
+        raw = json.dumps(corpus, sort_keys=True).encode()
+        context = {"source_kind": "demo", "source_uri": "embedded-demo",
+                   "corpus_sha256": hashlib.sha256(raw).hexdigest(), "manifest_sha256": "demo"}
+    else:
+        path = Path(corpus_path or _CORPUS_PATH)
+        manifest_path = path.with_name(path.name + ".manifest.json")
+        if not path.is_file() or not manifest_path.is_file():
+            raise LegalSourceUnavailable("Fonte juridica indisponivel: forneca corpus e manifesto aprovado.")
+        try:
+            raw = path.read_bytes()
+            manifest_raw = manifest_path.read_bytes()
+            corpus = json.loads(raw)
+            manifest = json.loads(manifest_raw)
+            if not isinstance(manifest, dict):
+                raise ValueError("manifesto deve ser um objeto")
+            MUNICIPALITY.validate_code(manifest.get("municipality_code", ""))
+            digest = hashlib.sha256(raw).hexdigest()
+            if manifest.get("checksum_sha256") != digest:
+                raise ValueError("checksum do corpus diverge do manifesto")
+            for field in ("approved_by", "approved_at", "rule_version"):
+                if not isinstance(manifest.get(field), str) or not manifest[field].strip():
+                    raise ValueError(f"manifesto sem {field}")
+            uri = manifest.get("source_uri", "")
+            parsed = urlsplit(uri)
+            if parsed.scheme != "https" or not (parsed.hostname or "").endswith(".gov.br"):
+                raise ValueError("source_uri deve apontar para fonte oficial HTTPS gov.br")
+            context = {"source_kind": "validated_corpus", "source_uri": uri,
+                       "corpus_sha256": digest, "manifest_sha256": hashlib.sha256(manifest_raw).hexdigest()}
+        except (ValueError, TypeError, OSError) as exc:
+            raise LegalSourceUnavailable(f"Corpus juridico nao verificado: {exc}") from exc
+    if not isinstance(corpus, list) or not corpus:
+        raise LegalSourceUnavailable("Corpus juridico vazio ou invalido.")
+    ids = set()
+    for doc in corpus:
+        if not isinstance(doc, dict) or any(
+            not isinstance(doc.get(key), str) or not doc[key].strip()
+            for key in ("id", "title", "text", "chapter", "lei")
+        ):
+            raise LegalSourceUnavailable("Artigo sem identificacao, texto ou referencia legal.")
+        if doc["id"] in ids:
+            raise LegalSourceUnavailable("Identificador de artigo duplicado.")
+        ids.add(doc["id"])
+    context["municipality_code"] = MUNICIPALITY.ibge_code
+    return corpus, context
+
+
+def _load_corpus(corpus_path: Path | None = None, *, demo: bool = False) -> list[dict]:
+    """Carrega corpus verificado; demonstracao exige opt-in explicito."""
+    return _corpus_context(corpus_path, demo=demo)[0]
 
 
 def _builtin_corpus() -> list[dict]:
@@ -218,8 +278,9 @@ def _builtin_corpus() -> list[dict]:
     ]
 
 
-def build_index(corpus_path: Path | None = None, persist_dir: str = "data/rag_index") -> int:
+def build_index(corpus_path: Path | None = None, persist_dir: str = "data/rag_index", *, demo: bool = False) -> int:
     """Index the plan director corpus into ChromaDB. Returns number of documents indexed."""
+    corpus, context = _corpus_context(corpus_path, demo=demo)
     try:
         import chromadb
         from chromadb.utils import embedding_functions
@@ -227,8 +288,6 @@ def build_index(corpus_path: Path | None = None, persist_dir: str = "data/rag_in
         raise ImportError(
             "Instale chromadb: pip install chromadb"
         ) from exc
-
-    corpus = _load_corpus(corpus_path)
 
     client = chromadb.PersistentClient(path=persist_dir)
 
@@ -239,7 +298,7 @@ def build_index(corpus_path: Path | None = None, persist_dir: str = "data/rag_in
         pass
 
     ef = embedding_functions.DefaultEmbeddingFunction()
-    collection = client.create_collection(_COLLECTION_NAME, embedding_function=ef)
+    collection = client.create_collection(_COLLECTION_NAME, embedding_function=ef, metadata=context)
 
     documents = [doc["text"] for doc in corpus]
     metadatas = [
@@ -248,6 +307,8 @@ def build_index(corpus_path: Path | None = None, persist_dir: str = "data/rag_in
             "title": doc["title"],
             "chapter": doc["chapter"],
             "lei": doc["lei"],
+            "source_uri": context["source_uri"],
+            "source_kind": context["source_kind"],
         }
         for doc in corpus
     ]
@@ -263,8 +324,14 @@ def query(
     n_results: int = 4,
     persist_dir: str = "data/rag_index",
     model: str = "claude-haiku-4-5-20251001",
+    *,
+    corpus_path: Path | None = None,
+    demo: bool = False,
 ) -> RagAnswer:
     """Answer a legal question about the Plano Diretor using RAG + Claude."""
+    corpus, context = _corpus_context(corpus_path, demo=demo)
+    if n_results < 1:
+        raise ValueError("n_results deve ser positivo")
     try:
         import chromadb
         from chromadb.utils import embedding_functions
@@ -283,14 +350,26 @@ def query(
     try:
         collection = client.get_collection(_COLLECTION_NAME, embedding_function=ef)
     except Exception:
-        build_index(persist_dir=persist_dir)
+        collection = None
+    # Um indice legado/ demonstrativo nao pode contornar a validacao do corpus.
+    if collection is None or any((collection.metadata or {}).get(k) != v for k, v in context.items()):
+        build_index(corpus_path=corpus_path, persist_dir=persist_dir, demo=demo)
         collection = client.get_collection(_COLLECTION_NAME, embedding_function=ef)
 
-    results = collection.query(query_texts=[question], n_results=n_results)
+    results = collection.query(query_texts=[question], n_results=min(n_results, len(corpus)))
     docs = results["documents"][0]
     metas = results["metadatas"][0]
+    verified = {doc["id"]: doc for doc in corpus}
+    if not docs or len(docs) != len(metas):
+        raise LegalSourceUnavailable("Indice sem artigos verificaveis.")
+    for doc, meta in zip(docs, metas):
+        original = verified.get(meta.get("id"))
+        if original is None or original["text"] != doc or any(
+            original[key] != meta.get(key) for key in ("title", "chapter", "lei")
+        ):
+            raise LegalSourceUnavailable("Indice diverge do corpus aprovado; reconstrua o indice.")
 
-    context = "\n\n".join(
+    retrieved_context = "\n\n".join(
         f"[{m['title']}]\n{doc}" for doc, m in zip(docs, metas)
     )
 
@@ -299,10 +378,13 @@ def query(
         "de Pouso Alegre (Lei 6476/2021). Responda a pergunta abaixo com base exclusivamente "
         "nos artigos fornecidos no contexto. Se a resposta nao estiver no contexto, diga isso "
         "claramente e sugira consultar o texto completo da lei.\n\n"
-        f"CONTEXTO:\n{context}\n\n"
+        f"CONTEXTO:\n{retrieved_context}\n\n"
         f"PERGUNTA: {question}\n\n"
         "RESPOSTA (em portugues, objetiva e citando artigos quando pertinente):"
     )
+    warning = "DEMONSTRACAO: corpus embutido nao verificado; nao usar para decisoes reais." if demo else None
+    if warning:
+        prompt = warning + "\nIdentifique sua resposta como demonstrativa.\n" + prompt
 
     anthro = anthropic.Anthropic()
     message = anthro.messages.create(
@@ -313,7 +395,8 @@ def query(
     answer_text = message.content[0].text
 
     sources = [
-        {"title": m["title"], "chapter": m["chapter"], "lei": m["lei"]}
+        {"title": m["title"], "chapter": m["chapter"], "lei": m["lei"],
+         "source_uri": context["source_uri"], "source_kind": context["source_kind"]}
         for m in metas
     ]
 
@@ -322,4 +405,6 @@ def query(
         answer=answer_text,
         sources=sources,
         model=model,
+        source_kind=context["source_kind"],
+        warning=warning,
     )

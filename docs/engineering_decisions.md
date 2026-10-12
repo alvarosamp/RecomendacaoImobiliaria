@@ -26,7 +26,15 @@ O comando `healthcheck` verifica:
 
 ## Relatorios
 
-O comando `export-report` gera um Markdown executivo e um CSV analitico. Ele tenta usar PostGIS; se o banco nao estiver disponivel e a fonte for `auto`, usa dados demonstrativos.
+O comando `export-report` gera um Markdown executivo e um CSV analitico. PostGIS e a fonte padrao; `auto` e um alias de PostGIS. Falhas e base vazia interrompem a exportacao. Dados demonstrativos exigem `--source demo` e sao identificados no Markdown e no CSV.
+
+## Identidade territorial e procedencia
+
+O piloto compartilha a identidade de `config/cities/pouso_alegre.json`: IBGE de sete digitos e CNES derivado de seis digitos. Respostas municipais divergentes sao rejeitadas. Populacao por H3 continua estimada, com metodo, fonte e ano registrados em `ops.data_sources`; dados legados sem registro verificavel aparecem como procedencia pendente. A auditoria `audit-territorial-data` e somente de leitura.
+
+## Corpus juridico
+
+O RAG real exige corpus acompanhado de manifesto aprovado e checksum. Corpus embutido exige `--demo`, bloqueado em producao. O indice persistido precisa corresponder ao corpus validado; RAG nao altera a regra legal deterministica. Veja `docs/implementacao_lote_01.md` para operacao e limitacoes.
 
 ## Fronteira entre produto e dado oficial
 

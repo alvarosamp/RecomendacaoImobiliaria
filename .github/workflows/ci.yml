@@ -126,8 +126,8 @@ jobs:
           docker compose logs db
           exit 1
 
-      - name: Run zoning integration test
-        run: pytest tests/integration/test_postgis_zoning.py -v --tb=short
+      - name: Run territorial integration tests
+        run: pytest tests/integration/ -v --tb=short
 
       - name: Database logs on failure
         if: failure()

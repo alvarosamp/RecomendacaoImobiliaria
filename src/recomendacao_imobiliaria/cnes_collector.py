@@ -20,11 +20,13 @@ from sqlalchemy import text
 
 from .config import Settings, load_settings
 from .db import db_engine
+from .municipality import MUNICIPALITY, MunicipalityMismatch
+from .data_registry import record_data_source
 
 log = logging.getLogger(__name__)
 
 # Código IBGE 6-dígitos do município (sem dígito verificador)
-POUSO_ALEGRE_MUN_CODE = "315180"
+POUSO_ALEGRE_MUN_CODE = MUNICIPALITY.datasus_code
 
 # Tentativas de endpoint do site CNES (podem mudar com o tempo)
 _CNES_ENDPOINTS = [
@@ -55,6 +57,7 @@ def _try_cnes_api(mun_code: str = POUSO_ALEGRE_MUN_CODE) -> list[dict]:
     Retorna lista de dicts com {name, subcategory, lat, lon}.
     Retorna [] se a API não estiver disponível ou sem coordenadas.
     """
+    MUNICIPALITY.validate_code(mun_code, datasus=True)
     params = {"municipio": mun_code, "page": 0, "size": 500, "fl_ativo": "S"}
     headers = {"Accept": "application/json", "User-Agent": "recomendacao-imobiliaria/1.0"}
 
@@ -72,6 +75,9 @@ def _try_cnes_api(mun_code: str = POUSO_ALEGRE_MUN_CODE) -> list[dict]:
 
             results = []
             for item in items:
+                code = item.get("codigoMunicipio") or item.get("coMunicipio") or item.get("municipio")
+                if code is not None:
+                    MUNICIPALITY.validate_code(code, datasus=len(str(code)) == 6)
                 lat = item.get("latDecimal") or item.get("latitude") or item.get("lat")
                 lon = item.get("lonDecimal") or item.get("longitude") or item.get("lng") or item.get("lon")
                 if not lat or not lon:
@@ -93,6 +99,8 @@ def _try_cnes_api(mun_code: str = POUSO_ALEGRE_MUN_CODE) -> list[dict]:
             if results:
                 log.info("CNES API (%s): %d estabelecimentos com coordenadas.", url, len(results))
                 return results
+        except MunicipalityMismatch:
+            raise
         except Exception as exc:
             log.debug("CNES endpoint %s falhou: %s", url, exc)
 
@@ -196,10 +204,12 @@ def fetch_cnes_establishments(settings: Settings | None = None) -> int:
 
     log.info("Buscando estabelecimentos de saude CNES...")
     records = _try_cnes_api()
+    source = "CNES"
 
     if not records:
         log.info("CNES API sem resultado — tentando OSM healthcare...")
         records = _cnes_via_osm_healthcare(settings)
+        source = "OSM healthcare"
 
     if not records:
         log.warning("Nenhum estabelecimento CNES/healthcare encontrado.")
@@ -224,4 +234,10 @@ def fetch_cnes_establishments(settings: Settings | None = None) -> int:
                 count += 1
 
     log.info("CNES/healthcare: %d estabelecimentos inseridos.", count)
+    record_data_source(
+        "healthcare_pois", source, row_count=count, settings=settings,
+        details={"municipality_code": MUNICIPALITY.ibge_code,
+                 "quality": "provider_records" if source == "CNES" else "community_mapping",
+                 "capacity_available": False},
+    )
     return count

@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import json
+from contextlib import nullcontext
 from datetime import date
 
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 from .config import Settings, load_settings
 from .db import make_engine
@@ -95,11 +97,14 @@ def record_data_source(
     schema_version: str | None = None,
     legal_basis: str | None = None,
     settings: Settings | None = None,
+    connection: Connection | None = None,
 ) -> None:
-    ensure_data_schema(settings)
-    engine = make_engine(settings or load_settings())
+    if connection is None:
+        ensure_data_schema(settings)
+    engine = make_engine(settings or load_settings()) if connection is None else None
     try:
-        with engine.begin() as conn:
+        transaction = engine.begin() if engine is not None else nullcontext(connection)
+        with transaction as conn:
             conn.execute(
                 text("""
                     INSERT INTO ops.data_sources
@@ -120,4 +125,5 @@ def record_data_source(
                 },
             )
     finally:
-        engine.dispose()
+        if engine is not None:
+            engine.dispose()

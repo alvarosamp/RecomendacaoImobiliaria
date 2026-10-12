@@ -85,6 +85,15 @@ def _build_explainability(record: dict) -> list[dict[str, str]]:
 
     return [
         {
+            "label": "Populacao",
+            "value": (
+                f"distribuicao estimada; metodo {record.get('population_method')}; "
+                f"fonte {record.get('population_source')}; ano {record.get('population_reference_year')}"
+                if record.get("population_quality") == "estimated"
+                else "procedencia populacional nao verificada; auditar e reprocessar antes de usar em decisoes"
+            ),
+        },
+        {
             "label": "Equipamentos e servicos",
             "value": "; ".join(gaps) if gaps else "boa cobertura dos servicos medidos no entorno",
         },

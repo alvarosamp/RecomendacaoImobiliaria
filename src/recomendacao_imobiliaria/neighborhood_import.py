@@ -10,6 +10,7 @@ from sqlalchemy import text
 from .config import load_settings
 from .data_registry import ensure_data_schema, record_data_source
 from .db import make_engine
+from .municipality import MUNICIPALITY
 
 
 NAME_COLUMNS = ("nm_bairro", "bairro", "neighborhood", "nome", "name", "ds_bairro")
@@ -39,13 +40,16 @@ def default_neighborhood_file() -> Path:
 def import_neighborhoods(
     filepath: str | Path,
     *,
-    municipality: str = "Pouso Alegre",
-    municipality_code: str = "3152501",
+    municipality: str = MUNICIPALITY.name,
+    municipality_code: str = MUNICIPALITY.ibge_code,
     source_name: str = "oficial",
     settings=None,
 ) -> NeighborhoodImportResult:
     import geopandas as gpd
 
+    MUNICIPALITY.validate_code(municipality_code)
+    if municipality.casefold() != MUNICIPALITY.name.casefold():
+        raise ValueError("Nome municipal nao corresponde ao codigo IBGE do piloto.")
     path = Path(filepath)
     if not path.exists():
         raise FileNotFoundError(f"Arquivo de bairros não encontrado: {path}")

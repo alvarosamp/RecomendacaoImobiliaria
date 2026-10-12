@@ -9,6 +9,8 @@ from pathlib import Path
 import pandas as pd
 import requests
 
+from .municipality import MUNICIPALITY, MunicipalityMismatch
+
 log = logging.getLogger(__name__)
 
 # Mercado Livre public API — no key required
@@ -22,7 +24,7 @@ _ML_REAL_ESTATE_CATEGORY = None
 _IBGE_BASE = "https://servicodados.ibge.gov.br/api/v1"
 
 # Pouso Alegre IBGE code
-_PA_IBGE_CODE = "3152501"
+_PA_IBGE_CODE = MUNICIPALITY.ibge_code
 
 
 @dataclasses.dataclass
@@ -220,11 +222,13 @@ def fetch_ibge_housing_indicators(
     rows: list[dict] = []
 
     # --- Info basica do municipio (sempre funciona) ---
+    MUNICIPALITY.validate_code(ibge_code)
     try:
         url = f"https://servicodados.ibge.gov.br/api/v1/localidades/municipios/{ibge_code}"
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
         muni = resp.json()
+        MUNICIPALITY.validate_code(muni.get("id", ""))
         uf = (
             muni.get("microrregiao", {})
             .get("mesorregiao", {})
@@ -235,6 +239,8 @@ def fetch_ibge_housing_indicators(
         rows.append({"indicador": "uf", "codigo_ibge": ibge_code, "valor": uf})
         rows.append({"indicador": "mesorregiao", "codigo_ibge": ibge_code,
                      "valor": muni.get("microrregiao", {}).get("mesorregiao", {}).get("nome", "")})
+    except MunicipalityMismatch:
+        raise
     except Exception as exc:
         errors.append(f"localidades: {exc}")
 

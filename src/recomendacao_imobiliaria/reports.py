@@ -19,9 +19,13 @@ class ReportResult:
     source: str
 
 
+class ReportDataUnavailable(RuntimeError):
+    """O relatorio real nao possui dados utilizaveis; nunca implica usar demo."""
+
+
 def export_report(
     output_dir: str = "reports",
-    source: str = "auto",
+    source: str = "postgis",
     top_n: int = 10,
 ) -> ReportResult:
     frame, resolved_source = _load_report_frame(source)
@@ -41,15 +45,23 @@ def export_report(
 
 
 def _load_report_frame(source: str) -> tuple[pd.DataFrame, str]:
+    if source not in {"auto", "postgis", "demo"}:
+        raise ValueError("Fonte invalida: escolha postgis ou demo explicitamente.")
     if source in {"auto", "postgis"}:
         try:
             table = load_score_table()
+            if table.empty:
+                raise ReportDataUnavailable("Sem scores reais disponiveis para gerar o relatorio.")
             table["explicacao"] = table["explain_json"].apply(explain_to_text)
             table["best_score"] = table[["score_residencial", "score_comercial"]].max(axis=1)
+            table["data_source"] = "postgis"
             return table, "postgis"
-        except Exception:
-            if source == "postgis":
-                raise
+        except ReportDataUnavailable:
+            raise
+        except Exception as exc:
+            raise ReportDataUnavailable(
+                "Dados reais indisponiveis. Corrija a origem; use --source demo apenas para demonstracao."
+            ) from exc
 
     rows = []
     for area in sample_areas():
@@ -57,6 +69,7 @@ def _load_report_frame(source: str) -> tuple[pd.DataFrame, str]:
         rows.append(
             {
                 "h3_id": result.h3_id,
+                "data_source": "demo",
                 "score_residencial": result.score_residencial,
                 "score_comercial": result.score_comercial,
                 "best_score": max(result.score_residencial, result.score_comercial),
@@ -85,6 +98,13 @@ def _render_markdown(frame: pd.DataFrame, source: str, top_n: int) -> str:
         "## Top oportunidades",
         "",
     ]
+
+    if source == "demo":
+        lines.extend(["**DEMONSTRACAO — DADOS SINTETICOS. Nao utilizar para decisoes reais.**", ""])
+    elif "population_quality" in frame.columns:
+        if (frame["population_quality"] != "estimated").any():
+            lines.extend(["**Procedencia populacional nao verificada em parte das areas; auditar e reprocessar antes de decidir.**", ""])
+        lines.extend(["Populacao por H3 e uma distribuicao estimada, nao uma contagem observada.", ""])
 
     columns = [
         "h3_id",

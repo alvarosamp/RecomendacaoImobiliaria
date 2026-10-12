@@ -5,6 +5,7 @@ import json
 
 from .demo_data import sample_areas
 from .scoring import score_area
+from .municipality import MUNICIPALITY
 
 
 def score_demo() -> None:
@@ -129,8 +130,8 @@ def main() -> None:
 
     neighborhoods_parser = subparsers.add_parser("import-neighborhoods", help="Importa polígonos oficiais de bairros e vincula o grid H3.")
     neighborhoods_parser.add_argument("--file", default=None)
-    neighborhoods_parser.add_argument("--municipality", default="Pouso Alegre")
-    neighborhoods_parser.add_argument("--municipality-code", default="3152501")
+    neighborhoods_parser.add_argument("--municipality", default=MUNICIPALITY.name)
+    neighborhoods_parser.add_argument("--municipality-code", default=MUNICIPALITY.ibge_code)
     neighborhoods_parser.add_argument("--source", default="oficial")
 
     osm_neighborhoods_parser = subparsers.add_parser("fetch-osm-neighborhoods", help="Baixa bairros/quadrantes do OpenStreetMap para rotular o mapa.")
@@ -154,20 +155,34 @@ def main() -> None:
     subparsers.add_parser("official-sources", help="Lista onde buscar Plano Diretor, zoneamento e bases oficiais.")
     subparsers.add_parser("validate-official-data", help="Verifica arquivos oficiais em data/official.")
     subparsers.add_parser("healthcheck", help="Diagnostica arquivos, dados oficiais e PostGIS.")
+    subparsers.add_parser("audit-territorial-data", help="Auditoria somente de leitura de municipio e procedencia populacional.")
 
     report_parser = subparsers.add_parser("export-report", help="Exporta relatorio executivo em Markdown e CSV.")
     report_parser.add_argument("--output-dir", default="reports")
-    report_parser.add_argument("--source", choices=["auto", "postgis", "demo"], default="auto")
+    report_parser.add_argument("--source", choices=["auto", "postgis", "demo"], default="postgis",
+                               help="auto e alias de postgis; demonstracao exige --source demo.")
     report_parser.add_argument("--top", type=int, default=10)
 
     # --- RAG juridico ---
-    subparsers.add_parser("build-rag-index", help="Indexa artigos do Plano Diretor para RAG juridico.")
+    index_parser = subparsers.add_parser("build-rag-index", help="Indexa corpus juridico aprovado.")
+    index_parser.add_argument("--corpus", type=str)
+    index_parser.add_argument("--demo", action="store_true", help="Corpus embutido demonstrativo (fora de producao).")
 
     rag_parser = subparsers.add_parser("rag-query", help="Responde pergunta juridica sobre o Plano Diretor.")
     rag_parser.add_argument("--question", required=True, help="Pergunta em linguagem natural.")
     rag_parser.add_argument("--model", default="claude-haiku-4-5-20251001")
+    rag_parser.add_argument("--corpus", type=str)
+    rag_parser.add_argument("--demo", action="store_true", help="Consulta demonstrativa, sem valor de validacao legal.")
 
     args = parser.parse_args()
+
+    if args.command == "audit-territorial-data":
+        from .territorial_audit import audit_territorial_data
+        result = audit_territorial_data()
+        print(json.dumps(result, ensure_ascii=False, indent=2, default=str))
+        if result["status"] == "unavailable":
+            raise SystemExit(1)
+        return
 
     # ---- score-demo ----
     if args.command == "score-demo":
@@ -301,10 +316,11 @@ def main() -> None:
             _raise_missing_dependency(exc)
         try:
             count = estimate_h3_population()
+            if count == 0:
+                parser.exit(1, "Populacao nao atualizada; verifique fontes e banco.\n")
             print(f"pop_estimated atualizado para {count} celulas H3.")
         except Exception as exc:
-            # Non-fatal: log and continue — pipeline should not abort
-            print(f"AVISO: estimate-population falhou ({exc}). Continuando sem dados populacionais.")
+            parser.exit(1, f"Populacao indisponivel ({type(exc).__name__}); pipeline interrompido.\n")
         return
 
     if args.command == "fetch-cnes":
@@ -442,7 +458,11 @@ def main() -> None:
             from .reports import export_report
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
-        result = export_report(output_dir=args.output_dir, source=args.source, top_n=args.top)
+        from .reports import ReportDataUnavailable
+        try:
+            result = export_report(output_dir=args.output_dir, source=args.source, top_n=args.top)
+        except (ReportDataUnavailable, ValueError) as exc:
+            parser.exit(1, f"Relatorio indisponivel: {exc}\n")
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))
         return
 
@@ -452,7 +472,14 @@ def main() -> None:
             from .rag_juridico import build_index
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
-        n = build_index()
+        from pathlib import Path
+        from .rag_juridico import LegalSourceUnavailable
+        try:
+            n = build_index(Path(args.corpus) if args.corpus else None, demo=args.demo)
+        except LegalSourceUnavailable as exc:
+            parser.exit(1, f"Fonte juridica indisponivel: {exc}\n")
+        if args.demo:
+            print("DEMONSTRACAO: corpus embutido nao verificado.")
         print(f"Indice RAG criado com {n} documentos.")
         return
 
@@ -461,7 +488,15 @@ def main() -> None:
             from .rag_juridico import query
         except ModuleNotFoundError as exc:
             _raise_missing_dependency(exc)
-        result = query(args.question, model=args.model)
+        from pathlib import Path
+        from .rag_juridico import LegalSourceUnavailable
+        try:
+            result = query(args.question, model=args.model,
+                           corpus_path=Path(args.corpus) if args.corpus else None, demo=args.demo)
+        except LegalSourceUnavailable as exc:
+            parser.exit(1, f"Fonte juridica indisponivel: {exc}\n")
+        if result.warning:
+            print(result.warning)
         print(f"\nPERGUNTA: {result.question}\n")
         print(f"RESPOSTA:\n{result.answer}\n")
         print("FONTES:")

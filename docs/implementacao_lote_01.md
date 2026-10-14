@@ -108,3 +108,5 @@ Próximo lote: baseline de migrations e DTOs versionados (EX-05/EX-06), antes de
 As imagens da API (Python 3.12) e do frontend (Node 20/Nginx) foram construídas com sucesso. A execução completa dos testes e das verificações HTTP foi interrompida e não está aprovada: o PostGIS descartável falhou ao encerrar o servidor temporário da inicialização, e a API ainda não respondeu às requisições. Não houve alteração do banco de desenvolvimento/produção.
 
 O arquivo `compose.test.yaml` fornece ambiente separado, portas aleatórias e volume próprio. O script `scripts/test_docker_smoke.py` verifica autenticação, permissões, isolamento de leads e proxy Nginx. A próxima execução deve confirmar a inicialização do banco e concluir a suíte e esse script antes de considerar Docker validado.
+
+Atualização de 13/10/2026: a validação do primeiro lote foi concluída com 128 testes, 7 subtestes e 9 verificações HTTP aprovados. Consulte `teste_docker_lote_01.md`. A fundação de EX-05 foi adicionada com migrações SQL explícitas; a adoção do banco existente e retirada de DDL do runtime continuam pendentes em `migrations.md`.

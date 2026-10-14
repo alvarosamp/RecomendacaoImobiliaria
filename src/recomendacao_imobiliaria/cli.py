@@ -25,6 +25,7 @@ def score_demo() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(prog="imobiliaria")
     subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("migrate-db", help="Aplica migrations em banco novo ou ja versionado; recusa baseline desconhecida.")
 
     # --- pipeline basico ---
     subparsers.add_parser("score-demo", help="Roda scoring com dados demonstrativos.")
@@ -175,6 +176,10 @@ def main() -> None:
     rag_parser.add_argument("--demo", action="store_true", help="Consulta demonstrativa, sem valor de validacao legal.")
 
     args = parser.parse_args()
+    if args.command == "migrate-db":
+        from .schema_migrations import migrate_database
+        print(json.dumps(migrate_database(), ensure_ascii=False, indent=2))
+        return
 
     if args.command == "audit-territorial-data":
         from .territorial_audit import audit_territorial_data

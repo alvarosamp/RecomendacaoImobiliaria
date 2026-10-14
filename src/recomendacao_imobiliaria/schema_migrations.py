@@ -40,7 +40,9 @@ def migrate_database(settings=None, *, directory=MIGRATIONS):
                     )
                 """))
             recorded = dict(conn.execute(text("SELECT version, checksum_sha256 FROM ops.schema_migrations")).all())
-            available = {file.name: sha256(file.read_bytes()).hexdigest() for file in files}
+            # Git may check out CRLF on Windows and LF on Linux. Hash canonical SQL.
+            available = {file.name: sha256(file.read_text(encoding="utf-8-sig").encode("utf-8")).hexdigest()
+                         for file in files}
             for version, checksum in recorded.items():
                 if available.get(version) != checksum:
                     raise RuntimeError(f"Migration aplicada ausente ou alterada: {version}")

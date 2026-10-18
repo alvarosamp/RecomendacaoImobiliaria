@@ -22,7 +22,7 @@ const paths = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name]||paths.info}</svg>`;
 document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-const titles = {overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
+const titles = {overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],inspection:['Inspeção ao vivo','Inspecione a rede, passo a passo.','Acompanhe sinal, conectividade e vínculos em uma sessão inteiramente simulada.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
 const labels = {active:'Ativa',suspended:'Suspensa',cancelled:'Cancelada',operational:'Operacional',maintenance:'Manutenção',offline:'Indisponível',survey:'Validar em vistoria',capacity:'Sem porta livre',outside:'Fora da triagem',incident:'Verificar incidente'};
 const badge = status => `<span class="status ${escapeHTML(status)}">${labels[status]||escapeHTML(status)}</span>`;
 let db, roads, map, tiles, groups = {}, selected = null, page = 0, view = 'overview', tileErrorShown = false;
@@ -114,7 +114,9 @@ function renderDetail(){
   }else{
     html+=`<div style="margin-top:15px">${badge(row.triage)}</div><div class="detail-stats">${detailRow('Recebido em',formatDate(row.created_at))}${detailRow('CTO mais próxima',escapeHTML(row.nearest_cto))}${detailRow('Distância em linha reta',`${n(row.distance_m)} m`)}${detailRow('Mensalidade hipotética',money(row.monthly_price))}</div><button class="button" id="go-cto" data-id="${row.nearest_cto}">Inspecionar CTO ${icon('arrow')}</button><div class="detail-callout"><strong>Apenas triagem</strong>A proximidade não garante atendimento. Investigar rota de drop, postes, capacidade óptica e condições de instalação.</div>`;
   }
+  if(kind==='cto')html+='<button class="button inspection-primary" id="inspect-cto">Iniciar inspeção simulada</button>';
   $('detail').innerHTML=html;
+  $('inspect-cto')?.addEventListener('click',()=>openInspection(id));
   $('back-detail').onclick=()=>{selected=null;groups.selection.clearLayers();renderDetail();};
   $('go-cto')?.addEventListener('click',event=>selectEntity('cto',event.currentTarget.dataset.id,true));
   $('detail').querySelectorAll('[data-client]').forEach(el=>el.onclick=()=>selectEntity('client',el.dataset.client,true));
@@ -160,19 +162,22 @@ function renderTable(){
   $('table-body').querySelectorAll('[data-cto]').forEach(el=>el.onclick=()=>selectEntity('cto',el.dataset.cto,true));
 }
 function renderSources(){
-  $('sources-section').innerHTML=`<div class="section-intro"><h2>Geografia real. Operação inteiramente fictícia.</h2><p>Esta demonstração não representa os clientes, a rede ou a participação de mercado de nenhum provedor.</p></div><div class="sources-grid">${db.meta.sources.map(source=>`<article class="panel source-card"><h3>${escapeHTML(source.name)}</h3><p>${escapeHTML(source.role)}</p><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener">Consultar referência pública ↗</a></article>`).join('')}</div><div class="panel assumptions"><h2>Hipóteses e limites do cenário</h2><ul>${db.meta.assumptions.map(a=>`<li>${escapeHTML(a)}</li>`).join('')}</ul><p class="mini-caption">Coleta de ruas: ${escapeHTML(new Date(db.meta.road_retrieved_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}))}. Retrato operacional: ${formatDate(db.meta.as_of)}. Gerador determinístico com semente ${db.meta.seed}. Coordenadas fictícias junto às ruas não comprovam imóveis existentes.</p></div><div class="architecture"><strong>O que esta versão entrega</strong><br>Mapa de instalações e infraestrutura, vínculos por porta, histórico de ativações/cancelamentos, filtros, exportação CSV e triagem explicada de pedidos.<br><br><strong>Próxima etapa com um provedor parceiro</strong><br>Validar o inventário e o fluxo de trabalho; depois conectar cadastro e rede, com acesso por equipe, histórico de alterações e atualização controlada. Sem integração com ERP, importação de dados reais ou monitoramento nesta versão.</div>`;
+  $('sources-section').innerHTML=`<div class="section-intro"><h2>Geografia real. Operação inteiramente fictícia.</h2><p>Esta demonstração não representa os clientes, a rede ou a participação de mercado de nenhum provedor.</p></div><div class="sources-grid">${db.meta.sources.map(source=>`<article class="panel source-card"><h3>${escapeHTML(source.name)}</h3><p>${escapeHTML(source.role)}</p><a href="${escapeHTML(source.url)}" target="_blank" rel="noopener">Consultar referência pública ↗</a></article>`).join('')}</div><div class="panel assumptions"><h2>Hipóteses e limites do cenário</h2><ul>${db.meta.assumptions.map(a=>`<li>${escapeHTML(a)}</li>`).join('')}</ul><p class="mini-caption">Coleta de ruas: ${escapeHTML(new Date(db.meta.road_retrieved_at).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'}))}. Retrato operacional: ${formatDate(db.meta.as_of)}. Gerador determinístico com semente ${db.meta.seed}. Coordenadas fictícias junto às ruas não comprovam imóveis existentes.</p></div><div class="architecture"><strong>O que esta versão entrega</strong><br>Mapa de instalações e infraestrutura, vínculos por porta, histórico de ativações/cancelamentos, filtros, exportação CSV, triagem explicada de pedidos e sessões de inspeção com telemetria fictícia.<br><br><strong>Próxima etapa com um provedor parceiro</strong><br>Validar o inventário e o fluxo de trabalho; depois conectar cadastro e rede, com acesso por equipe, histórico de alterações e atualização controlada. Sem integração com ERP, importação de dados reais ou monitoramento nesta versão.</div>`;
 }
 function setView(next){
+  if(view==='inspection'&&next!=='inspection'&&inspectionSession?.state==='running'){inspectionSession.pause();clearInspectionTimer();renderInspection();}
   view=next;page=0;const [label,title,subtitle]=titles[next];
   $('breadcrumb').textContent=label;$('page-title').textContent=title;$('page-subtitle').textContent=subtitle;
   document.querySelectorAll('[data-view]').forEach(el=>{el.classList.toggle('active',el.dataset.view===next);el.setAttribute('aria-current',el.dataset.view===next?'page':'false');});
   $('map-section').hidden=!['overview','network','clients'].includes(next);
   $('overview-section').hidden=next!=='overview';$('table-section').hidden=!['overview','network','clients'].includes(next);
   $('opportunities-section').hidden=next!=='opportunities';$('sources-section').hidden=next!=='sources';
-  $('kpis').hidden=next==='sources';$('filters').hidden=next==='sources';$('export').hidden=next==='sources';
+  $('inspection-section').hidden=next!=='inspection';
+  $('kpis').hidden=['sources','inspection'].includes(next);$('filters').hidden=next==='sources';$('export').hidden=['sources','inspection'].includes(next);
+  if(next==='inspection'){refreshInspectionTargets();renderInspection();}
   renderTable();if(map&&!$('map-section').hidden){map.invalidateSize();drawMap();}
 }
-function renderAll(fit=false){renderKPIs();renderDetail();renderHistory();renderTable();renderOpportunities();drawMap(fit);}
+function renderAll(fit=false){refreshInspectionTargets();renderKPIs();renderDetail();renderHistory();renderTable();renderOpportunities();drawMap(fit);}
 function exportCSV(){
   const columns=['id','city_id','sector','street','lat','lng','cto_id','port','status','installed_at','cancelled_at','speed_mbps','monthly_price','synthetic'];
   const rows=clientRows();
@@ -195,7 +200,7 @@ async function boot(){
     $('previous').onclick=()=>{page--;renderTable();};$('next').onclick=()=>{page++;renderTable();};
     $('layers').querySelectorAll('input').forEach(input=>input.onchange=()=>{layers[input.dataset.layer]=input.checked;if(input.dataset.layer==='basemap'){if(input.checked)tiles.addTo(map);else map.removeLayer(tiles);}drawMap();});
     $('fit-map').onclick=fitMap;$('export').onclick=exportCSV;$('see-sources').onclick=()=>setView('sources');$('all-opportunities').onclick=()=>setView('opportunities');
-    initMap();renderSources();renderAll();
+    initMap();initInspection();renderSources();renderAll();
     window.ISP_DEMO={getSummary:()=>({city:$('city').value,sector:$('sector').value,clients:clientRows().length,ctos:scoped('ctos').length,requests:scoped('requests').length,view}),selectEntity};
   }catch(error){$('fatal-error').hidden=false;$('fatal-error').textContent=`Não foi possível carregar a simulação. ${error.message} Recarregue a página ou verifique o serviço Docker.`;console.error(error);}
 }

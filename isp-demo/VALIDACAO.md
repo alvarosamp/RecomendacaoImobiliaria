@@ -24,3 +24,11 @@ Uma falha na navegação encontrada na primeira passagem foi corrigida antes da 
 ## Isolamento
 
 Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-isp-demo-net`, porta `127.0.0.1:18089`. Não usa banco, volumes ou rede da stack imobiliária. Endpoint `/health` retorna `synthetic-demo`. A interface é somente leitura e não tem integração com operação real.
+
+## Inspeção ao vivo simulada
+
+- Oito testes Node verificaram estados de sessão, pausa/retomada, interrupção parcial, duração de 24 amostras, cenários, exclusão de cancelados/suspensos dos testes de conectividade, ausência de sinal/latência ficticiamente zerados e preservação do inventário.
+- No navegador, sessão de degradação pausada em 18 segundos e retomada até 24; relatório JSON baixado e conferido, com cenário, alvo, 24 amostras, marcação sintética e eventos de pausa/retomada.
+- Cenário de rompimento pela condição da CTO indisponível: sinal e latência sem leitura, perda fictícia de 100% e zero respostas de 11 instalações testáveis.
+- Sair da tela pausou a sessão; encerrá-la apresentou evidência parcial. Acesso pela ficha da CTO selecionou o alvo correto.
+- A sessão não consulta equipamentos nem persiste alterações no cadastro. Recarregar a página descarta a sessão em memória.

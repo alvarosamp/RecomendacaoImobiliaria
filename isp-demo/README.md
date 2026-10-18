@@ -82,3 +82,18 @@ O gerador salva `simulation.json` e CSVs de instalações, CTOs, POPs e pedidos.
 5. Validar rota de atendimento, projeto óptico e custos antes de recomendar expansão ou apresentar viabilidade de instalação.
 
 O MVP atual entrega exploração e triagem do cenário sintético; não inclui autenticação, edição, importação real, ERP, OLT/SNMP, orçamento de expansão ou aprovação automática de atendimento.
+
+
+## Inspeção ao vivo simulada
+
+Abrir **Inspeção ao vivo** no menu ou selecionar uma CTO no mapa e usar **Iniciar inspeção simulada**. Escolher alvo e cenário, iniciar e acompanhar as quatro etapas por 24 segundos simulados. Há operação normal, degradação óptica e rompimento. A opção de condição do cadastro converte CTO operacional/manutenção/indisponível nos três cenários correspondentes.
+
+Os valores são produzidos no navegador, uma amostra por segundo: sinal óptico, latência, perda de pacotes e respostas de contratos ativos. Não são enviados pacotes reais nem consultados OLT, ONU, SNMP ou sistemas externos. Ausência de leitura usa `null`, nunca zero. Suspensos reservam porta e ficam fora dos testes de sessão; cancelados não ocupam porta.
+
+É possível pausar, retomar, encerrar e exportar relatório JSON marcado como simulação, com alvo, cenário, amostras, eventos e indicação de conclusão ou evidência parcial. Ao sair da tela ou ocultar a aba, a sessão pausa. Filtros territoriais e alvo ficam bloqueados enquanto a sessão está em andamento ou pausada; encerrar libera uma nova seleção. A sessão está apenas na memória da página e é perdida ao recarregar; exportar permite conservar o resultado. O inventário original não é modificado.
+
+Os gráficos e portas mostram hipóteses do cenário; não há limiar de aceitação técnica ou diagnóstico automático de causa. A hora de abertura usa Brasília; os segundos são relativos à simulação e podem demorar mais sob carga do navegador. Os testes do motor não exigem dependências externas:
+
+```sh
+node --test test_inspection.cjs
+```

@@ -4,8 +4,8 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#112a30"><title>Urbia Telecom · território conectado</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="/style.css">
-  <script defer src="/vendor/leaflet.js"></script><script defer src="/app.js"></script>
+  <link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/inspection.css">
+  <script defer src="/vendor/leaflet.js"></script><script defer src="/inspection-engine.js"></script><script defer src="/inspection.js"></script><script defer src="/app.js"></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -17,6 +17,7 @@
       <button data-view="network"><span data-icon="network"></span>Rede e capacidade</button>
       <button data-view="clients"><span data-icon="pin"></span>Instalações</button>
       <button data-view="opportunities"><span data-icon="spark"></span>Oportunidades<span class="nav-dot"></span></button>
+      <button data-view="inspection"><span data-icon="spark"></span>Inspeção ao vivo</button>
       <button data-view="sources"><span data-icon="layers"></span>Dados e premissas</button>
     </nav>
     <div class="sidebar-bottom"><div class="demo-badge"><i></i>AMBIENTE DE SIMULAÇÃO</div><p>Explore uma operação fictícia sobre ruas reais.</p><div class="sidebar-footer">Urbia · inteligência territorial<span>Protótipo ISP / v0.1</span></div></div>
@@ -25,7 +26,7 @@
     <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Visão geral</strong></div><div class="top-actions"><span class="snapshot"><i></i>Retrato em 18 out. 2026</span><span class="avatar" aria-label="Usuário demonstração">DM</span></div></header>
     <div class="content">
       <div class="page-heading"><div><div class="eyebrow">INTELIGÊNCIA PARA PROVEDORES</div><h1 id="page-title">Seu território, conectado.</h1><p id="page-subtitle">Entenda onde estão seus clientes, sua rede e as próximas oportunidades.</p></div><button class="button secondary" id="export"><span data-icon="download"></span>Exportar instalações</button></div>
-      <div class="simulation-notice"><span data-icon="info"></span><span><strong>Dados demonstrativos.</strong> Clientes, rede e indicadores são fictícios. Ruas: OpenStreetMap. Não há telemetria ao vivo.</span><button id="see-sources">Ver premissas ↗</button></div>
+      <div class="simulation-notice"><span data-icon="info"></span><span><strong>Dados demonstrativos.</strong> Clientes, rede e indicadores são fictícios. Ruas: OpenStreetMap. Sem conexão com equipamentos reais.</span><button id="see-sources">Ver premissas ↗</button></div>
       <section id="filters" class="filters" aria-label="Filtros territoriais"><label><span data-icon="pin"></span><span class="sr-only">Cidade</span><select id="city" aria-label="Cidade"><option value="all">Todas as cidades</option></select></label><label><span class="sr-only">Setor demonstrativo</span><select id="sector" aria-label="Setor demonstrativo"><option value="all">Todos os setores</option><option>Norte</option><option>Sul</option><option>Leste</option><option>Oeste</option></select></label><span class="filter-note">Setores são divisões demonstrativas, não bairros oficiais.</span><button id="clear-filters">Limpar filtros</button></section>
       <section id="kpis" class="kpis" aria-label="Indicadores"></section>
       <section id="map-section" class="map-layout">
@@ -38,6 +39,21 @@
       <section class="bottom-grid" id="overview-section"><div class="panel"><div class="panel-heading"><div><h2>Evolução das instalações</h2><p>Entradas, cancelamentos e base conectada</p></div><span class="small-tag">13 competências</span></div><div id="history"></div></div><div class="panel"><div class="panel-heading"><div><h2>Onde olhar agora</h2><p>Próximas ações a partir do cenário</p></div><button class="text-button" id="all-opportunities">Ver todas ↗</button></div><div id="quick-actions"></div></div></section>
       <section class="panel table-panel" id="table-section"><div class="panel-heading table-heading"><div><h2 id="table-title">Instalações no território</h2><p id="table-subtitle">Cada instalação tem vínculo com uma CTO e uma porta.</p></div><div class="table-filters"><label class="search"><span data-icon="search"></span><input id="search" placeholder="Buscar ID, rua ou CTO" aria-label="Buscar instalação"></label><select id="status" aria-label="Situação da instalação"><option value="all">Todas as situações</option><option value="active">Ativas</option><option value="suspended">Suspensas</option><option value="cancelled">Canceladas</option></select></div></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><div class="table-footer"><span id="table-count"></span><div><button id="previous" aria-label="Página anterior">←</button><span id="page-count"></span><button id="next" aria-label="Próxima página">→</button></div></div></section>
       <section id="opportunities-section" hidden><div class="section-intro"><h2>Uma lista de decisões, com evidências.</h2><p>Triagem comercial simulada. Distância e portas livres não comprovam viabilidade de instalação.</p></div><div id="opportunity-cards" class="opportunity-grid"></div><div class="panel request-panel"><div class="panel-heading"><div><h2>Pedidos de instalação</h2><p>Endereços fictícios posicionados nas vias públicas; clique para localizar.</p></div><span id="request-count" class="small-tag"></span></div><div id="request-list" class="request-list"></div></div></section>
+      <section id="inspection-section" hidden>
+        <div class="inspection-banner"><span class="inspection-pulse"></span><div><strong>INSPEÇÃO AO VIVO · SIMULAÇÃO</strong><p>Amostras fictícias geradas a cada segundo no navegador. Sem acesso a equipamentos reais ou alteração do cadastro.</p></div><span class="small-tag">24 segundos / sessão</span></div>
+        <div class="panel inspection-console">
+          <div class="inspection-controls"><label>CTO a inspecionar<select id="inspection-target" aria-label="CTO a inspecionar"></select></label><label>Cenário<select id="inspection-scenario" aria-label="Cenário da inspeção"><option value="baseline">Condição do cadastro fictício</option><option value="normal">Operação normal</option><option value="degraded">Degradação óptica</option><option value="outage">Rompimento de fibra</option></select></label><button class="button inspection-primary" id="inspection-start">Iniciar inspeção</button><button class="button" id="inspection-pause" disabled>Pausar</button><button class="button" id="inspection-stop" disabled>Encerrar</button></div>
+          <p class="inspection-selection-note">Os controles definem a próxima sessão. Resultados e exportação mantêm o alvo capturado ao iniciar. Ao sair da tela ou ocultar a aba, a sessão é pausada.</p>
+          <div class="inspection-session-heading"><div><span id="inspection-state" class="inspection-state idle" role="status">Pronta para iniciar</span><p id="inspection-context"></p></div><strong id="inspection-clock">00 / 24 s simulados</strong></div>
+          <div id="inspection-progress-track" class="inspection-progress-track" role="progressbar" aria-label="Progresso da inspeção simulada" aria-valuemin="0" aria-valuemax="24" aria-valuenow="0"><span id="inspection-progress"></span></div>
+          <ol class="inspection-steps" id="inspection-steps"></ol>
+        </div>
+        <div class="inspection-metrics" id="inspection-metrics"></div>
+        <div class="inspection-charts"><div class="panel"><div class="panel-heading"><div><h2>Sinal óptico simulado</h2><p>dBm · ausência de leitura permanece sem valor</p></div></div><div id="inspection-optical-chart" class="inspection-chart"></div></div><div class="panel"><div class="panel-heading"><div><h2>Latência simulada</h2><p>ms · sem resposta não equivale a latência zero</p></div></div><div id="inspection-latency-chart" class="inspection-chart"></div></div></div>
+        <div class="inspection-lower"><div class="panel"><div class="panel-heading"><div><h2>Portas e instalações</h2><p id="inspection-ports-title"></p></div><span class="small-tag">Vínculos do cadastro</span></div><div class="inspection-ports" id="inspection-ports"></div><p class="inspection-footnote">Portas livres não são testadas; suspensas permanecem reservadas. Estados técnicos representam o cenário escolhido.</p></div><div class="panel"><div class="panel-heading"><div><h2>Diário da sessão</h2><p>Eventos da simulação · tempo relativo à sessão</p></div></div><ol class="inspection-events" id="inspection-events" aria-label="Eventos da inspeção"></ol></div></div>
+        <div id="inspection-summary" class="inspection-summary" role="status" hidden></div>
+        <div class="inspection-export"><p>Relatório inclui o alvo, o cenário, amostras, eventos e indicação de resultado completo ou parcial. O relógio da sessão usa o horário de Brasília; o inventário é o retrato de 18/10/2026.</p><button class="button" id="inspection-download" disabled>Exportar inspeção JSON</button></div>
+      </section>
       <section id="sources-section" hidden></section>
       <footer class="page-footer"><span>URBIA TELECOM <i>·</i> Decisões melhores começam pelo território.</span><span>Simulação determinística · semente 3152501</span></footer>
     </div>

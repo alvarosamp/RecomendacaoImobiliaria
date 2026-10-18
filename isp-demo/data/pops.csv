@@ -1,0 +1,4 @@
+id,city_id,name,lat,lng,status,commissioned_at
+POP-POUSO-ALEGRE,pouso-alegre,POP Pouso Alegre,-22.229705,-45.9359921,operational,2025-10-01
+POP-SANTA-RITA,santa-rita,POP Santa Rita do Sapucaí,-22.2523367,-45.7034442,operational,2025-10-01
+POP-ITAJUBA,itajuba,POP Itajubá,-22.4252069,-45.4527193,operational,2025-10-01

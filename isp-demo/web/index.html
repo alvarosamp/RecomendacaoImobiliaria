@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#112a30"><title>Urbia Telecom · território conectado</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="/style.css">
+  <script defer src="/vendor/leaflet.js"></script><script defer src="/app.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Urbia Telecom início"><span class="brand-symbol">u<span>·</span></span><span>urbia<small>TELECOM</small></span></a>
+    <div class="provider"><span class="provider-logo">S</span><div>SerraLink<small>Provedor fictício · Sul de Minas</small></div></div>
+    <p class="nav-label">ESPAÇO DE TRABALHO</p>
+    <nav aria-label="Navegação principal">
+      <button data-view="overview" class="active"><span data-icon="dashboard"></span>Visão geral</button>
+      <button data-view="network"><span data-icon="network"></span>Rede e capacidade</button>
+      <button data-view="clients"><span data-icon="pin"></span>Instalações</button>
+      <button data-view="opportunities"><span data-icon="spark"></span>Oportunidades<span class="nav-dot"></span></button>
+      <button data-view="sources"><span data-icon="layers"></span>Dados e premissas</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="demo-badge"><i></i>AMBIENTE DE SIMULAÇÃO</div><p>Explore uma operação fictícia sobre ruas reais.</p><div class="sidebar-footer">Urbia · inteligência territorial<span>Protótipo ISP / v0.1</span></div></div>
+  </aside>
+  <main>
+    <header class="topbar"><div class="breadcrumb">Workspace <span>/</span> <strong id="breadcrumb">Visão geral</strong></div><div class="top-actions"><span class="snapshot"><i></i>Retrato em 18 out. 2026</span><span class="avatar" aria-label="Usuário demonstração">DM</span></div></header>
+    <div class="content">
+      <div class="page-heading"><div><div class="eyebrow">INTELIGÊNCIA PARA PROVEDORES</div><h1 id="page-title">Seu território, conectado.</h1><p id="page-subtitle">Entenda onde estão seus clientes, sua rede e as próximas oportunidades.</p></div><button class="button secondary" id="export"><span data-icon="download"></span>Exportar instalações</button></div>
+      <div class="simulation-notice"><span data-icon="info"></span><span><strong>Dados demonstrativos.</strong> Clientes, rede e indicadores são fictícios. Ruas: OpenStreetMap. Não há telemetria ao vivo.</span><button id="see-sources">Ver premissas ↗</button></div>
+      <section id="filters" class="filters" aria-label="Filtros territoriais"><label><span data-icon="pin"></span><span class="sr-only">Cidade</span><select id="city" aria-label="Cidade"><option value="all">Todas as cidades</option></select></label><label><span class="sr-only">Setor demonstrativo</span><select id="sector" aria-label="Setor demonstrativo"><option value="all">Todos os setores</option><option>Norte</option><option>Sul</option><option>Leste</option><option>Oeste</option></select></label><span class="filter-note">Setores são divisões demonstrativas, não bairros oficiais.</span><button id="clear-filters">Limpar filtros</button></section>
+      <section id="kpis" class="kpis" aria-label="Indicadores"></section>
+      <section id="map-section" class="map-layout">
+        <div class="panel map-panel"><div class="panel-heading"><div><h2>Mapa da operação</h2><p id="map-caption">Clientes e infraestrutura no mesmo território</p></div><button class="icon-button" id="fit-map" aria-label="Enquadrar território" title="Enquadrar território"><span data-icon="expand"></span></button></div>
+          <div class="map-wrap"><div id="map" aria-label="Mapa interativo das instalações e da rede"></div><div class="map-watermark">SIMULAÇÃO · REDE FICTÍCIA</div><div class="map-loading" id="map-loading">Preparando o território…</div></div>
+          <div class="map-controls" id="layers"><label><input type="checkbox" data-layer="clients" checked><i class="legend-dot green"></i>Instalações</label><label><input type="checkbox" data-layer="ctos" checked><i class="legend-square"></i>CTOs</label><label><input type="checkbox" data-layer="fiber" checked><i class="legend-line"></i>Fibra</label><label><input type="checkbox" data-layer="pops" checked><i class="legend-dot dark"></i>POPs</label><label><input type="checkbox" data-layer="requests"><i class="legend-dot amber"></i>Pedidos</label><label><input type="checkbox" data-layer="basemap" checked>Mapa base</label></div>
+        </div>
+        <aside class="panel detail-panel" id="detail" aria-live="polite"></aside>
+      </section>
+      <section class="bottom-grid" id="overview-section"><div class="panel"><div class="panel-heading"><div><h2>Evolução das instalações</h2><p>Entradas, cancelamentos e base conectada</p></div><span class="small-tag">13 competências</span></div><div id="history"></div></div><div class="panel"><div class="panel-heading"><div><h2>Onde olhar agora</h2><p>Próximas ações a partir do cenário</p></div><button class="text-button" id="all-opportunities">Ver todas ↗</button></div><div id="quick-actions"></div></div></section>
+      <section class="panel table-panel" id="table-section"><div class="panel-heading table-heading"><div><h2 id="table-title">Instalações no território</h2><p id="table-subtitle">Cada instalação tem vínculo com uma CTO e uma porta.</p></div><div class="table-filters"><label class="search"><span data-icon="search"></span><input id="search" placeholder="Buscar ID, rua ou CTO" aria-label="Buscar instalação"></label><select id="status" aria-label="Situação da instalação"><option value="all">Todas as situações</option><option value="active">Ativas</option><option value="suspended">Suspensas</option><option value="cancelled">Canceladas</option></select></div></div><div class="table-scroll"><table><thead id="table-head"></thead><tbody id="table-body"></tbody></table></div><div class="table-footer"><span id="table-count"></span><div><button id="previous" aria-label="Página anterior">←</button><span id="page-count"></span><button id="next" aria-label="Próxima página">→</button></div></div></section>
+      <section id="opportunities-section" hidden><div class="section-intro"><h2>Uma lista de decisões, com evidências.</h2><p>Triagem comercial simulada. Distância e portas livres não comprovam viabilidade de instalação.</p></div><div id="opportunity-cards" class="opportunity-grid"></div><div class="panel request-panel"><div class="panel-heading"><div><h2>Pedidos de instalação</h2><p>Endereços fictícios posicionados nas vias públicas; clique para localizar.</p></div><span id="request-count" class="small-tag"></span></div><div id="request-list" class="request-list"></div></div></section>
+      <section id="sources-section" hidden></section>
+      <footer class="page-footer"><span>URBIA TELECOM <i>·</i> Decisões melhores começam pelo território.</span><span>Simulação determinística · semente 3152501</span></footer>
+    </div>
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <div id="fatal-error" role="alert" hidden></div>
+</body></html>

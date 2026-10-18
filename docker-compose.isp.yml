@@ -1,0 +1,22 @@
+# Isolated local demonstration: no dependency on, or access to, the existing stack.
+name: urbia-isp-demo
+services:
+  dashboard:
+    build:
+      context: ./isp-demo
+      dockerfile: Dockerfile
+    ports:
+      - '127.0.0.1:${ISP_DEMO_PORT:-18089}:8080'
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - isp_demo
+networks:
+  isp_demo:
+    name: urbia-isp-demo-net

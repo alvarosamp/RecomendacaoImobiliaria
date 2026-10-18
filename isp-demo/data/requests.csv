@@ -1,0 +1,109 @@
+id,city_id,sector,street,lat,lng,created_at,nearest_cto,distance_m,triage,monthly_price,synthetic
+PED-0001,pouso-alegre,Leste,Rua Fausto Campanella,-22.2191492,-45.9230098,2026-10-13,CTO-POU-001,0,capacity,99.9,True
+PED-0002,pouso-alegre,Sul,Rua Joaquim Benedito de Paula,-22.2416575,-45.9291118,2026-10-06,CTO-POU-009,87,incident,99.9,True
+PED-0003,pouso-alegre,Leste,Rua Vitorino Rigoti,-22.2242679,-45.9262499,2026-09-26,CTO-POU-011,377,outside,99.9,True
+PED-0004,pouso-alegre,Oeste,Via sem nome no OSM,-22.2243027,-45.9503476,2026-09-13,CTO-POU-021,289,survey,99.9,True
+PED-0005,pouso-alegre,Oeste,Rua Silviano Brandão,-22.2326228,-45.9405055,2026-10-04,CTO-POU-006,197,survey,99.9,True
+PED-0006,pouso-alegre,Norte,Rua Coronel Saturnino de Alcântara,-22.2273282,-45.9386471,2026-10-03,CTO-POU-016,236,survey,99.9,True
+PED-0007,pouso-alegre,Oeste,Rua Oswaldo Cruz,-22.2246238,-45.9417316,2026-09-30,CTO-POU-025,232,survey,99.9,True
+PED-0008,pouso-alegre,Leste,Avenida Ayrton Senna,-22.2389812,-45.9203436,2026-09-10,CTO-POU-027,393,outside,99.9,True
+PED-0009,pouso-alegre,Norte,Rua Dom Assis,-22.2292266,-45.9340856,2026-10-11,CTO-POU-032,162,survey,99.9,True
+PED-0010,pouso-alegre,Leste,Rua Doutor Lecyr Ferreira,-22.2238491,-45.9171329,2026-09-23,CTO-POU-019,345,capacity,99.9,True
+PED-0011,pouso-alegre,Leste,Via sem nome no OSM,-22.2315875,-45.9271377,2026-09-29,CTO-POU-026,511,outside,99.9,True
+PED-0012,pouso-alegre,Oeste,Avenida Dona Eliza Paciulli,-22.2166432,-45.9513675,2026-09-08,CTO-POU-004,172,incident,99.9,True
+PED-0013,pouso-alegre,Norte,Rua Professora Georgina Reis,-22.2230945,-45.9342704,2026-09-12,CTO-POU-003,417,outside,99.9,True
+PED-0014,pouso-alegre,Oeste,Rua Paula Augusta Garcia,-22.2260818,-45.9457013,2026-09-03,CTO-POU-025,332,survey,99.9,True
+PED-0015,pouso-alegre,Leste,Rua Antonieta de Barros Cobra,-22.2280817,-45.92522,2026-10-05,CTO-POU-011,474,outside,99.9,True
+PED-0016,pouso-alegre,Norte,Praça Vereador José Custódio Ferreira,-22.2222603,-45.9398044,2026-10-13,CTO-POU-003,236,survey,99.9,True
+PED-0017,pouso-alegre,Leste,Via sem nome no OSM,-22.2246486,-45.930995,2026-10-01,CTO-POU-034,244,survey,99.9,True
+PED-0018,pouso-alegre,Sul,Rua Oscar Dantas Filho,-22.2443035,-45.9328244,2026-10-01,CTO-POU-009,553,outside,99.9,True
+PED-0019,pouso-alegre,Oeste,Avenida Dona Eliza Paciulli,-22.2211922,-45.9501001,2026-10-17,CTO-POU-013,74,survey,99.9,True
+PED-0020,pouso-alegre,Norte,Rua 7,-22.2191558,-45.9294017,2026-09-18,CTO-POU-035,564,outside,99.9,True
+PED-0021,pouso-alegre,Leste,Avenida Antônio Scodeller,-22.2188222,-45.9161076,2026-09-05,CTO-POU-036,635,outside,99.9,True
+PED-0022,pouso-alegre,Norte,Rua José R. Faanuchi,-22.2148204,-45.9271194,2026-10-17,CTO-POU-035,146,survey,99.9,True
+PED-0023,pouso-alegre,Norte,Rua 4,-22.2188731,-45.931901,2026-10-01,CTO-POU-035,637,outside,99.9,True
+PED-0024,pouso-alegre,Oeste,Rua Três Corações,-22.2359389,-45.9540579,2026-09-22,CTO-POU-033,922,outside,99.9,True
+PED-0025,pouso-alegre,Oeste,Rua Aymorés Sales Nogueira,-22.2261662,-45.9513272,2026-09-26,CTO-POU-005,150,survey,99.9,True
+PED-0026,pouso-alegre,Oeste,Rua General Newton Castelo Branco,-22.2334191,-45.9517674,2026-09-21,CTO-POU-033,562,outside,99.9,True
+PED-0027,pouso-alegre,Sul,Via sem nome no OSM,-22.2438837,-45.9331995,2026-09-24,CTO-POU-009,552,outside,99.9,True
+PED-0028,pouso-alegre,Leste,Avenida Vicente Simões,-22.2319595,-45.9300511,2026-09-26,CTO-POU-031,345,survey,99.9,True
+PED-0029,pouso-alegre,Leste,Rua Coronel Brito Filho,-22.2244716,-45.9255998,2026-10-16,CTO-POU-011,308,survey,99.9,True
+PED-0030,pouso-alegre,Norte,Rua São João,-22.2282597,-45.934069,2026-09-16,CTO-POU-032,65,survey,99.9,True
+PED-0031,pouso-alegre,Norte,Via sem nome no OSM,-22.2195888,-45.9421232,2026-09-15,CTO-POU-014,51,survey,99.9,True
+PED-0032,pouso-alegre,Leste,Via sem nome no OSM,-22.2254759,-45.9149417,2026-09-26,CTO-POU-019,56,capacity,99.9,True
+PED-0033,pouso-alegre,Norte,Avenida Messias Nirceu Morais,-22.2155265,-45.9465415,2026-10-02,CTO-POU-029,111,survey,99.9,True
+PED-0034,pouso-alegre,Leste,Rua Augusto Joaquim de Souza,-22.2210149,-45.9230426,2026-09-12,CTO-POU-001,207,capacity,99.9,True
+PED-0035,pouso-alegre,Sul,Rua Doutor Clóvis Amicis Modesto,-22.2500964,-45.9297271,2026-10-11,CTO-POU-028,658,outside,99.9,True
+PED-0036,pouso-alegre,Leste,Rua Pedro Narciso Rodrigues,-22.2235064,-45.9248352,2026-09-04,CTO-POU-011,258,survey,99.9,True
+PED-0037,santa-rita,Sul,Via sem nome no OSM,-22.2644065,-45.7103328,2026-10-14,CTO-SAN-001,0,capacity,99.9,True
+PED-0038,santa-rita,Oeste,Via sem nome no OSM,-22.2462614,-45.7114855,2026-09-08,CTO-SAN-017,512,outside,99.9,True
+PED-0039,santa-rita,Oeste,Rua Pedro Carletti,-22.2428913,-45.715671,2026-10-14,CTO-SAN-017,77,survey,99.9,True
+PED-0040,santa-rita,Leste,Via sem nome no OSM,-22.2642291,-45.6870545,2026-10-04,CTO-SAN-018,911,outside,99.9,True
+PED-0041,santa-rita,Oeste,Via sem nome no OSM,-22.2461523,-45.7120816,2026-10-06,CTO-SAN-017,462,outside,99.9,True
+PED-0042,santa-rita,Leste,Via sem nome no OSM,-22.2539361,-45.6854345,2026-09-12,CTO-SAN-006,634,outside,99.9,True
+PED-0043,santa-rita,Sul,Rua Loreto Garcia,-22.2560585,-45.7027723,2026-09-29,CTO-SAN-015,234,survey,99.9,True
+PED-0044,santa-rita,Norte,Rua Projetista Mauro Gouvea,-22.2403261,-45.6998654,2026-09-20,CTO-SAN-014,693,outside,99.9,True
+PED-0045,santa-rita,Leste,Via sem nome no OSM,-22.2530089,-45.6817853,2026-09-03,CTO-SAN-019,891,outside,99.9,True
+PED-0046,santa-rita,Sul,Rua Assad Baracat,-22.2611293,-45.6971412,2026-09-11,CTO-SAN-005,212,survey,99.9,True
+PED-0047,santa-rita,Sul,Via sem nome no OSM,-22.2537629,-45.7058434,2026-09-28,CTO-SAN-010,162,capacity,99.9,True
+PED-0048,santa-rita,Sul,Rua Pedro Ribeiro de Carvalho,-22.2640932,-45.7036105,2026-09-05,CTO-SAN-001,693,outside,99.9,True
+PED-0049,santa-rita,Leste,Avenida Francisco Moreira Bilac Pinto,-22.2552381,-45.6932518,2026-10-04,CTO-SAN-016,258,survey,99.9,True
+PED-0050,santa-rita,Leste,Rua José Benedito Coelho,-22.2574995,-45.6927241,2026-09-21,CTO-SAN-018,71,survey,99.9,True
+PED-0051,santa-rita,Leste,Via sem nome no OSM,-22.2551512,-45.6817625,2026-10-01,CTO-SAN-019,1016,outside,99.9,True
+PED-0052,santa-rita,Leste,Via sem nome no OSM,-22.2445224,-45.6919429,2026-09-28,CTO-SAN-020,578,outside,99.9,True
+PED-0053,santa-rita,Leste,Via sem nome no OSM,-22.2593328,-45.6899031,2026-10-13,CTO-SAN-018,303,survey,99.9,True
+PED-0054,santa-rita,Leste,Rua Benedito Ribeiro da Luz,-22.2524429,-45.693115,2026-09-10,CTO-SAN-016,121,survey,99.9,True
+PED-0055,santa-rita,Leste,Via sem nome no OSM,-22.2579563,-45.6822413,2026-09-14,CTO-SAN-018,1009,outside,99.9,True
+PED-0056,santa-rita,Leste,Via sem nome no OSM,-22.2462943,-45.6833913,2026-10-17,CTO-SAN-019,745,outside,99.9,True
+PED-0057,santa-rita,Sul,Via sem nome no OSM,-22.2646306,-45.7106714,2026-09-22,CTO-SAN-001,43,capacity,99.9,True
+PED-0058,santa-rita,Leste,Via sem nome no OSM,-22.2488842,-45.6869164,2026-09-16,CTO-SAN-019,294,capacity,99.9,True
+PED-0059,santa-rita,Sul,Alameda José Cleto Duarte,-22.2541813,-45.7047785,2026-09-07,CTO-SAN-010,54,capacity,99.9,True
+PED-0060,santa-rita,Sul,Rua Henrique de Faria,-22.2597022,-45.6959564,2026-09-23,CTO-SAN-005,132,survey,99.9,True
+PED-0061,santa-rita,Leste,Rua D,-22.2473531,-45.696282,2026-09-08,CTO-SAN-020,69,survey,99.9,True
+PED-0062,santa-rita,Leste,Via sem nome no OSM,-22.2668652,-45.688743,2026-10-13,CTO-SAN-018,1100,outside,99.9,True
+PED-0063,santa-rita,Oeste,Rua Pedro Seda,-22.2475284,-45.7195867,2026-09-06,CTO-SAN-012,101,survey,99.9,True
+PED-0064,santa-rita,Leste,Rua Dante Volpato,-22.2485702,-45.6978705,2026-10-16,CTO-SAN-020,200,survey,99.9,True
+PED-0065,santa-rita,Sul,Rua Victor Manoel Magalhães,-22.2596417,-45.7125742,2026-10-01,CTO-SAN-009,263,incident,99.9,True
+PED-0066,santa-rita,Sul,Rua José Moreira da Silva,-22.2572106,-45.7017784,2026-10-07,CTO-SAN-015,179,survey,99.9,True
+PED-0067,santa-rita,Sul,Rua Maria Theresa Capistrano Carneiro,-22.2576379,-45.6969204,2026-10-05,CTO-SAN-005,178,survey,99.9,True
+PED-0068,santa-rita,Leste,Avenida Francisco Moreira Bilac Pinto,-22.2566134,-45.6935575,2026-10-16,CTO-SAN-018,182,survey,99.9,True
+PED-0069,santa-rita,Norte,Rua Frederico Adami,-22.2455972,-45.7068791,2026-09-04,CTO-SAN-014,249,survey,99.9,True
+PED-0070,santa-rita,Sul,Rua Abrahão Elias Kallas,-22.2616616,-45.6945274,2026-09-20,CTO-SAN-005,381,outside,99.9,True
+PED-0071,santa-rita,Oeste,Rua Capitão Vicente Ribeiro do Vale,-22.2475961,-45.7169592,2026-10-16,CTO-SAN-012,370,outside,99.9,True
+PED-0072,santa-rita,Sul,Rua Assad Baracat,-22.2610623,-45.6970929,2026-09-24,CTO-SAN-005,204,survey,99.9,True
+PED-0073,itajuba,Sul,Rua Vargem Grande,-22.4379423,-45.4527985,2026-09-06,CTO-ITA-001,0,capacity,99.9,True
+PED-0074,itajuba,Oeste,Rua Doutor Francisco Masseli,-22.4254115,-45.4564717,2026-10-02,CTO-ITA-016,230,survey,99.9,True
+PED-0075,itajuba,Norte,Via sem nome no OSM,-22.4081055,-45.4465424,2026-09-26,CTO-ITA-013,174,survey,99.9,True
+PED-0076,itajuba,Oeste,Rua Geraldino Campista,-22.4387294,-45.4704501,2026-10-14,CTO-ITA-006,158,survey,99.9,True
+PED-0077,itajuba,Oeste,Rua Ana Campos Gonçalves,-22.4405664,-45.4677638,2026-10-07,CTO-ITA-006,436,outside,99.9,True
+PED-0078,itajuba,Norte,Avenida BPS,-22.4145179,-45.4540055,2026-09-15,CTO-ITA-010,608,outside,99.9,True
+PED-0079,itajuba,Oeste,Rua Antônio Lisboa,-22.4133777,-45.4691757,2026-09-11,CTO-ITA-019,1641,outside,99.9,True
+PED-0080,itajuba,Leste,Via sem nome no OSM,-22.4296316,-45.4368868,2026-09-06,CTO-ITA-002,147,survey,99.9,True
+PED-0081,itajuba,Leste,Avenida BPS,-22.4149329,-45.4427073,2026-09-17,CTO-ITA-004,165,survey,99.9,True
+PED-0082,itajuba,Oeste,Via sem nome no OSM,-22.4324289,-45.4661652,2026-09-29,CTO-ITA-017,23,survey,99.9,True
+PED-0083,itajuba,Oeste,Rua Barão do Rio Branco,-22.4283421,-45.4604032,2026-10-01,CTO-ITA-016,296,survey,99.9,True
+PED-0084,itajuba,Leste,Via sem nome no OSM,-22.4205518,-45.44077,2026-10-07,CTO-ITA-012,470,outside,99.9,True
+PED-0085,itajuba,Oeste,Rua Oswaldo Seabra,-22.4211872,-45.4559447,2026-10-10,CTO-ITA-022,255,survey,99.9,True
+PED-0086,itajuba,Leste,Avenida Doutor Gerson Dias,-22.4116611,-45.4364197,2026-09-14,CTO-ITA-024,73,survey,99.9,True
+PED-0087,itajuba,Leste,Avenida BPS,-22.4153428,-45.4417817,2026-10-01,CTO-ITA-004,59,survey,99.9,True
+PED-0088,itajuba,Leste,Vila Clarimundo Dias de Moura,-22.4294507,-45.4380404,2026-09-24,CTO-ITA-002,31,survey,99.9,True
+PED-0089,itajuba,Norte,Rua Dona Zezé,-22.4132509,-45.4660486,2026-09-19,CTO-ITA-021,1374,outside,99.9,True
+PED-0090,itajuba,Sul,Rua Flamino Miranda,-22.4276448,-45.4513936,2026-10-13,CTO-ITA-023,186,survey,99.9,True
+PED-0091,itajuba,Oeste,Via sem nome no OSM,-22.4186775,-45.4728109,2026-10-18,CTO-ITA-019,1360,outside,99.9,True
+PED-0092,itajuba,Leste,Praça Duque de Caxias,-22.4293242,-45.4375421,2026-09-30,CTO-ITA-002,84,survey,99.9,True
+PED-0093,itajuba,Oeste,Travessa Smart,-22.424766,-45.4708617,2026-09-14,CTO-ITA-019,830,outside,99.9,True
+PED-0094,itajuba,Oeste,Rua Feliciano Rodrigues Simões,-22.420308,-45.4692686,2026-09-24,CTO-ITA-019,977,outside,99.9,True
+PED-0095,itajuba,Leste,Vila Costa Manso,-22.4288608,-45.436168,2026-09-03,CTO-ITA-002,234,survey,99.9,True
+PED-0096,itajuba,Norte,Via sem nome no OSM,-22.4199673,-45.4518671,2026-10-02,CTO-ITA-010,70,capacity,99.9,True
+PED-0097,itajuba,Sul,Rua Aurélio Correalle,-22.4411628,-45.4388316,2026-09-16,CTO-ITA-009,238,incident,99.9,True
+PED-0098,itajuba,Sul,Rua Orlando Mohallem,-22.4366587,-45.4556785,2026-09-05,CTO-ITA-001,329,capacity,99.9,True
+PED-0099,itajuba,Oeste,Rua Dona Joaquina Dias,-22.4302245,-45.4628306,2026-09-15,CTO-ITA-005,282,survey,99.9,True
+PED-0100,itajuba,Sul,Avenida Doutor Antônio Braga Filho,-22.430711,-45.4507667,2026-09-17,CTO-ITA-023,486,outside,99.9,True
+PED-0101,itajuba,Norte,Rua Deputado Luiz Fernando Faria Azevedo,-22.4144904,-45.4548366,2026-10-18,CTO-ITA-010,652,outside,99.9,True
+PED-0102,itajuba,Leste,Rua José Joaquim,-22.4262927,-45.4464955,2026-09-10,CTO-ITA-008,321,survey,99.9,True
+PED-0103,itajuba,Oeste,Rua Professor Carmo Cascardo,-22.4287158,-45.4629238,2026-09-12,CTO-ITA-019,186,capacity,99.9,True
+PED-0104,itajuba,Sul,Rua Desembargador Aureliano,-22.4361821,-45.4546016,2026-09-17,CTO-ITA-001,270,capacity,99.9,True
+PED-0105,itajuba,Oeste,Praça Doutor José Bráz,-22.4236846,-45.4602677,2026-09-29,CTO-ITA-022,341,survey,99.9,True
+PED-0106,itajuba,Sul,Praça Professor Mário Maia,-22.4272995,-45.4519566,2026-10-10,CTO-ITA-023,117,survey,99.9,True
+PED-0107,itajuba,Sul,Estrada da Torre,-22.4420108,-45.4396076,2026-09-23,CTO-ITA-009,325,incident,99.9,True
+PED-0108,itajuba,Sul,Rua Arthur Bombeiro,-22.4283278,-45.4510564,2026-09-23,CTO-ITA-023,258,survey,99.9,True

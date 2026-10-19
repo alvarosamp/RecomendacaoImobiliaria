@@ -63,7 +63,7 @@ function StepRow({ step, index, total }) {
   )
 }
 
-export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone }) {
+export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone, onOpenAnalyses }) {
   const [phase, setPhase] = useState('idle') // idle | running | done | error
   const [steps, setSteps] = useState([])
   const [mode, setMode] = useState(null)
@@ -124,7 +124,7 @@ export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone
 
   // ── Logo compartilhado ───────────────────────────────────────────
   const Logo = () => (
-    <div className="setup-logo">IT</div>
+    <div className="setup-logo">Ur</div>
   )
 
   // ── Idle ─────────────────────────────────────────────────────────
@@ -133,10 +133,10 @@ export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone
       <div className="setup-screen">
         <div className="setup-card">
           <Logo />
-          <h2 className="setup-title">Bem-vindo à plataforma</h2>
+          <h2 className="setup-title">Os dados desta ferramenta ainda não estão disponíveis</h2>
           <p className="setup-desc">
-            Para iniciar, precisamos carregar os dados do município de Pouso Alegre — MG.
-            O processo é automático e leva cerca de 2 a 5 minutos.
+            Esta ferramenta depende dos dados territoriais de Pouso Alegre.
+            Você pode continuar nas análises e conhecer exemplos enquanto essas fontes não são carregadas.
           </p>
 
           <div className="setup-what">
@@ -150,6 +150,7 @@ export default function SetupScreen({ isAdmin = false, onComplete, onRefreshDone
             </ul>
           </div>
 
+          {onOpenAnalyses&&<button className="setup-btn" onClick={onOpenAnalyses}>Ir para minhas análises</button>}
           {isAdmin ? (
             <button className="setup-btn" onClick={() => launch('run')}>
               Inicializar dados

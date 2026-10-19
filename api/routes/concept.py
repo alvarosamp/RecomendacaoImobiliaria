@@ -12,7 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter
 from fastapi.responses import Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 router = APIRouter()
 
@@ -46,24 +46,25 @@ SCENARIOS = {
 
 
 class ConceptInput(BaseModel):
-    lotArea: float = Field(300, ge=40)
-    frontage: float = Field(10, ge=3)
-    buildArea: float = Field(165, ge=20)
+    model_config = ConfigDict(allow_inf_nan=False)
+    lotArea: float = Field(300, ge=40, le=1e8)
+    frontage: float = Field(10, ge=3, le=1e5)
+    buildArea: float = Field(165, ge=20, le=1e8)
     floors: int = Field(2, ge=1, le=30)
     typology: str = "casa"
     finish: str = "medio"
     style: str = "contemporaneo"
     zone: str | None = None
     neighborhood: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    residentialScore: float | None = None
-    commercialScore: float | None = None
+    latitude: float | None = Field(None, ge=-90, le=90)
+    longitude: float | None = Field(None, ge=-180, le=180)
+    residentialScore: float | None = Field(None, ge=0, le=100)
+    commercialScore: float | None = Field(None, ge=0, le=100)
     riskLevel: str | None = None
-    riskConfidence: float | None = None
+    riskConfidence: float | None = Field(None, ge=0, le=1)
     riskAlert: str | None = None
     growthSignal: float | None = None
-    predictedMarketPrice: float | None = None
+    predictedMarketPrice: float | None = Field(None, ge=0, le=1e15)
     exteriorImage: str | None = None
     interiorImage: str | None = None
 
@@ -101,7 +102,7 @@ def _liquidity_factor(data: ConceptInput) -> float:
 
 def _risk_adjustment(data: ConceptInput) -> dict[str, object]:
     level = (data.riskAlert or data.riskLevel or "baixo").lower()
-    confidence = float(data.riskConfidence or (0.7 if level in {"alto", "medio"} else 0.0))
+    confidence = float(data.riskConfidence if data.riskConfidence is not None else (0.7 if level in {"alto", "medio"} else 0.0))
     if confidence < 0.45 or level in {"em_observacao", "dados_insuficientes"}:
         return {"factor": 1.0, "label": "sem penalidade", "reason": "Evidencia territorial insuficiente para ajuste financeiro."}
     if level == "alto":
@@ -114,7 +115,7 @@ def _risk_adjustment(data: ConceptInput) -> dict[str, object]:
 def _market_price_estimate(data: ConceptInput, build_area: float, total_cost: float) -> float:
     if data.predictedMarketPrice and data.predictedMarketPrice > 0:
         return float(data.predictedMarketPrice)
-    score = ((data.residentialScore or 55) * 0.58) + ((data.commercialScore or 45) * 0.42)
+    score = ((data.residentialScore if data.residentialScore is not None else 55) * 0.58) + ((data.commercialScore if data.commercialScore is not None else 45) * 0.42)
     base_m2 = DEFAULT_CUB_M2 * (1.42 + score / 180)
     if data.finish == "alto":
         base_m2 *= 1.22
@@ -180,7 +181,7 @@ def _plan(data: ConceptInput) -> dict[str, Any]:
     total = construction + soft + contingency
     months = max(6, round(build_area / 28) + int(data.floors or 1))
     occupancy = min(85, (build_area / lot_area) * 100)
-    potential = ((data.residentialScore or 55) * 0.55) + ((data.commercialScore or 45) * 0.35)
+    potential = ((data.residentialScore if data.residentialScore is not None else 55) * 0.55) + ((data.commercialScore if data.commercialScore is not None else 45) * 0.35)
     if data.riskLevel == "alto":
         potential *= 0.82
     risk_adjustment = _risk_adjustment(data)

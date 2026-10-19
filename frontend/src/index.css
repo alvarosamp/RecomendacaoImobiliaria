@@ -3768,3 +3768,111 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Decision-oriented workspaces */
+.workspace-page { max-width: 1120px; margin: 0 auto; padding: 32px 24px; }
+.workspace-hero { padding: 32px; background: var(--navy); color: white; border-radius: 16px; margin-bottom: 32px; }
+.workspace-eyebrow { color: var(--gold-light); font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+.workspace-hero h1 { font-size: clamp(26px, 3vw, 38px); margin: 14px 0; line-height: 1.2; }
+.workspace-hero p { color: var(--sidebar-text); line-height: 1.7; max-width: 720px; }
+.workspace-page h2 { font-size: 21px; margin-bottom: 18px; }
+.workspace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.workspace-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 26px; display: flex; flex-direction: column; gap: 16px; }
+.workspace-card h3 { color: var(--navy); font-size: 21px; line-height: 1.4; }
+.workspace-card p, .workspace-card li { color: var(--text-2); line-height: 1.65; }
+.workspace-card ol { padding-left: 22px; }
+.workspace-result { background: var(--bg); border-radius: 8px; padding: 14px; margin-top: auto; }
+.workspace-card button { border: 0; border-radius: 8px; background: var(--navy); color: white; padding: 13px 18px; font: inherit; cursor: pointer; text-align: left; }
+.workspace-card button span { float: right; }
+.workspace-note { margin-top: 24px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.journey-nav { margin: 20px 24px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.journey-heading { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.journey-nav ol { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 16px 0; }
+.journey-nav button { padding: 8px 12px; border: 1px solid var(--border); background: var(--bg); border-radius: 6px; color: var(--navy); font: inherit; cursor: pointer; }
+.journey-nav button[aria-current] { background: var(--navy); color: white; }
+.journey-nav p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.workspace-card button:focus-visible, .journey-nav button:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@media (max-width: 720px) { .workspace-grid { grid-template-columns: 1fr; } .workspace-page { padding: 20px 12px; } .workspace-hero { padding: 24px; } .journey-nav { margin: 12px; } .journey-heading { flex-wrap: wrap; } }
+
+.study-toolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin: 20px 0; }
+.study-toolbar label, .study-fields label { display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text-2); }
+.study-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin: 20px 0; }
+.study-fields input, .study-fields select, .study-fields textarea, .study-toolbar select { padding: 10px; border: 1px solid var(--border-warm); border-radius: 6px; background: white; color: var(--text); font: inherit; width: 100%; }
+.study-toolbar button, .study-results > button { padding: 12px 18px; border: 0; border-radius: 6px; background: var(--navy); color: white; font: inherit; cursor: pointer; }
+.land-study button:disabled { opacity: .5; cursor: not-allowed; }
+.study-notes { grid-column: 1 / -1; }
+.study-results { display: grid; gap: 18px; line-height: 1.6; }
+.study-results ul { padding-left: 24px; }
+.land-study > .journey-nav { margin: 20px 0; }
+.public-summary { margin: 24px 0; }
+.public-diagnosis details { margin: 20px 0; }
+.public-diagnosis summary { cursor: pointer; font-weight: 600; }
+.public-diagnosis ul { padding-left: 22px; line-height: 1.7; }
+.public-diagnosis table { min-width: 850px; }
+.public-diagnosis td { vertical-align: top; }
+.public-diagnosis td small { display: block; margin: 7px 0; }
+.public-diagnosis td button { border: 1px solid var(--border); border-radius: 6px; padding: 8px; color: var(--navy); background: var(--card); cursor: pointer; }
+.team-select { display: block; width: min(100%, 500px); margin: 12px 0 24px; padding: 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); font: inherit; }
+.teams-page td small { display: block; margin-top: 6px; color: var(--muted); }
+.teams-page td select { min-width: 140px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); font: inherit; }
+.financial-toggle { grid-column: 1 / -1; flex-direction: row !important; align-items: center; }
+.financial-toggle input { width: auto; }
+.financial-results { display: grid; gap: 18px; }
+.financial-results dl div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.financial-results dd { text-align: right; font-weight: 600; }
+.financial-results details { padding: 16px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+.financial-results summary { cursor: pointer; font-weight: 600; }
+.financial-results ul { padding-left: 22px; }
+.study-results, .financial-results { min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr); }
+.financial-results > *, .financial-results details { min-width: 0; max-width: 100%; }
+.financial-results { overflow-wrap: anywhere; }
+.project-history { padding-left: 24px; line-height: 1.7; }
+.project-history li { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.project-version { min-width: 0; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+.project-version .version-differences pre { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 130px; max-width: 340px; font: inherit; text-align: left; }
+.project-version .version-differences caption { padding: 12px; text-align: left; font-weight: 700; }
+.project-version details { margin: 16px 0; }
+.project-version dt { font-weight: 600; }
+.project-version dd { margin: 4px 0 12px 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.land-study > .workspace-card { margin: 20px 0; }
+.sidebar-mode { display:flex; flex-direction:column; gap:8px; font-size:12px; color:var(--sidebar-text); margin-bottom:16px; }
+.sidebar-mode select { width:100%; padding:9px; border-radius:6px; border:1px solid var(--navy-mid); background:var(--navy-light); color:white; font:inherit; }
+.study-caution { margin:0; padding:14px 16px; border-left:3px solid var(--gold); background:var(--gold-pale); color:var(--navy-dark); line-height:1.6; }
+
+/* Guided decision cases share layout, not professional conclusions. */
+.decision-case { max-width: 1250px; }
+.case-steps { display:flex; flex-wrap:wrap; gap:8px; margin:24px 0; }
+.case-steps button { border:1px solid var(--border); border-radius:10px; padding:12px 16px; background:var(--card); color:var(--navy); }
+.case-steps button[aria-current="step"] { background:var(--navy); color:white; }
+.case-inputs { min-width:0; border:1px solid var(--border); border-radius:16px; padding:24px; margin:20px 0; background:var(--card); }
+.case-inputs > label,.case-fields label,.case-item > label { display:flex;flex-direction:column;gap:8px;min-width:0;font-size:14px;margin:12px 0; }
+.case-inputs input,.case-inputs select,.case-inputs textarea { width:100%;max-width:100%;min-width:0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font:inherit; }
+.case-inputs input[type="checkbox"] { width:auto; }
+.case-inputs button,.decision-case button,.case-executive button { border-radius:8px;padding:12px 16px;cursor:pointer;margin:4px; }
+.case-fields { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px; }
+.case-fields label:has(textarea) { grid-column:1 / -1; }
+.case-item { min-width:0;border:1px solid var(--border);border-radius:12px;padding:20px;margin:20px 0; }
+.case-executive { background:var(--card);border:1px solid var(--border);border-left:5px solid var(--gold);border-radius:16px;padding:28px;margin:24px 0;min-width:0; }
+.case-executive > h3 {font-size:24px;line-height:1.4;margin:12px 0;}
+.case-reasons {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px;margin:24px 0;}
+.case-reasons article {border-top:1px solid var(--border);padding-top:12px;min-width:0;}
+.case-provenance {border-radius:8px;padding:12px;font-size:13px;}
+.case-provenance.simulation {background:#fff1cc;color:#664600;border:1px solid #dfc783;}
+.case-provenance.declared {background:#eef2f7;color:#213a56;}
+.case-table {margin:28px 0;min-width:0;}
+.case-table .comparison-table td {text-align:left;max-width:280px;overflow-wrap:anywhere;}
+.case-table-hint {font-size:12px;color:var(--muted);}
+.case-json {white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:450px;overflow:auto;}
+.case-task {border-bottom:1px solid var(--border);padding:16px 0;}
+.workspace-secondary {margin:28px 0;}
+.workspace-secondary > summary {cursor:pointer;font-weight:600;padding:16px 0;}
+@media(max-width:700px){.case-fields{grid-template-columns:minmax(0,1fr);}.case-inputs,.case-item{padding:16px;}.case-executive{padding:18px;}.case-steps button{flex:1 1 42%;padding:10px;}.case-executive > h3{font-size:21px;}}
+
+.case-feedback label {display:flex;flex-direction:column;gap:8px;margin:16px 0;}
+.case-feedback select,.case-feedback textarea {font:inherit;max-width:100%;width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);}
+
+.decision-case button,.case-executive button {background:var(--navy);border:1px solid var(--navy);color:#fff;font-weight:600;}
+.decision-case button:disabled,.case-executive button:disabled {opacity:.5;cursor:not-allowed;}
+.decision-case .case-steps button {background:var(--card);border-color:var(--border);color:var(--navy);}
+.decision-case .case-steps button[aria-current="step"] {background:var(--navy);color:#fff;}
+.decision-case .case-item > button {background:var(--card);border-color:var(--border);color:var(--navy);}

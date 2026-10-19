@@ -1,3 +1,4 @@
+import { ProductIcon } from '../components/ProductVisuals';
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
@@ -33,27 +34,27 @@ export default function LoginPage() {
 
         <div className="auth-split-left-content">
           <div className="auth-brand-mark">
-            <div className="auth-logo-badge">Ur</div>
-            <span className="auth-brand-name-text">Urbia</span>
+            <div className="auth-logo-badge"><ProductIcon name="building" size={25}/></div>
+            <span className="auth-brand-name-text">urbia.</span>
           </div>
 
           <h2 className="auth-split-tagline">
-            Inteligência territorial<br />
-            para decidir<br />
-            <em>onde vale investir.</em>
+            Desvende o lugar.<br />
+            Encontre seu<br />
+            <em>próximo passo.</em>
           </h2>
 
           <p className="auth-split-desc">
-            Mapas, Plano Diretor, sensoriamento remoto e dados de mercado reunidos
-            em uma única plataforma — para qualquer cidade brasileira.
+            Seis ambientes para organizar informações e avançar com mais clareza.
+            Começando por Pouso Alegre, com a cobertura de cada fonte à vista.
           </p>
 
           <div className="auth-features-list">
             {[
-              'Score territorial com explicabilidade',
-              'Conformidade com Plano Diretor',
-              'Oportunidades residenciais e comerciais',
-              'Avaliação de imóvel por modelo de dados',
+              'Um ambiente para cada tipo de decisão',
+              'Análises guiadas com pendências claras',
+              'Casos salvos para retomar depois',
+              'Relatórios para a próxima conversa',
             ].map(f => (
               <div key={f} className="auth-feature-item">
                 <div className="auth-feature-dot" />
@@ -72,10 +73,12 @@ export default function LoginPage() {
 
           {error && <div className="auth-error">{error}</div>}
 
+          <Link to="/recover">Preciso recuperar meu acesso</Link>
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>Email</label>
+              <label htmlFor="login-email">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
@@ -85,8 +88,9 @@ export default function LoginPage() {
               />
             </div>
             <div className="form-group">
-              <label>Senha</label>
+              <label htmlFor="login-password">Senha</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}

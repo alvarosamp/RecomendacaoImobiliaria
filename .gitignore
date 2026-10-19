@@ -211,6 +211,7 @@ mlruns/
 
 hostinger.env
 hostinger.test.env
+.env.docker.local
 
 # cache bruto do ViaCEP (regerável)
 data/official/bairros/viacep_cache.json

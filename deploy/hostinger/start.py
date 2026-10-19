@@ -12,4 +12,4 @@ if Path('/app/storage').exists():
         Path('/app/data').rmdir()
         os.symlink('/app/storage', '/app/data')
 ensure_data_schema()
-os.execvp('uvicorn', ['uvicorn', 'api.main:app', '--host', '0.0.0.0', '--port', '8000', '--proxy-headers', '--forwarded-allow-ips', '*'])
+os.execvp('uvicorn', ['uvicorn', 'api.main:app', '--host', '0.0.0.0', '--port', '8000', '--proxy-headers', '--forwarded-allow-ips', '*', '--no-access-log'])

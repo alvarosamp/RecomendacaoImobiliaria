@@ -1,0 +1,88 @@
+# Dedicated partner demonstration. Requires DNS/domain and explicit credentials.
+# Does not replace or modify any existing deployment or its volumes.
+name: urbia-partner-demo
+services:
+  db:
+    image: postgis/postgis:15-3.5
+    environment:
+      POSTGRES_DB: ${PG_DB:?Set PG_DB}
+      POSTGRES_USER: ${PG_USER:?Set PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASS:?Set PG_PASS}
+    volumes:
+      - partner_db:/var/lib/postgresql/data
+      - ./Infra/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks: [backend]
+  api:
+    build:
+      context: .
+      dockerfile: deploy/hostinger/api.Dockerfile
+    environment:
+      APP_ENV: production
+      PG_HOST: db
+      PG_PORT: '5432'
+      PG_DB: ${PG_DB:?Set PG_DB}
+      PG_USER: ${PG_USER:?Set PG_USER}
+      PG_PASS: ${PG_PASS:?Set PG_PASS}
+      JWT_SECRET: ${JWT_SECRET:?Set a random JWT_SECRET of at least 32 characters}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:?Set ADMIN_EMAILS for the demonstration operator}
+      CORS_ORIGINS: https://${DOMAIN:?Set DOMAIN}
+      DEMO_REGISTRATION_CODE: ${DEMO_REGISTRATION_CODE:?Set a private registration code for partners}
+      DEMO_ALLOWED_EMAILS: ${DEMO_ALLOWED_EMAILS:-}
+      CITY_NAME: Pouso Alegre, Minas Gerais, Brazil
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_IMAGE_MODEL: ${HF_IMAGE_MODEL:-black-forest-labs/FLUX.1-schnell}
+      HF_IMAGE_PROVIDER: ${HF_IMAGE_PROVIDER:-auto}
+      HF_DAILY_IMAGE_LIMIT: ${HF_DAILY_IMAGE_LIMIT:-8}
+    volumes:
+      - partner_storage:/app/storage
+      - partner_models:/app/models
+      - partner_cache:/app/cache
+      - partner_output:/app/output
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -f, http://localhost:8000/health/ready]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks: [backend]
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/hostinger/frontend.Dockerfile
+    depends_on: [api]
+    restart: unless-stopped
+    networks: [backend, edge]
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    ports: ['${DEMO_HTTP_PORT:-80}:80', '${DEMO_HTTPS_PORT:-443}:443']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - partner_tls:/data
+      - partner_tls_config:/config
+    depends_on: [frontend]
+    restart: unless-stopped
+    networks: [edge]
+networks:
+  backend:
+  edge:
+volumes:
+  partner_db:
+  partner_storage:
+  partner_models:
+  partner_cache:
+  partner_output:
+  partner_tls:
+  partner_tls_config:

@@ -1,0 +1,73 @@
+# Local updated application. Open http://localhost:18088.
+# docker compose --env-file .env.docker.local -f docker-compose.local.yml up -d --build
+name: urbia-local
+services:
+  db:
+    image: postgis/postgis:15-3.5
+    environment:
+      POSTGRES_DB: urbia_local
+      POSTGRES_USER: urbia_local
+      POSTGRES_PASSWORD: ${URBIA_LOCAL_DB_PASSWORD:?Set URBIA_LOCAL_DB_PASSWORD}
+    volumes:
+      - local_db:/var/lib/postgresql/data
+      - ./Infra/initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: deploy/hostinger/api.Dockerfile
+    environment:
+      APP_ENV: development
+      PG_HOST: db
+      PG_PORT: '5432'
+      PG_DB: urbia_local
+      PG_USER: urbia_local
+      PG_PASS: ${URBIA_LOCAL_DB_PASSWORD:?Set URBIA_LOCAL_DB_PASSWORD}
+      JWT_SECRET: ${URBIA_LOCAL_JWT_SECRET:?Set URBIA_LOCAL_JWT_SECRET}
+      CORS_ORIGINS: http://localhost:18088,http://127.0.0.1:18088
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      CITY_NAME: Pouso Alegre, Minas Gerais, Brazil
+      HF_TOKEN: ${HF_TOKEN:-}
+      HF_IMAGE_MODEL: ${HF_IMAGE_MODEL:-black-forest-labs/FLUX.1-schnell}
+      HF_IMAGE_PROVIDER: ${HF_IMAGE_PROVIDER:-auto}
+      HF_DAILY_IMAGE_LIMIT: ${HF_DAILY_IMAGE_LIMIT:-8}
+    volumes:
+      - local_storage:/app/storage
+      - local_models:/app/models
+      - local_cache:/app/cache
+      - local_output:/app/output
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -fsS, http://localhost:8000/health/ready]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+  frontend:
+    build:
+      context: .
+      dockerfile: deploy/hostinger/frontend.Dockerfile
+    ports: ['127.0.0.1:18088:80']
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1/]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+volumes:
+  local_db:
+  local_storage:
+  local_models:
+  local_cache:
+  local_output:

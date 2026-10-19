@@ -3,10 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App'
 import LoginPage from './pages/LoginPage'
+import RecoveryPage from './pages/RecoveryPage'
 import RegisterPage from './pages/RegisterPage'
 import LandingPage from './pages/LandingPage'
 import { AuthProvider, AuthContext } from './contexts/AuthContext'
 import './index.css'
+import './product-theme.css'
 
 function AuthGuard({ children }) {
   const { user, loading } = React.useContext(AuthContext);
@@ -53,6 +55,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<GuestOnly><LoginPage /></GuestOnly>} />
+          <Route path="/recover" element={<RecoveryPage />} />
           <Route path="/register" element={<GuestOnly><RegisterPage /></GuestOnly>} />
           <Route 
             path="/app/*"

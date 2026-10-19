@@ -1,212 +1,41 @@
-﻿import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { ProductIcon, TerritoryVisual } from '../components/ProductVisuals'
 
-const FEATURES = [
-  {
-    icon: '🗺',
-    title: 'Mapa de oportunidades',
-    desc: 'Visualize cada área da cidade com scores residenciais e comerciais, zoneamento e indicadores de crescimento urbano.',
-  },
-  {
-    icon: '📊',
-    title: 'Score territorial explicado',
-    desc: 'Cada recomendação vem acompanhada de fatores positivos, negativos, restrições legais e dados utilizados. Nada de caixa-preta.',
-  },
-  {
-    icon: '⚖️',
-    title: 'Plano Diretor integrado',
-    desc: 'Regras urbanísticas verificadas automaticamente. Áreas bloqueadas ou condicionadas são sinalizadas antes de qualquer recomendação.',
-  },
-  {
-    icon: '💰',
-    title: 'Avaliação de imóvel',
-    desc: 'Estimativa de preço por modelo treinado em dados reais de mercado, enriquecido com features geoespaciais da cidade.',
-  },
-  {
-    icon: '🏪',
-    title: 'Comércios faltantes',
-    desc: 'Identifique quais serviços estão ausentes em cada região e por que aquele local é uma oportunidade comercial.',
-  },
-  {
-    icon: '👥',
-    title: 'Lead Scoring',
-    desc: 'Priorize clientes com maior probabilidade de conversão, baseado em orçamento, perfil e comportamento de busca.',
-  },
+const ENVIRONMENTS = [
+  { name: 'Incorpora', audience: 'Para incorporadoras', icon: 'building', desc: 'Do terreno à proposta que merece avançar.', delivery: 'Comparação de empreendimentos', color: 'sage' },
+  { name: 'Obras', audience: 'Para construtoras', icon: 'tools', desc: 'Saiba o que verificar antes de construir.', delivery: 'Plano de investigação do terreno', color: 'sand' },
+  { name: 'Invest', audience: 'Para investidores', icon: 'chart', desc: 'Coloque capital, prazo e cenários lado a lado.', delivery: 'Comparação de investimentos', color: 'blue' },
+  { name: 'Mercado', audience: 'Para corretores', icon: 'home', desc: 'Transforme informações em uma boa conversa.', delivery: 'Apresentação comercial do imóvel', color: 'rose' },
+  { name: 'Negócios', audience: 'Para empreendedores', icon: 'shop', desc: 'Compare pontos antes de escolher o endereço.', delivery: 'Comparação de pontos comerciais', color: 'lavender' },
+  { name: 'Governo', audience: 'Para o setor público', icon: 'civic', desc: 'Organize onde investigar o atendimento escolar.', delivery: 'Agenda de investigação territorial', color: 'mint' },
 ]
-
-const PROFILES = [
-  { icon: '🏗', title: 'Incorporadoras', desc: 'Encontre terrenos e zonas com alto potencial construtivo e permissividade legal.' },
-  { icon: '📐', title: 'Investidores', desc: 'Análise de risco, crescimento e valorização para decisões de alocação de capital.' },
-  { icon: '🏡', title: 'Corretores', desc: 'Apresente dados concretos aos clientes e identifique leads mais qualificados.' },
-  { icon: '🏛', title: 'Poder Público', desc: 'Mapeie carências de serviços, expansão urbana e impacto de zoneamento.' },
-]
-
-function StatBar() {
-  return (
-    <div className="landing-stats">
-      <div className="landing-stat">
-        <span className="landing-stat-value">H3</span>
-        <span className="landing-stat-label">Grade hexagonal de análise</span>
-      </div>
-      <div className="landing-stat">
-        <span className="landing-stat-value">22+</span>
-        <span className="landing-stat-label">Zonas urbanas reconhecidas</span>
-      </div>
-      <div className="landing-stat">
-        <span className="landing-stat-value">10+</span>
-        <span className="landing-stat-label">Camadas de dados integradas</span>
-      </div>
-      <div className="landing-stat">
-        <span className="landing-stat-value">100%</span>
-        <span className="landing-stat-label">Explicável e auditável</span>
-      </div>
-    </div>
-  )
-}
 
 export default function LandingPage() {
-  return (
-    <div className="landing">
-      {/* Nav */}
-      <nav className="landing-nav">
-        <div className="landing-nav-brand">
-          <div className="landing-nav-logo">Ur</div>
-          <span className="landing-nav-name">Urbia</span>
+  return <div className="showcase">
+    <nav className="showcase-nav" aria-label="Navegação principal">
+      <Link to="/" className="product-brand"><span className="product-symbol"><ProductIcon name="building" /></span>urbia<span className="brand-period">.</span></Link>
+      <div className="showcase-links"><a href="#ambientes">Os ambientes</a><a href="#como-funciona">Como funciona</a></div>
+      <Link to="/login" className="product-button ink">Acessar plataforma <ProductIcon name="arrow" size={17} /></Link>
+    </nav>
+    <main>
+      <section className="showcase-hero">
+        <div className="showcase-hero-copy"><span className="product-eyebrow"><span className="live-dot" /> Inteligência para decisões sobre lugares</span>
+          <h1>Um lugar.<br />Muitas possibilidades.<br /><em>Um próximo passo.</em></h1>
+          <p>A Urbia organiza os dados de uma localização, explica o que importa para o seu objetivo e ajuda você a decidir o que fazer a seguir.</p>
+          <div className="showcase-actions"><Link to="/login" className="product-button lime">Explorar a plataforma <ProductIcon name="arrow" size={19} /></Link><a href="#ambientes" className="showcase-text-link">Encontre seu ambiente <span>↗</span></a></div>
+          <div className="showcase-territory"><ProductIcon name="pin" size={17} /><span>Começando por <strong>Pouso Alegre, MG</strong></span></div>
         </div>
-        <div className="landing-nav-actions">
-          <a href="#funcionalidades" className="landing-nav-link">Funcionalidades</a>
-          <a href="#para-quem" className="landing-nav-link">Para quem</a>
-          <Link to="/login" className="landing-btn-outline">Entrar</Link>
-          <Link to="/register" className="landing-btn-primary">
-            Começar agora
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 7h10M8 3l4 4-4 4"/>
-            </svg>
-          </Link>
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section>
-        <div className="landing-hero">
-          <div className="landing-hero-bg" />
-          <div className="landing-hex-bg" />
-
-          <div className="landing-hero-grid">
-            <div className="landing-hero-copy">
-              <div className="landing-hero-eyebrow">Inteligência territorial</div>
-
-              <h1>
-                Decida com dados<br />
-                onde <em>realmente</em><br />
-                vale investir.
-              </h1>
-
-              <p className="landing-hero-desc">
-                Urbia combina mapas urbanos, Plano Diretor, sensoriamento remoto e
-                dados de mercado para mostrar o potencial territorial de cada área de Pouso Alegre.
-              </p>
-
-              <div className="landing-hero-actions">
-                <Link to="/register" className="landing-hero-btn-primary">
-                  Explorar oportunidades
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 8h10M9 4l4 4-4 4"/>
-                  </svg>
-                </Link>
-                <a href="#funcionalidades" className="landing-hero-btn-secondary">
-                  Conhecer a plataforma
-                </a>
-              </div>
-            </div>
-
-            <div className="landing-product-preview" aria-label="Prévia do mapa de inteligência territorial">
-              <div className="preview-toolbar">
-                <div className="preview-brand"><span>Ur</span> Visão territorial</div>
-                <div className="preview-status"><i /> Dados atualizados</div>
-              </div>
-              <div className="preview-body">
-                <div className="preview-map">
-                  <div className="preview-search">⌕ &nbsp; Florianópolis, SC</div>
-                  <div className="preview-hex hex-a">92</div>
-                  <div className="preview-hex hex-b">87</div>
-                  <div className="preview-hex hex-c">74</div>
-                  <div className="preview-hex hex-d">81</div>
-                  <div className="preview-map-label">Potencial territorial</div>
-                </div>
-                <div className="preview-panel">
-                  <span className="preview-kicker">Melhor oportunidade</span>
-                  <strong>Centro expandido</strong>
-                  <div className="preview-score"><b>92</b><span>/ 100<br />alto potencial</span></div>
-                  <div className="preview-metric"><span>Valorização estimada</span><b>+18,4%</b></div>
-                  <div className="preview-metric"><span>Risco regulatório</span><b className="safe">Baixo</b></div>
-                  <div className="preview-bars"><i /><i /><i /><i /></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <StatBar />
+        <div className="showcase-scene"><div className="scene-heading"><span>Um território, novas perspectivas</span><span className="scene-badge">Prévia ilustrativa</span></div><TerritoryVisual />
+          <div className="scene-decision"><span className="scene-icon"><ProductIcon name="document" /></span><div><small>Mais clareza para avançar</small><strong>Da informação ao plano de ação.</strong><p>Compare alternativas. Entenda pendências.</p></div><span className="scene-check"><ProductIcon name="check" size={18} /></span></div>
         </div>
       </section>
-
-      {/* Features */}
-      <section id="funcionalidades" className="landing-features">
-        <div className="landing-features-inner">
-          <div className="landing-section-label">Funcionalidades</div>
-          <h2>Tudo que você precisa para<br />analisar uma cidade.</h2>
-
-          <div className="landing-features-grid">
-            {FEATURES.map(f => (
-              <div key={f.title} className="landing-feature-card">
-                <div className="landing-feature-icon">{f.icon}</div>
-                <h3>{f.title}</h3>
-                <p>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      <section className="showcase-principles" aria-label="O que você leva da análise"><div><span>01</span><strong>Uma decisão por vez</strong><p>Perguntas próprias para o seu objetivo.</p></div><div><span>02</span><strong>Informação que faz sentido</strong><p>Motivos, fontes e lacunas à vista.</p></div><div><span>03</span><strong>Uma entrega para usar</strong><p>Síntese, relatório e próximas ações.</p></div></section>
+      <section className="showcase-environments" id="ambientes"><div className="showcase-section-heading"><div><span className="product-eyebrow">Escolha sua perspectiva</span><h2>Seis ambientes.<br />Seis formas de avançar.</h2></div><p>Cada atividade tem suas perguntas.<br />E merece uma entrega própria.</p></div>
+        <div className="environment-grid">{ENVIRONMENTS.map((env, index) => <Link to="/register" className={`environment-card tone-${env.color}`} key={env.name}><div className="environment-card-top"><span className="environment-icon"><ProductIcon name={env.icon} size={26} /></span><span className="environment-number">0{index+1}</span></div><small>{env.audience}</small><h3>Urbia {env.name}</h3><p>{env.desc}</p><div className="environment-delivery"><span>{env.delivery}</span><ProductIcon name="arrow" size={19} /></div></Link>)}</div>
       </section>
-
-      {/* Profiles */}
-      <section id="para-quem" className="landing-profiles">
-        <div className="landing-section-label">Para quem</div>
-        <h2>Uma ferramenta,<br />múltiplos perfis.</h2>
-        <p>O mesmo dado, visto do ângulo certo para cada decisão.</p>
-        <div className="landing-profiles-grid">
-          {PROFILES.map(p => (
-            <div key={p.title} className="landing-profile-card">
-              <div className="landing-profile-card-icon">{p.icon}</div>
-              <h4>{p.title}</h4>
-              <p>{p.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="landing-cta">
-        <div className="landing-cta-inner">
-          <h2>Pronto para analisar sua cidade?</h2>
-          <p>Acesse a plataforma, selecione sua cidade e explore as oportunidades do território com dados reais.</p>
-          <div className="landing-cta-actions">
-            <Link to="/register" className="landing-hero-btn-primary">
-              Criar conta gratuita
-            </Link>
-            <Link to="/login" className="landing-hero-btn-secondary">
-              Já tenho acesso
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="landing-footer">
-        <div className="landing-footer-brand">
-          <div className="landing-nav-logo" style={{ width: 24, height: 24, fontSize: 10, borderRadius: 5 }}>Ur</div>
-          Urbia
-        </div>
-        <span className="landing-footer-copy">Plataforma de inteligência territorial · Dados geoespaciais + Plano Diretor + Mercado imobiliário</span>
-      </footer>
-    </div>
-  )
+      <section className="showcase-process" id="como-funciona"><div><span className="product-eyebrow">Da pergunta à próxima ação</span><h2>Menos esforço para entender.<br />Mais clareza para decidir.</h2><p>Um caminho guiado, com o essencial primeiro. Fontes e memória de cálculo ficam disponíveis quando você quiser se aprofundar.</p><Link to="/register" className="product-button ink">Criar meu acesso <ProductIcon name="arrow" size={18}/></Link></div><ol>{[['Seu objetivo','Escolha o que você precisa decidir.'],['Informações essenciais','Preencha o que sabe, sem esconder o que falta.'],['Confira os dados','Revise a origem, as premissas e as pendências.'],['Sua análise','Entenda o resultado e organize a próxima ação.']].map(([title,desc],i)=><li key={title}><span>0{i+1}</span><div><h3>{title}</h3><p>{desc}</p></div></li>)}</ol></section>
+      <section className="showcase-closing"><span className="product-eyebrow">Sua próxima decisão começa aqui</span><h2>Conheça a Urbia<br />com um caso demonstrativo.</h2><Link to="/login" className="product-button lime">Entrar na plataforma <ProductIcon name="arrow" size={19}/></Link><p>Exemplos identificados como simulação. Estudos reais dependem das fontes disponíveis.</p></section>
+    </main>
+    <footer className="showcase-footer"><span className="product-brand">urbia<span className="brand-period">.</span></span><p>Inteligência territorial. Decisões com contexto.</p><span>Pouso Alegre · MG</span></footer>
+  </div>
 }

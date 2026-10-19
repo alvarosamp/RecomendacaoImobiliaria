@@ -269,6 +269,8 @@ export default function H3Map({
   influenceRadius = 900,
   labelMode = 'smart',
   onOpenConcept = null,
+  selectedAreaId = null,
+  onSelectArea = null,
   onModeChange = () => {},
   onToggleLayer = () => {},
   onTogglePoiType = () => {},
@@ -282,6 +284,10 @@ export default function H3Map({
 }) {
   const [tooltip, setTooltip] = useState(null)
   const [selected, setSelected] = useState(null)
+  const selectCell = cell => { setSelected(cell); if (cell) onSelectArea?.(cell) }
+  useEffect(() => {
+    if (onSelectArea) setSelected(data.find(row => row.h3_id === selectedAreaId) || null)
+  }, [selectedAreaId, data, onSelectArea])
   const [viewState, setViewState] = useState(INITIAL_VIEW)
   const [searchPin, setSearchPin] = useState(null)
   const isNarrow = typeof window !== 'undefined' && window.innerWidth <= 900
@@ -509,7 +515,7 @@ export default function H3Map({
     ],
     aggregation: 'SUM',
     updateTriggers: { getWeight: [objectiveConfig] },
-  }), [kernelPoints, mode, objectiveConfig])
+  }), [kernelPoints, mode, objectiveConfig, onSelectArea])
 
   const hexLayer = useMemo(() => new H3HexagonLayer({
     id: 'h3-readable',
@@ -557,8 +563,8 @@ export default function H3Map({
       coverage: [mode],
     },
     onHover: info => setTooltip(info.object ? { kind: 'cell', object: info.object, x: info.x, y: info.y } : null),
-    onClick: info => setSelected(info.object || null),
-  }), [data, mode, selectedDate, ndviByCell, selected, objectiveConfig])
+    onClick: info => selectCell(info.object || null),
+  }), [data, mode, selectedDate, ndviByCell, selected, objectiveConfig, onSelectArea])
 
   const validationLayer = useMemo(() => new ColumnLayer({
     id: 'validation-columns',
@@ -574,12 +580,12 @@ export default function H3Map({
     getLineColor: [255, 255, 255, 170],
     lineWidthMinPixels: 0.6,
     onHover: info => setTooltip(info.object ? { kind: 'validation', object: info.object, x: info.x, y: info.y } : null),
-    onClick: info => setSelected(info.object || null),
+    onClick: info => selectCell(info.object || null),
     updateTriggers: {
       getElevation: [objectiveConfig],
       getFillColor: [objectiveConfig],
     },
-  }), [kernelPoints, mode, objectiveConfig])
+  }), [kernelPoints, mode, objectiveConfig, onSelectArea])
 
   const poiLayer = useMemo(() => new ScatterplotLayer({
     id: 'osm-pois',
@@ -736,7 +742,7 @@ export default function H3Map({
         objectiveConfig={objectiveConfig}
         cockpit={cockpit}
         onSelectCell={cell => {
-          setSelected(cell)
+          selectCell(cell)
           const center = selectedCenter(cell)
           if (center) {
             setViewState(current => ({

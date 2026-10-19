@@ -16,7 +16,7 @@ export default function ValuationPage() {
     try {
       const estimate = await predictPrice({ ...form, area_m2: Number(form.area_m2), bedrooms: Number(form.bedrooms), bathrooms: Number(form.bathrooms), parking_spaces: Number(form.parking_spaces), latitude: Number(form.latitude || 0), longitude: Number(form.longitude || 0) })
       setResult(estimate)
-      if (form.reference && Number(form.asking_price) > 0) setMarket(await compareMarket({ neighborhood: form.reference, askingPrice: Number(form.asking_price), areaM2: Number(form.area_m2) }))
+      if (form.reference && Number(form.asking_price) > 0) setMarket(await compareMarket({ neighborhood: form.reference, askingPrice: Number(form.asking_price), areaM2: Number(form.area_m2), propertyType: form.property_type }))
     } catch (err) { setError(`Não foi possível calcular a avaliação. ${err.message}`) } finally { setLoading(false) }
   }
   return <div className="page">

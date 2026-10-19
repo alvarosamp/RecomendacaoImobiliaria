@@ -9,8 +9,9 @@ RUN pip install --no-cache-dir huggingface-hub==2.1.1
 COPY src/ src/
 COPY api/ api/
 COPY config/ config/
-COPY data/official/pdpa/ reference-data/official/pdpa/
-COPY data/official/ibge/MG_bairros_CD2022.gpkg reference-data/official/ibge/MG_bairros_CD2022.gpkg
+# The Dockerfile-specific allowlist includes only audited public references.
+# Optional sources (such as the IBGE GeoPackage) need not exist to run demos.
+COPY data/official/ reference-data/official/
 COPY deploy/hostinger/start.py /app/start.py
 ENV PYTHONPATH=/app/src PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 RUN useradd --create-home --uid 10001 appuser && mkdir -p data storage models cache output && chown -R appuser:appuser /app

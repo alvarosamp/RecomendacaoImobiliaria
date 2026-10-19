@@ -58,3 +58,12 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - API na imagem Docker final: cálculo com custos, entradas inválidas retornando HTTP 400, ocorrência próxima orientando investigação e endpoints de saúde/radar preservados.
 - Layout a 390 pixels: documento com 390 pixels de largura e formulário com 358 pixels, sem rolagem horizontal global. Exportação e marcação de novo ponto conferidas no navegador; custos de teste não são valores padrão.
 - Com limite adotado de 500 m, PED-0003 apresentou atendimento por CTO-POU-011 com 390,2 m de percurso e uma porta disponível. Restaurado o limite de 250 m, o estudo passou a comparar ampliações. Nenhuma dessas alternativas constitui viabilidade óptica validada.
+
+## Guia Como usar — 19/10/2026
+
+- Guia no menu e atalho de texto no cabeçalho, com seis etapas e glossário.
+- Conferidos no navegador os sete atalhos para operação, planejador, radar, inspeção e premissas; cada destino exibiu o título esperado e ocultou o guia.
+- Tela de ajuda oculta filtros, indicadores e exportação de instalações; navegação retorna ao guia sem reiniciar a aplicação.
+- Layout conferido em 390 px: documento de 390 px e cartões de 358 px, sem transbordamento horizontal. Viewport restaurado após a conferência.
+- Console sem erros durante os fluxos conferidos. Docker reconstruído e saudável.
+- Arquivos app.js e style.css com revisão na URL para evitar reutilização da versão anterior em cache.

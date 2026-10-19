@@ -179,3 +179,7 @@ python3 -m unittest -v test_planner.py
 Nove testes cobrem rota em U em vez de atalho reto, projeção de dois pontos no mesmo segmento, componentes desconectados, CTOs cheias/indisponíveis, reserva de portas suspensas, ocorrências, custos com reserva, campos ausentes, exclusão do pedido atual, limites de portas, dados inválidos, reprodução e preservação do inventário. Casos das três cidades verificam que os segmentos de rota pertencem às vias armazenadas.
 
 O estudo não reserva portas, não altera CTOs, não valida infraestrutura física nem estima conversão comercial. Para uso real, precisa de inventário auditado de postes/dutos, fibras/portas de origem, permissões, medições ópticas e custos completos.
+
+### Ajuda no painel
+
+Use **Como usar** no menu ou no cabeçalho para abrir o roteiro de operação, atendimento de pedidos, expansão, radar e inspeção. O guia contém atalhos para as telas e um glossário de CTO, POP, drop e reserva de cabo. As instruções distinguem dados reais de simulação e estudo preliminar de validação técnica em campo.

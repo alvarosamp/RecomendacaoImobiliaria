@@ -1,0 +1,4 @@
+/public/
+/.vercel/
+__pycache__/
+*.pyc

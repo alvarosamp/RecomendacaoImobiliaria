@@ -183,3 +183,7 @@ O estudo não reserva portas, não altera CTOs, não valida infraestrutura físi
 ### Ajuda no painel
 
 Use **Como usar** no menu ou no cabeçalho para abrir o roteiro de operação, atendimento de pedidos, expansão, radar e inspeção. O guia contém atalhos para as telas e um glossário de CTO, POP, drop e reserva de cabo. As instruções distinguem dados reais de simulação e estudo preliminar de validação técnica em campo.
+
+### Vercel
+
+Para publicar somente o protótipo ISP, importe a branch `codex/urbia-isp-vercel` com **Root Directory = `isp-demo`** e preset **Other**. Não exige Docker ou envs. A interface e os snapshots são estáticos; `POST /api/plan` roda como função Python reutilizando o motor atual. Configuração e passo a passo em [VERCEL.md](VERCEL.md).

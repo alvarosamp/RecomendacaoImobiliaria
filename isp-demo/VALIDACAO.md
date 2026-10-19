@@ -67,3 +67,11 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - Layout conferido em 390 px: documento de 390 px e cartões de 358 px, sem transbordamento horizontal. Viewport restaurado após a conferência.
 - Console sem erros durante os fluxos conferidos. Docker reconstruído e saudável.
 - Arquivos app.js e style.css com revisão na URL para evitar reutilização da versão anterior em cache.
+
+## Preparação para Vercel — 19/10/2026
+
+- Build local determinístico com 24 arquivos estáticos, 3.793.377 bytes. HTML, scripts, estilos, seis imagens do radar, licença Leaflet, três snapshots e health incluídos; código Python e envs fora da saída pública.
+- 14 testes passaram: nove do planejador existente e cinco da adaptação HTTP/empacotamento. POST comparado ao motor original, entradas inválidas 400/413/415, GET/HEAD 405 sem servir arquivos, rota desconhecida 404, leitura independente do diretório de execução e rewrites estáticos verificados.
+- Entrada `api/plan.py` com handler Python documentado pela Vercel, sem dependências externas. Dockerfile, servidor, motor, dados, interface e Compose existentes não foram alterados.
+- CLI oficial Vercel 64.5.0 disponível via npx. Não havia sessão conectada. A tentativa de dry-run com modo temporário foi recusada por indisponibilidade e abriu login, cancelado sem autenticação. Não se afirma build da plataforma ou publicação remota validada.
+- Importação requer Root Directory `isp-demo`, preset Other, branch `codex/urbia-isp-vercel`, sem variáveis de ambiente. Instruções em VERCEL.md.

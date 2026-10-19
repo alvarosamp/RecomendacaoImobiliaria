@@ -45,3 +45,16 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - As contagens são de células espectrais exploratórias, não de construções comprovadas. Não houve validação de campo, medida de precisão de classificação ou comprovação de demanda.
 - Layout verificado em 1280 e 390 pixels: largura do documento igual à viewport, sem rolagem horizontal global; comparação e detalhes reorganizam-se na tela pequena. Tamanho original do navegador restaurado.
 - Imagem Docker final: endpoint `/api/radar` e seis PNGs conferidos; cache científico ausente no container. Serviço permanece no Compose isolado e porta local 18089.
+
+
+## Planejador de atendimento e ampliação — 19/10/2026
+
+- Nove testes passaram: caminhos por ruas (incluindo rota em U), componentes desconectados, projeção no mesmo segmento, capacidade/estado das CTOs, incidências, custos e reserva, pedidos únicos sem contar o atual, validação de entrada e preservação do inventário. Nas três cidades, segmentos de rota foram conferidos contra a geometria das vias.
+- No navegador: troca de pedido e premissas ocultou o estudo anterior; custos opcionais, prioridade de agrupamento e comparação de alternativas funcionaram. Busca local de rua preservou o ponto do pedido; clique no mapa mudou para ponto manual e invalidou o resultado antigo.
+- Pedido demonstrativo PED-0003: com custos exclusivamente de teste (drop R$ 2,50/m, fibra R$ 9/m, CTO instalada R$ 700 e reserva de 10%), uma alternativa apresentou 117,1 m de drop + 111 m de extensão e R$ 2.120,93; outra apresentou 0 m de drop + 167,5 m de extensão e R$ 2.358,25. Ambas tinham dois outros pedidos compatíveis, limitados por portas. Esses preços não são referências de mercado e os custos ficam vazios por padrão.
+- Percursos de fibra/drop exibidos no mapa com cores distintas e itinerário de ruas. Arquivo JSON exportado e conferido: pedido, parâmetros, custos, caminhos, alternativa selecionada, inventário fictício e engenharia pendente.
+- Não foram validados postes, dutos, permissões, fibras livres, split ou orçamento óptico. Satélite histórico foi mantido como contexto separado, sem contagem de futuros clientes.
+
+- API na imagem Docker final: cálculo com custos, entradas inválidas retornando HTTP 400, ocorrência próxima orientando investigação e endpoints de saúde/radar preservados.
+- Layout a 390 pixels: documento com 390 pixels de largura e formulário com 358 pixels, sem rolagem horizontal global. Exportação e marcação de novo ponto conferidas no navegador; custos de teste não são valores padrão.
+- Com limite adotado de 500 m, PED-0003 apresentou atendimento por CTO-POU-011 com 390,2 m de percurso e uma porta disponível. Restaurado o limite de 250 m, o estudo passou a comparar ampliações. Nenhuma dessas alternativas constitui viabilidade óptica validada.

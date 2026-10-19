@@ -139,3 +139,43 @@ python3 collect_radar.py
 ```
 
 As janelas históricas estão definidas em `PERIODS` no coletor. Alterar datas, parâmetros ou inventário exige recolher/recalcular, executar os testes e reconstruir o Docker. Não existe atualização automática nem agenda de coleta nesta entrega. A avaliação de falsos positivos e o confronto com visitas ou cadastros reais ainda precisam ser feitos com um parceiro.
+
+
+## Planejar atendimento e ampliação
+
+O menu **Planejar expansão** acrescenta um estudo de rota e distribuição para um pedido selecionado ou marcado no mapa. Não cadastra clientes nem instala equipamentos.
+
+1. Escolher a cidade e um pedido demonstrativo, ou localizar uma rua pelo nome completo e clicar na posição aproximada do cliente. Também é possível informar latitude/longitude. A busca é local no cache OSM: não geocodifica número de imóvel.
+2. Adotar um limite de percurso de drop e uma reserva de cabo. Os padrões de 250 m e 10% são hipóteses editáveis, não regras técnicas ou certificação de potência.
+3. Escolher entre priorizar o atendimento atual e agrupar outros pedidos. Opcionalmente informar custos de drop instalado/m, fibra instalada/m e CTO instalada. Nenhum preço de mercado é presumido.
+4. Comparar até duas alternativas de CTO existente e duas de nova CTO. Inspecionar os percursos por rua, a origem da extensão, os pedidos próximos pelo grafo e as limitações de portas; alternar a rota no mapa.
+5. Exportar o estudo JSON para conservar parâmetros, caminhos, alternativa selecionada, custos e pendências. Alterar o ponto ou premissas invalida o resultado anterior.
+
+### Lógica de roteamento e candidatos
+
+`planner.py` usa apenas a biblioteca padrão do Python. O endpoint de cálculo local é `POST /api/plan`; não existe chamada a roteador ou geocodificador externo, nem gravação do pedido no servidor.
+
+O grafo usa os segmentos e vértices das ruas OSM já armazenadas. Distâncias são aproximadas em projeção métrica local por cidade. O grafo é não direcionado, não modela níveis de viadutos nem sentidos de tráfego, e não serve como instrução de condução de veículo. Coordenadas comuns são tratadas como conexão geométrica; vias sem conexão permanecem separadas.
+
+O ponto do pedido é projetado no segmento viário mais próximo. Acesso superior a 150 m é recusado como insuficiência da malha disponível. O acesso entre a rua e o ponto fica separado como guia tracejado, contado na metragem de cabo, sem comprovar passagem física. Não se inventa uma ligação direta em linha reta entre componentes desconectados.
+
+- **Atendimento existente:** caminhos mínimos por ruas para CTOs operacionais com porta livre; percurso e acessos dentro do limite adotado. Cancelados não ocupam porta; suspensos continuam reservando. Avalia CTOs elegíveis e mantém até duas conforme a prioridade.
+- **Nova CTO:** busca até 24 vértices de ruas, espaçados pelo menos 45 m, que mantenham o pedido atual dentro do limite de drop. Usa busca de múltiplas origens para o caminho mínimo até um vértice do traçado de fibra cadastrado. Mantém até duas alternativas com pelo menos 75 m entre si. Não é otimização global, nem identifica postes reais.
+- **Origem da extensão:** representa somente um ponto geométrico no traçado fictício. Derivação, fibra livre, split, alimentação, porta PON e orçamento óptico permanecem desconhecidos. CTO com 16 portas é hipótese da alternativa; a existência do cabo na rua não autoriza uma derivação.
+- **Próximos pedidos:** IDs únicos de outros pedidos fictícios alcançáveis por ruas a partir da CTO, no limite de percurso adotado. O pedido atual é excluído quando selecionado por ID. O teto inicial é o menor entre essa quantidade e as portas restantes após o pedido atual. Não é previsão de vendas ou ocupação garantida.
+- **Satélite:** células históricas do radar de 2024/2025 a até 500 m em linha reta do local, apresentadas separadamente. Elas não são somadas a clientes e não entram na quantidade de adesões.
+- **Ocorrências:** sem opção direta elegível e com CTO indisponível/em manutenção próxima, a conclusão pede investigar a ocorrência antes de decidir uma ampliação. Construir outra CTO não é apresentado como solução comprovada de falha.
+
+Na prioridade de atendimento, opções existentes vêm primeiro, seguidas das ampliações; dentro dessa ordem compara-se metragem ou custos, e pedidos adicionais. Na prioridade de agrupamento, compara-se primeiro o teto de outros pedidos pelas portas, depois custo/metros e tipo. A métrica de desempate só é monetária se os três custos estiverem presentes, evitando misturar reais e metros.
+
+Orçamento: drop × (1 + reserva) × R$/m; em nova CTO, acrescentar extensão × (1 + reserva) × R$/m e CTO instalada. Atendimento existente pode ter orçamento apenas com custo de drop; nova CTO requer os três valores. Campos ausentes deixam o orçamento correspondente pendente. As estimativas excluem postes, travessias, permissões, equipamentos ativos, deslocamentos, impostos e contingências. Não são ROI, payback nem aprovação de investimento.
+
+### Validação
+
+```sh
+python3 -m unittest -v test_planner.py
+```
+
+Nove testes cobrem rota em U em vez de atalho reto, projeção de dois pontos no mesmo segmento, componentes desconectados, CTOs cheias/indisponíveis, reserva de portas suspensas, ocorrências, custos com reserva, campos ausentes, exclusão do pedido atual, limites de portas, dados inválidos, reprodução e preservação do inventário. Casos das três cidades verificam que os segmentos de rota pertencem às vias armazenadas.
+
+O estudo não reserva portas, não altera CTOs, não valida infraestrutura física nem estima conversão comercial. Para uso real, precisa de inventário auditado de postes/dutos, fibras/portas de origem, permissões, medições ópticas e custos completos.

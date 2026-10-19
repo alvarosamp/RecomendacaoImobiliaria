@@ -32,3 +32,16 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - Cenário de rompimento pela condição da CTO indisponível: sinal e latência sem leitura, perda fictícia de 100% e zero respostas de 11 instalações testáveis.
 - Sair da tela pausou a sessão; encerrá-la apresentou evidência parcial. Acesso pela ficha da CTO selecionou o alvo correto.
 - A sessão não consulta equipamentos nem persiste alterações no cadastro. Recarregar a página descarta a sessão em memória.
+
+
+## Radar com imagens reais
+
+- Sete testes verificaram sinais repetidos em duas observações posteriores, ausência de sinal em superfície estável, exclusão de nuvens/sombras/água/nodata, rejeição da coleção legada, datas/qualidade radiométrica, cálculo das áreas a partir dos recortes e coerência dos vínculos com CTOs/pedidos fictícios.
+- Os oito testes existentes do motor de inspeção também passaram após a integração.
+- Inspeção visual das composições RGB e verificação de metadados STAC. A versão preliminar de catálogo legado foi descartada; somente Collection 1 integra os arquivos entregues.
+- No navegador: imagens das duas épocas carregadas, divisória comparada nos extremos, troca de cidade, filtros de distância/ação, paginação e ausência legítima de candidatos.
+- Exportação GeoJSON baixada no recorte “Priorizar visita” de Pouso Alegre: quatro áreas, polígonos fechados em longitude/latitude, marcação de satélite real e operação fictícia, fontes e validação pendente. Arquivo conferido após o download.
+- Botão “Ver CTO no mapa” abriu CTO-POU-013 com cinco portas livres, coerente com a evidência comercial do radar.
+- As contagens são de células espectrais exploratórias, não de construções comprovadas. Não houve validação de campo, medida de precisão de classificação ou comprovação de demanda.
+- Layout verificado em 1280 e 390 pixels: largura do documento igual à viewport, sem rolagem horizontal global; comparação e detalhes reorganizam-se na tela pequena. Tamanho original do navegador restaurado.
+- Imagem Docker final: endpoint `/api/radar` e seis PNGs conferidos; cache científico ausente no container. Serviço permanece no Compose isolado e porta local 18089.

@@ -1,8 +1,8 @@
 # Urbia Telecom — protótipo ISP
 
-Mapa e análise de **instalações de clientes e infraestrutura de rede**, em uma operação integralmente fictícia de três cidades do Sul de Minas: Pouso Alegre, Santa Rita do Sapucaí e Itajubá.
+Mapa e análise de **instalações de clientes e infraestrutura de rede**, em uma operação de provedor inteiramente fictícia em três cidades do Sul de Minas: Pouso Alegre, Santa Rita do Sapucaí e Itajubá.
 
-Esta versão está na branch `codex/urbia-isp`, criada em worktree a partir do HEAD commitado de `main`. As alterações não commitadas do checkout original foram preservadas e não foram copiadas. O módulo é independente da aplicação imobiliária e pode ser integrado à Urbia depois da validação com um parceiro.
+Esta versão está na branch `codex/urbia-isp`, criada em worktree a partir do HEAD commitado de `main`. As alterações não commitadas do checkout original foram preservadas e não foram copiadas. O radar acrescenta imagens e índices reais, com identificação explícita de sua origem. O módulo é independente da aplicação imobiliária e pode ser integrado à Urbia depois da validação com um parceiro.
 
 ## Executar separado no Docker
 
@@ -97,3 +97,45 @@ Os gráficos e portas mostram hipóteses do cenário; não há limiar de aceita�
 ```sh
 node --test test_inspection.cjs
 ```
+
+
+## Radar de crescimento próximo à rede
+
+**Radar de crescimento** compara composições reais Sentinel-2 Collection 1 de julho–setembro de 2024 e 2025 nas três cidades. As imagens, cenas e índices são reais; a infraestrutura e os pedidos sobrepostos continuam fictícios, no retrato de 18/10/2026. A análise é histórica e não descreve mudanças em 2026.
+
+A interface permite comparar antes/depois com uma divisória, ligar/desligar áreas e rede, filtrar a distância ao traçado fictício, consultar os motivos de cada próxima ação, abrir a CTO correspondente e exportar as áreas filtradas em GeoJSON. As fontes STAC, datas, qualidade, limiares e limitações estão nos detalhes do radar. O estado vazio é legítimo: não são inventadas áreas para preencher o painel.
+
+### Método e limites
+
+- Duas cenas de referência e duas posteriores por cidade, com pelo menos dez dias entre observações da mesma época. As cenas são selecionadas por nuvem global e cobertura do recorte; o produto registra também a qualidade local.
+- Grade comum de **20 m**, respeitando a banda SWIR, e células analíticas de **200 × 200 m** (4 ha). Bandas de 10 m são agregadas a 20 m; SCL usa vizinho mais próximo.
+- Usar apenas classes SCL 4 e 5 (vegetação/superfície não vegetada), com pixel válido nas quatro cenas. Células com menos de 80% de pixels utilizáveis são excluídas.
+- NDVI = (NIR−red)/(NIR+red); NDBI = (SWIR−NIR)/(SWIR+NIR). Sinal exploratório: aumento de NDBI ≥ 0,10 e queda de NDVI ≤ −0,12 nas **duas** observações posteriores, contra a mediana das anteriores. Uma célula precisa de ao menos 12 pixels sinalizados (0,48 ha).
+- “Superfície sinalizada” soma pixels que passam nessa regra; não é área construída comprovada. Não há classificador urbano treinado ou validado. Solo exposto, agricultura, sazonalidade e diferenças de cena podem criar falsos positivos.
+- RGB usa a mesma escala fixa para as duas épocas e é reprojetado a Web Mercator para alinhamento das sobreposições; o cálculo de área e distância ocorre em UTM 23S.
+- Distâncias são entre o centro da célula e segmentos de fibra/CTOs. Pedidos são procurados em raio geométrico de 500 m. O painel conta IDs únicos de pedidos, sem somar repetidamente o mesmo pedido entre células vizinhas.
+- A consulta de portas considera somente a CTO mais próxima. “Priorizar visita” exige rede e CTO a até 500 m, pedido próximo, CTO operacional e porta livre no inventário fictício. A regra não escolhe rota de drop, não valida potência, não estima vendas e não aprova expansão.
+- A ordenação coloca prioridades de visita primeiro, depois presença de pedidos, proximidade de 500 m, distância da rede e área sinalizada; não há um percentual de confiança ou score de retorno.
+
+O resultado atual tem **80 células candidatas** antes dos filtros: Pouso Alegre 31, Santa Rita do Sapucaí 25, Itajubá 24. No recorte padrão até 500 m da rede fictícia, são 11, 4 e 1 respectivamente. Essas contagens não são quantidade de bairros, construções, clientes ou oportunidades comerciais confirmadas.
+
+### Proveniência e reprodução
+
+Fonte: catálogo público [Earth Search / Element 84](https://earth-search.aws.element84.com/v1), coleção `sentinel-2-c1-l2a`. Contém dados Copernicus Sentinel modificados (2024–2025). Os IDs e links das 12 observações (algumas cenas se repetem entre cidades), ativos, escala/offset, qualidade local e datas estão em `data/radar.json` e nos metadados de `data/radar-cache-c1/`.
+
+A coleção legada `sentinel-2-l2a` foi descartada na preparação por inconsistência de escala/offset; o coletor e os testes só aceitam Collection 1. Valores físicos são calculados com escala/offset dos ativos STAC; há uma verificação para interromper a coleta diante de refletância vermelha excessivamente negativa. Referência sobre a migração: [Element 84 / Earth Search](https://github.com/Element84/earth-search).
+
+Os recortes espectrais comprimidos de 20 m em `data/radar-cache-c1/` permitem reproduzir o cálculo sem consultar novamente as imagens originais. São derivados científicos, não imagens criadas por IA. As composições PNG em `web/radar-assets/` e o catálogo JSON são incluídos no Docker; o navegador não precisa acessar o catálogo STAC. O cache científico fica fora da imagem Docker.
+
+Para preparar ou recalcular, em um ambiente Python separado com as dependências de `requirements-radar.txt`, a partir de `isp-demo/`:
+
+```sh
+# Reproduzir usando os recortes incluídos, sem internet:
+python3 collect_radar.py --cached
+python3 -m unittest -v test_radar.py
+
+# Atualizar os recortes públicos (exige internet):
+python3 collect_radar.py
+```
+
+As janelas históricas estão definidas em `PERIODS` no coletor. Alterar datas, parâmetros ou inventário exige recolher/recalcular, executar os testes e reconstruir o Docker. Não existe atualização automática nem agenda de coleta nesta entrega. A avaliação de falsos positivos e o confronto com visitas ou cadastros reais ainda precisam ser feitos com um parceiro.

@@ -14,11 +14,11 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
-        if path in ('/health', '/api/simulation', '/api/roads'):
+        if path in ('/health', '/api/simulation', '/api/roads', '/api/radar'):
             if path == '/health':
                 body = json.dumps({'status': 'ok', 'mode': 'synthetic-demo'}).encode()
             else:
-                name = 'simulation.json' if path == '/api/simulation' else 'roads.json'
+                name = {'/api/simulation':'simulation.json','/api/roads':'roads.json','/api/radar':'radar.json'}[path]
                 body = (ROOT / 'data' / name).read_bytes()
             self.send_response(200)
             self.send_header('Content-Type', 'application/json; charset=utf-8')

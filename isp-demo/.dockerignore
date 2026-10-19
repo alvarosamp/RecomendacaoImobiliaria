@@ -3,3 +3,6 @@ __pycache__
 tests
 data/*.csv
 data/*.geojson
+data/radar-cache-c1/
+test_*.py
+test_*.cjs

@@ -22,7 +22,7 @@ const paths = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name]||paths.info}</svg>`;
 document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-const titles = {overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],inspection:['Inspeção ao vivo','Inspecione a rede, passo a passo.','Acompanhe sinal, conectividade e vínculos em uma sessão inteiramente simulada.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
+const titles = {overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],radar:['Radar de crescimento','Encontre mudanças perto da sua rede.','Compare cenas reais e transforme sinais territoriais em uma agenda de investigação.'],inspection:['Inspeção ao vivo','Inspecione a rede, passo a passo.','Acompanhe sinal, conectividade e vínculos em uma sessão inteiramente simulada.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
 const labels = {active:'Ativa',suspended:'Suspensa',cancelled:'Cancelada',operational:'Operacional',maintenance:'Manutenção',offline:'Indisponível',survey:'Validar em vistoria',capacity:'Sem porta livre',outside:'Fora da triagem',incident:'Verificar incidente'};
 const badge = status => `<span class="status ${escapeHTML(status)}">${labels[status]||escapeHTML(status)}</span>`;
 let db, roads, map, tiles, groups = {}, selected = null, page = 0, view = 'overview', tileErrorShown = false;
@@ -173,7 +173,9 @@ function setView(next){
   $('overview-section').hidden=next!=='overview';$('table-section').hidden=!['overview','network','clients'].includes(next);
   $('opportunities-section').hidden=next!=='opportunities';$('sources-section').hidden=next!=='sources';
   $('inspection-section').hidden=next!=='inspection';
-  $('kpis').hidden=['sources','inspection'].includes(next);$('filters').hidden=next==='sources';$('export').hidden=['sources','inspection'].includes(next);
+  $('radar-section').hidden=next!=='radar';
+  $('kpis').hidden=['sources','inspection','radar'].includes(next);$('filters').hidden=['sources','radar'].includes(next);$('export').hidden=['sources','inspection','radar'].includes(next);
+  if(next==='radar')openRadar();
   if(next==='inspection'){refreshInspectionTargets();renderInspection();}
   renderTable();if(map&&!$('map-section').hidden){map.invalidateSize();drawMap();}
 }
@@ -201,6 +203,7 @@ async function boot(){
     $('layers').querySelectorAll('input').forEach(input=>input.onchange=()=>{layers[input.dataset.layer]=input.checked;if(input.dataset.layer==='basemap'){if(input.checked)tiles.addTo(map);else map.removeLayer(tiles);}drawMap();});
     $('fit-map').onclick=fitMap;$('export').onclick=exportCSV;$('see-sources').onclick=()=>setView('sources');$('all-opportunities').onclick=()=>setView('opportunities');
     initMap();initInspection();renderSources();renderAll();
+    initRadar().catch(handleRadarError);
     window.ISP_DEMO={getSummary:()=>({city:$('city').value,sector:$('sector').value,clients:clientRows().length,ctos:scoped('ctos').length,requests:scoped('requests').length,view}),selectEntity};
   }catch(error){$('fatal-error').hidden=false;$('fatal-error').textContent=`Não foi possível carregar a simulação. ${error.message} Recarregue a página ou verifique o serviço Docker.`;console.error(error);}
 }

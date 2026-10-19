@@ -1,5 +1,7 @@
 # Publicar o protótipo ISP na Vercel
 
+Publicação verificada: **https://urbia-isp.vercel.app** (projeto `urbia-isp`, conta/equipe `teste-tor-s-projects`, 19/10/2026). A publicação atual foi feita pela CLI; o projeto ainda não tem atualização automática pelo GitHub.
+
 Esta opção publica o **protótipo ISP**, não o sistema imobiliário completo. Mantém mapa, instalações, oportunidades, planejador, radar histórico, inspeção simulada, guia e exportações. Não utiliza Docker, imagem do Docker Hub, banco ou variáveis secretas.
 
 ## Importação pelo GitHub
@@ -46,7 +48,7 @@ A CLI também documenta uma publicação temporária sem login, sujeita à dispo
 npx vercel@64.5.0 deploy --temporary --yes
 ```
 
-**Na validação desta entrega, a Vercel recusou o modo temporário e solicitou autenticação; não foi criada uma publicação remota.** Nesse caso, execute `npx vercel@64.5.0 login` no seu computador ou use a importação pelo GitHub.
+**Na primeira tentativa, a Vercel recusou o modo temporário. Posteriormente, o usuário autenticou a CLI e o site foi publicado em produção no endereço acima.** Em um computador sem sessão conectada, execute `npx vercel@64.5.0 login` no seu computador ou use a importação pelo GitHub.
 
 Se o modo temporário estiver disponível, use a URL e o link de transferência/claim retornados pela CLI para experimentar e associar o deploy à sua conta. A validade é a informada pela Vercel no momento da publicação; uma URL temporária não é promessa de hospedagem permanente nem conecta automaticamente as atualizações do GitHub. Para implantação durável e atualizações a cada push, importe a branch como descrito acima.
 
@@ -55,3 +57,16 @@ Se o modo temporário estiver disponível, use a URL e o link de transferência/
 Os dados operacionais continuam fictícios. Não há cadastro/login, conexão com ERP ou coleta recorrente nesta versão. Chamadas ao cálculo podem ter latência maior na primeira execução; `maxDuration` foi definido em 30 segundos. A função não mantém tarefas em segundo plano. Os mapas base ainda dependem da disponibilidade dos tiles públicos do OpenStreetMap.
 
 Referências: [Python Functions em /api](https://vercel.com/docs/functions/runtimes/python/api-directory), [runtime Python e leitura de arquivos](https://vercel.com/docs/functions/runtimes/python) e [vercel.json](https://vercel.com/docs/project-configuration/vercel-json).
+
+## Atualizar a publicação existente
+
+Na raiz do módulo ISP, com a mesma conta autenticada:
+
+```bash
+cd isp-demo
+vercel deploy --prod --yes --project urbia-isp --scope teste-tor-s-projects
+```
+
+O projeto atual foi criado para upload direto do módulo: sua raiz remota é `.`. A opção de importação GitHub acima exige configurar `isp-demo` como Root Directory antes de conectar o repositório. Não conecte a branch `main` como produção para este protótipo.
+
+A verificação real de upload da CLI incluiu 30 arquivos (3.817.108 bytes), sem caches, coletores, CSVs ou envs. Para incluir diretórios em `.vercelignore`, as exceções usam `!api`, `!web` e `!data` sem barra final; a lista de upload foi conferida antes de publicar.

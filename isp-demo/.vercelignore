@@ -1,7 +1,7 @@
 # Upload only the ISP runtime, static source, build script and synthetic snapshots.
 # Set Root Directory to isp-demo. The parent repository is never the Vercel project root.
 *
-!api/
+!api
 !api/plan.py
 !server.py
 !planner.py
@@ -9,9 +9,9 @@
 !vercel.json
 !requirements.txt
 !.python-version
-!web/
+!web
 !web/**
-!data/
+!data
 !data/simulation.json
 !data/roads.json
 !data/radar.json

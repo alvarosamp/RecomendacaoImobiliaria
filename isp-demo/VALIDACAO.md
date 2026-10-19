@@ -75,3 +75,13 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - Entrada `api/plan.py` com handler Python documentado pela Vercel, sem dependências externas. Dockerfile, servidor, motor, dados, interface e Compose existentes não foram alterados.
 - CLI oficial Vercel 64.5.0 disponível via npx. Não havia sessão conectada. A tentativa de dry-run com modo temporário foi recusada por indisponibilidade e abriu login, cancelado sem autenticação. Não se afirma build da plataforma ou publicação remota validada.
 - Importação requer Root Directory `isp-demo`, preset Other, branch `codex/urbia-isp-vercel`, sem variáveis de ambiente. Instruções em VERCEL.md.
+
+## Publicação Vercel — 19/10/2026
+
+- CLI oficial 64.5.0 instalada globalmente e autenticada como `alvaroscareli-2979`. Projeto novo `urbia-isp`, escopo `teste-tor-s-projects`, criado separado do projeto existente.
+- Corrigida a lista de inclusão de diretórios em `.vercelignore` após dry-run autenticado: exatamente 30 arquivos, 3.817.108 bytes, excluindo coletores, caches brutos, CSVs, testes e envs.
+- Build remoto concluído com Python 3.12, geração estática de 24 arquivos e função Python. Deployment `dpl_DPgVSHoPUM4YnQTXWXyahapnZbSk`, estado READY, produção https://urbia-isp.vercel.app.
+- Acesso público sem cookies: health 200, snapshots simulation/roads/radar 200 com JSON, GET do planejador 405. POST de PED-0003 retornou 200, duas alternativas, em 1,7 s na medição; entradas inválidas retornaram 400 e 415.
+- No navegador público: painel carregado, pedido PED-0003 selecionado, cálculo concluído com as duas propostas e alternância da rota no mapa. Console sem erros no fluxo conferido.
+- Guia oficial get-started.md seguido: CLI global; plugin oficial instalado para Codex no escopo do usuário por marketplace; MCP oficial https://mcp.vercel.com configurado e OAuth concluído. Busca de documentação e list_teams executados; list_teams retornou lista vazia e get_project do escopo da publicação retornou 403 pelo MCP. Fallback CLI no mesmo escopo confirmou acesso ao projeto. Integração MCP não foi apresentada como tendo acesso a essa equipe; a publicação usa a conta da CLI. Novas orientações do plugin ficam disponíveis após recarregar a sessão.
+- Não houve alteração do Docker local. Integração de deploy automático por push não foi configurada; comandos de atualização manual constam em VERCEL.md.

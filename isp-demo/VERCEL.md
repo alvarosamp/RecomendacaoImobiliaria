@@ -1,6 +1,6 @@
 # Publicar o protótipo ISP na Vercel
 
-Publicação verificada: **https://urbia-isp.vercel.app** (projeto `urbia-isp`, conta/equipe `teste-tor-s-projects`, 19/10/2026). A publicação atual foi feita pela CLI; o projeto ainda não tem atualização automática pelo GitHub.
+Publicação verificada: **https://urbia-isp.vercel.app** (projeto `urbia-isp`, conta/equipe `teste-tor-s-projects`, atualização em 20/10/2026). A publicação atual foi feita pela CLI; o projeto ainda não tem atualização automática pelo GitHub.
 
 Esta opção publica o **protótipo ISP**, não o sistema imobiliário completo. Mantém mapa, instalações, oportunidades, planejador, radar histórico, inspeção simulada, guia e exportações. Não utiliza Docker, imagem do Docker Hub, banco ou variáveis secretas.
 
@@ -83,3 +83,6 @@ vercel deploy --prod --skip-domain --yes --project urbia-isp --scope teste-tor-s
 # Verificar a URL devolvida, os snapshots e POST /api/plan.
 vercel promote URL_DO_DEPLOY_VERIFICADO --scope teste-tor-s-projects
 ```
+
+
+Atualização publicada e promovida: `dpl_43CMnFQeVoUFbZwt6tAkERacBLh9`, código `20be570d`. Dry-run conferido com 36 arquivos (4.925.078 bytes); snapshots IBGE e regulatório remotos comparados aos locais, planejador e telas públicos conferidos. A sessão de CLI acessa a versão protegida sem desabilitar a proteção; o domínio principal continua público.

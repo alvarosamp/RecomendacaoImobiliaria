@@ -1,3 +1,4 @@
+import { DEMO_MODE } from '../demo/client'
 import { useEffect, useMemo, useState } from 'react'
 import { analyzeConcept, downloadConceptReport, generateConceptImage, predictPrice } from '../api'
 
@@ -271,7 +272,7 @@ export default function ConceptStudioPage({ seed = null }) {
           </div>
           <div className="concept-preview">
             {images[selectedView]
-              ? <img src={images[selectedView]} alt={`Imagem ${selectedView} gerada por IA`} />
+              ? <img src={images[selectedView]} alt={DEMO_MODE ? `Esquema ilustrativo: ${selectedView}` : `Imagem ${selectedView} gerada por IA`} />
               : <HouseSketch view={selectedView} floors={form.floors} />}
           </div>
           <div className="concept-actions">

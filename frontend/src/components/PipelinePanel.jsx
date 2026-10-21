@@ -1,3 +1,4 @@
+import { apiFetch } from '../api'
 import { useState, useEffect, useRef } from 'react'
 
 const STEP_ORDER = [
@@ -68,7 +69,7 @@ export default function PipelinePanel({ onComplete }) {
 
   const poll = async () => {
     try {
-      const res = await fetch('/api/pipeline/status')
+      const res = await apiFetch('/api/pipeline/status')
       const data = await res.json()
       setState(data)
       if (data.done) {
@@ -83,7 +84,7 @@ export default function PipelinePanel({ onComplete }) {
   const start = async () => {
     setStarting(true)
     try {
-      const res = await fetch('/api/pipeline/run', { method: 'POST' })
+      const res = await apiFetch('/api/pipeline/run', { method: 'POST' })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         alert(err.detail ?? 'Erro ao iniciar pipeline')

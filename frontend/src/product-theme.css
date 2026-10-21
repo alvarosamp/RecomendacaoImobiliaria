@@ -401,3 +401,6 @@ button:disabled { cursor:not-allowed; }
 .help-return-note {font-size:12px;line-height:1.8;color:#6b7c5f;margin-top:23px;}
 @media(max-width:760px){.help-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px);border-radius:12px;}.help-dialog-heading{padding:22px 20px 19px;}.help-dialog h1{font-size:26px;}.help-dialog-body{padding:20px;}.help-dialog h2{font-size:18px;}.help-steps > li{gap:11px;}.help-step-number{width:27px;height:27px;font-size:12px;}.help-current-workspace{padding:14px;}.help-reading li{display:block;}.help-reading span{display:block;margin-top:3px;}}
 .help-dialog-heading {position:sticky;top:0;z-index:2;}
+
+.demo-notice{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:14px 22px;background:#fff0ce;color:#513c12;border-bottom:1px solid #dac592;font-size:13px}.demo-notice strong{font-size:14px}.demo-notice span{flex:1;min-width:220px}.demo-notice a{color:inherit;text-decoration:underline}
+@media(max-width:768px){.demo-notice{padding-left:64px}.demo-notice strong{width:100%}}

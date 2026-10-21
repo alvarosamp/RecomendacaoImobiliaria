@@ -1,13 +1,15 @@
 import { createContext, useState, useEffect } from 'react';
 import { api } from '../api';
+import { DEMO_MODE, demoUser } from '../demo/client';
 
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => DEMO_MODE ? demoUser() : null);
+  const [loading, setLoading] = useState(!DEMO_MODE);
 
   useEffect(() => {
+    if (DEMO_MODE) return;
     const token = localStorage.getItem('token');
     if (token) {
       api.get('/auth/me')
@@ -45,6 +47,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    if (DEMO_MODE) { window.location.assign('/'); return; }
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);

@@ -1,3 +1,4 @@
+import { DEMO_MODE, DEMO_NOTICE } from './demo/client'
 import { useState, useEffect, useCallback, useRef, Suspense, lazy, useContext } from 'react'
 import SetupScreen from './components/SetupScreen'
 import { ProductIcon } from './components/ProductVisuals'
@@ -444,6 +445,7 @@ export default function App() {
 
       {helpOpen&&<Suspense fallback={null}><HelpDialog profile={profile} onClose={()=>setHelpOpen(false)} onNavigate={openFromHelp}/></Suspense>}
       <main className="main" inert={profileBusy ? '' : undefined}>
+        {DEMO_MODE && <div className="demo-notice" role="note"><strong>Modo de apresentação</strong><span>{DEMO_NOTICE} Não insira informações pessoais.</span><a href="/app">Recomeçar navegação</a></div>}
         {page === 'home' && <WorkspacePage disabled={profileBusy} profile={profile} onPrimary={()=>{setJourney(null);setCasesEntry('new');setPage('cases')}} onStart={selected => { if (selected.steps[0][0] === 'government') { setJourney(null); setPage('government') } else if (selected.steps[0][0] === 'study') { setJourney(null); setPage('study') } else { setJourney(selected); setPage(selected.steps[0][0]) } }} />}
         {page !== 'home' && journey && <JourneyNavigation journey={journey} page={page} onNavigate={setPage} onClose={() => { setJourney(null); setPage('home') }} />}
         {loading && page !== 'home' && (

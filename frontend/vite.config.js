@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  define: {
+    'import.meta.env.VITE_PUBLIC_DEMO': JSON.stringify(mode === 'public-demo' || process.env.VITE_PUBLIC_DEMO === 'true' ? 'true' : 'false'),
+  },
   plugins: [react()],
   server: {
     port: 5173,
@@ -15,4 +18,4 @@ export default defineConfig({
   optimizeDeps: {
     include: ['deck.gl', '@deck.gl/react', '@deck.gl/core', '@deck.gl/layers', '@deck.gl/geo-layers', '@deck.gl/extensions'],
   },
-})
+}))

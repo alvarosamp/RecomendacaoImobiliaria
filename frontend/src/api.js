@@ -1,4 +1,6 @@
-const BASE = '/api'
+import { DEMO_MODE, demoFetch } from './demo/client'
+export const apiFetch = (url, options) => DEMO_MODE ? demoFetch(url, options) : fetch(url, options)
+const BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '')
 
 function getHeaders() {
   const token = localStorage.getItem('token');
@@ -26,14 +28,14 @@ async function responseError(res) {
 }
 
 async function get(path) {
-  const res = await fetch(`${BASE}${path}`, { headers: getHeaders() })
+  const res = await apiFetch(`${BASE}${path}`, { headers: getHeaders() })
   checkSession(res, path)
   if (!res.ok) throw await responseError(res)
   return res.json()
 }
 
 async function post(path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(body),
@@ -45,7 +47,7 @@ async function post(path, body) {
 }
 
 async function patch(path, body) {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     method: 'PATCH',
     headers: getHeaders(),
     body: JSON.stringify(body),
@@ -100,7 +102,7 @@ export const resetPipeline     = ()   => post('/pipeline/reset', {})
 export const analyzeConcept    = body => post('/concept/analyze', body)
 export const generateConceptImage = body => post('/concept/generate-image', body)
 export const downloadConceptReport = async body => {
-  const res = await fetch(`${BASE}/concept/report`, {
+  const res = await apiFetch(`${BASE}/concept/report`, {
     method: 'POST',
     headers: getHeaders(),
     body: JSON.stringify(body),
@@ -125,7 +127,7 @@ export const createProject = body => post('/projects', body)
 export const saveProject = (id, body) => patch(`/projects/${id}`, body)
 export const analyzeProject = (id, revision) => post(`/projects/${id}/analyze`, { revision })
 export const downloadProjectReport = async id => {
-  const res = await fetch(`${BASE}/projects/${id}/report`, { headers: getHeaders() })
+  const res = await apiFetch(`${BASE}/projects/${id}/report`, { headers: getHeaders() })
   checkSession(res, '/projects')
   if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível baixar o relatório`)
   return res.blob()
@@ -138,7 +140,7 @@ export const addMember = (id, body) => post(`/organizations/${id}/members`, body
 export const changeMemberRole = (id, userId, role) => patch(`/organizations/${id}/members/${userId}`, { role })
 export const removeMember = async (id, userId) => {
   const path = `/organizations/${id}/members/${userId}`
-  const res = await fetch(`${BASE}${path}`, { method: 'DELETE', headers: getHeaders() })
+  const res = await apiFetch(`${BASE}${path}`, { method: 'DELETE', headers: getHeaders() })
   checkSession(res, path)
   if (!res.ok) throw await responseError(res)
 }

@@ -1,0 +1,63 @@
+// Run against scripts/serve_vercel_demo.py or the public Vercel URL.
+const { chromium } = require('playwright')
+const assert = require('node:assert/strict')
+const base = process.env.URBIA_UI_URL || 'http://127.0.0.1:4188'
+;(async () => {
+  const browser = await chromium.launch({ headless: true, channel: 'chrome', args: ['--enable-unsafe-swiftshader', '--no-proxy-server'] })
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+    const errors = []
+    page.on('pageerror', error => errors.push(error.message))
+    await page.goto(base + '/app')
+    await page.getByText('Modo de apresentação', { exact: true }).waitFor()
+    assert.ok(page.url().endsWith('/app'), 'Visitor was redirected to login')
+    const profiles = page.locator('.profile-select')
+    const select = await profiles.count() ? profiles : page.locator('.sidebar select').first()
+    const visited = new Set()
+    for (const role of ['investidor', 'corretor', 'incorporadora', 'construtora', 'empreendedor', 'governo']) {
+      await select.selectOption(role)
+      await page.getByRole('button', { name: 'Minhas análises', exact: true }).click()
+      const example = page.getByRole('button', { name: 'Ver exemplo preenchido', exact: true }).first()
+      await example.click()
+      await page.locator('.decision-case').waitFor()
+      await page.getByText('Demonstração isolada. Nenhum dado real foi alterado.', { exact: true }).waitFor()
+      assert.equal(await page.locator('.case-error').count(), 0)
+      await page.getByRole('button', { name: 'Início', exact: true }).click()
+      console.log(role + ': public access and calculated example OK')
+      const details = page.locator('.sidebar-extra-tools')
+      if (!(await details.evaluate(element => element.open))) await details.locator(':scope > summary').click()
+      const tools = await details.locator('.nav-item').allTextContents()
+      for (const label of tools.map(text => text.trim())) {
+        if (visited.has(label)) continue
+        await page.getByRole('button', { name: label, exact: true }).click()
+        await page.waitForTimeout(250)
+        assert.ok((await page.locator('.main').innerText()).length > 50, `Empty tool: ${label}`)
+        console.log('tool: ' + label)
+        visited.add(label)
+      }
+      await page.getByRole('button', { name: 'Início', exact: true }).click()
+    }
+    await select.selectOption('corretor')
+    await page.getByRole('button', { name: 'Equipes e acesso', exact: true }).click()
+    await page.locator('.team-select').selectOption('1')
+    await page.getByText('visitante@example.invalid', { exact: true }).waitFor()
+    const concept = await page.request.post(base + '/api/demo', { data: { action: 'concept_report', value: {} } })
+    assert.equal(concept.status(), 200)
+    assert.ok(Buffer.from((await concept.json()).pdf, 'base64').subarray(0, 5).equals(Buffer.from('%PDF-')))
+    const project = await page.request.post(base + '/api/demo', { data: { action: 'project', value: { premises: {} } } })
+    assert.equal(project.status(), 200)
+    assert.ok((await project.json()).concept.scenarios.length)
+    const invalid = await page.request.post(base + '/api/demo', { data: { action: 'concept', value: { lotArea: -1 } } })
+    assert.equal(invalid.status(), 422)
+    if (!(await page.locator('.sidebar-extra-tools').evaluate(element => element.open))) await page.locator('.sidebar-extra-tools > summary').click()
+    await page.getByRole('button', { name: 'CRM de leads', exact: true }).click()
+    await page.getByText('Contato ilustrativo', { exact: true }).waitFor()
+    await page.screenshot({ path: 'tmp/vercel-demo-desktop.png', fullPage: true })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.waitForTimeout(300)
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Mobile layout overflows')
+    await page.screenshot({ path: 'tmp/vercel-demo-mobile.png', fullPage: true })
+    assert.deepEqual(errors, [])
+    console.log(`${visited.size} complementary tools, CRM, mobile layout and browser error checks OK`)
+  } finally { await browser.close() }
+})().catch(error => { console.error(error); process.exit(1) })

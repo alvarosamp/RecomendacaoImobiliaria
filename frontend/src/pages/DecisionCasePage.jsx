@@ -1,5 +1,5 @@
 import {useEffect,useState,useRef} from 'react'
-import {api,fetchProjects,fetchOrganizations} from '../api'
+import {api,apiFetch,fetchProjects,fetchOrganizations} from '../api'
 import CaseInputs, {Fields} from '../components/CaseInputs'
 import CaseLibrary from '../components/CaseLibrary'
 import {DECISION_JOURNEYS as CONFIG,journeyForKind} from '../config/decisionJourneys'
@@ -36,7 +36,7 @@ export default function DecisionCasePage({profile,scores=[],onStudyStateChange,o
  const analyze=()=>run(async()=>{if(task){setError('Salve ou cancele a edição da tarefa antes de analisar.');return}const current=dirty||!saved?await persist():saved;accept(await api.post(`/cases/${current.id}/analyze`,{revision:current.revision}));setStep(3);setStatus('Análise calculada e salva')})
  const move=next=>{setStep(next);if(saved)api.post(`/cases/${saved.id}/interactions`,{event:'step_viewed',step:next+1}).catch(()=>{})}
  const createDemo=(selectedKind=kind)=>run(async()=>{if(isDirty&&!window.confirm('Descartar o rascunho para abrir uma demonstração isolada?'))return;const data=await api.post('/case-demos/'+selectedKind,{});setDemo(true);accept(data);setFeedback('');setStep(3);setShowLibrary(false);setStatus('Demonstração isolada. Nenhum dado real foi alterado.')})
- const report=format=>run(async()=>{const res=await fetch(`/api/cases/${saved.id}/report?format=${format}`,{headers:{Authorization:'Bearer '+localStorage.getItem('token')}});if(!res.ok){let data;try{data=await res.json()}catch{}throw new Error(data?.detail||'Não foi possível abrir o relatório')}const blob=await res.blob(),url=URL.createObjectURL(blob),link=Object.assign(document.createElement('a'),{href:url});if(format==='html'){link.target='_blank';link.rel='noopener'}else link.download=`urbia-caso-${saved.id}.md`;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);api.post(`/cases/${saved.id}/interactions`,{event:'exported'}).catch(()=>{})})
+ const report=format=>run(async()=>{const res=await apiFetch(`/api/cases/${saved.id}/report?format=${format}`,{headers:{Authorization:'Bearer '+localStorage.getItem('token')}});if(!res.ok){let data;try{data=await res.json()}catch{}throw new Error(data?.detail||'Não foi possível abrir o relatório')}const blob=await res.blob(),url=URL.createObjectURL(blob),link=Object.assign(document.createElement('a'),{href:url});if(format==='html'){link.target='_blank';link.rel='noopener'}else link.download=`urbia-caso-${saved.id}.md`;link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);api.post(`/cases/${saved.id}/interactions`,{event:'exported'}).catch(()=>{})})
  const saveTask=()=>run(async()=>{const path=`/cases/${saved.id}/tasks${task.id?'/'+task.id:''}`;const payload=Object.fromEntries(['title','assignee','due_date','status','evidence'].map(key=>[key,task[key]]));payload.revision=saved.revision;accept(await (task.id?api.patch(path,payload):api.post(path,payload)));setStatus('Tarefa salva com evidência e histórico')})
  const helpExampleStarted=useRef(false)
  useEffect(()=>{if(initialView==='example'&&!helpExampleStarted.current){helpExampleStarted.current=true;createDemo()}},[initialView])

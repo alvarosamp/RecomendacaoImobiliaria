@@ -4,27 +4,82 @@
   "installCommand": "",
   "buildCommand": "python3 build_vercel.py",
   "outputDirectory": "public",
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "functions": {
     "api/plan.py": {
       "maxDuration": 30,
-      "includeFiles": "{server.py,planner.py,data/simulation.json,data/roads.json,data/radar.json}",
+      "includeFiles": "{server.py,planner.py,planner_errors.py,knowledge.py,data/simulation.json,data/roads.json,data/radar.json,data/territory.json,data/regulations.json}",
       "excludeFiles": "{web/**,public/**,data/radar-cache*/**,test_*,build_vercel.py,README.md,VALIDACAO.md}"
     }
   },
   "rewrites": [
-    {"source": "/api/simulation", "destination": "/snapshots/simulation.json"},
-    {"source": "/api/roads", "destination": "/snapshots/roads.json"},
-    {"source": "/api/radar", "destination": "/snapshots/radar.json"},
-    {"source": "/health", "destination": "/health.json"}
+    {
+      "source": "/api/simulation",
+      "destination": "/snapshots/simulation.json"
+    },
+    {
+      "source": "/api/roads",
+      "destination": "/snapshots/roads.json"
+    },
+    {
+      "source": "/api/radar",
+      "destination": "/snapshots/radar.json"
+    },
+    {
+      "source": "/health",
+      "destination": "/health.json"
+    },
+    {
+      "source": "/api/territory",
+      "destination": "/snapshots/territory.json"
+    },
+    {
+      "source": "/api/regulations",
+      "destination": "/snapshots/regulations.json"
+    }
   ],
   "headers": [
-    {"source": "/(.*)", "headers": [
-      {"key": "X-Content-Type-Options", "value": "nosniff"},
-      {"key": "Referrer-Policy", "value": "strict-origin-when-cross-origin"}
-    ]},
-    {"source": "/api/(.*)", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
-    {"source": "/health", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
-    {"source": "/index.html", "headers": [{"key": "Cache-Control", "value": "no-cache"}]}
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/health",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
   ]
 }

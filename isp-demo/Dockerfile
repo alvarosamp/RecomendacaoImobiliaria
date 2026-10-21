@@ -1,8 +1,8 @@
 FROM python:3.12-alpine
 WORKDIR /app
-COPY server.py planner.py ./
+COPY server.py planner.py planner_errors.py knowledge.py ./
 COPY web ./web
-COPY data/simulation.json data/roads.json data/radar.json ./data/
+COPY data/simulation.json data/roads.json data/radar.json data/territory.json data/regulations.json ./data/
 RUN addgroup -S demo && adduser -S demo -G demo
 USER demo
 ENV HOST=0.0.0.0 PORT=8080 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1

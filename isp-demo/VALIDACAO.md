@@ -85,3 +85,12 @@ Compose `urbia-isp-demo`, container `urbia-isp-demo-dashboard-1`, rede `urbia-is
 - No navegador público: painel carregado, pedido PED-0003 selecionado, cálculo concluído com as duas propostas e alternância da rota no mapa. Console sem erros no fluxo conferido.
 - Guia oficial get-started.md seguido: CLI global; plugin oficial instalado para Codex no escopo do usuário por marketplace; MCP oficial https://mcp.vercel.com configurado e OAuth concluído. Busca de documentação e list_teams executados; list_teams retornou lista vazia e get_project do escopo da publicação retornou 403 pelo MCP. Fallback CLI no mesmo escopo confirmou acesso ao projeto. Integração MCP não foi apresentada como tendo acesso a essa equipe; a publicação usa a conta da CLI. Novas orientações do plugin ficam disponíveis após recarregar a sessão.
 - Não houve alteração do Docker local. Integração de deploy automático por push não foi configurada; comandos de atualização manual constam em VERCEL.md.
+
+
+## Dados públicos e triagem documental — 20/10/2026
+
+- 21 testes passaram: sete de integridade/contexto regulatório, nove de rotas/capacidade e cinco HTTP/empacotamento. Cobrem totais agregados, ausência de campos individuais, limites geométricos, município correto, aplicação condicional da norma Cemig, rejeição de contextos inválidos, persistência do estado pendente e preservação da ordenação/quantidade de pedidos.
+- Coletor executado novamente com os três ZIPs oficiais. Reprodução de `territory.json` idêntica byte a byte: 136.269 endereços mapeados, 112.356 residenciais e 7.008 células. Os demais níveis de coordenadas estão contabilizados como excluídos.
+- Textos e documentos oficiais consultados em 20/10/2026, incluindo PDFs municipais e a ND-6.6. Projeto de lei não foi confundido com lei sancionada. Referências, trechos, notas de atualização e fonte constam em `data/regulations.json` e na interface.
+- Cinco snapshots estáticos incluídos no build, 28 arquivos públicos. Código Python, ZIPs, coletores, envs e cache bruto fora da saída pública; função empacota os módulos e snapshots necessários.
+- Dockerfile atualizado para os novos módulos/dados. O daemon Docker estava desligado nesta sessão; a reconstrução local não pôde ser executada. A verificação do serviço usa a adaptação HTTP testada e a publicação Vercel.

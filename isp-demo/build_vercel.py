@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT = ROOT / 'public'
-SNAPSHOTS = ('simulation.json', 'roads.json', 'radar.json')
+SNAPSHOTS = ('simulation.json', 'roads.json', 'radar.json', 'territory.json', 'regulations.json')
 STATIC_SUFFIXES = {'.html', '.js', '.css', '.svg', '.png'}
 
 

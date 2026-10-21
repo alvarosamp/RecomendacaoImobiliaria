@@ -16,12 +16,12 @@ A API e a interface usam o mesmo domínio HTTPS. Teste `/health`, abra **Planeja
 
 ## Arquitetura
 
-- O build copia apenas assets estáticos autorizados de `web/` e três snapshots JSON para `public/`.
-- `/api/simulation`, `/api/roads`, `/api/radar` e `/health` são reescritos para arquivos estáticos. Não executam coleta de satélite.
+- O build copia apenas assets estáticos autorizados de `web/` e cinco snapshots JSON para `public/`.
+- `/api/simulation`, `/api/roads`, `/api/radar`, `/api/territory`, `/api/regulations` e `/health` são reescritos para arquivos estáticos. Não executam coleta de satélite.
 - `POST /api/plan` é uma função Python. O adaptador reutiliza a validação HTTP e o motor existentes do Docker, sem duplicar o algoritmo. O grafo é carregado a partir dos arquivos empacotados; não depende do diretório de execução nem de um processo de longa duração.
 - `GET` e `HEAD` da função retornam 405; ela não serve código-fonte ou arquivos do sistema.
 - A inspeção e o download de relatórios continuam no navegador. Não há sessões de servidor ou armazenamento persistente.
-- `.vercelignore` restringe o upload ao módulo ISP, aos arquivos necessários e aos dados sintéticos; caches brutos de satélite e coletores ficam fora. A função exclui assets estáticos do seu pacote.
+- `.vercelignore` restringe o upload ao módulo ISP, aos arquivos necessários e aos snapshots operacionais e públicos; caches brutos de satélite e coletores ficam fora. A função exclui assets estáticos do seu pacote.
 - O Docker local e os arquivos da Hostinger não precisam ser alterados.
 
 ## Verificação local
@@ -29,7 +29,7 @@ A API e a interface usam o mesmo domínio HTTPS. Teste `/health`, abra **Planeja
 ```bash
 cd isp-demo
 python3 build_vercel.py
-python3 -m unittest test_vercel.py test_planner.py
+python3 -m unittest test_vercel.py test_planner.py test_knowledge.py
 ```
 
 `public/` é uma pasta gerada, substituída a cada build e ignorada pelo Git. Não edite arquivos nela; edite a origem em `web/` ou `data/`.
@@ -70,3 +70,16 @@ vercel deploy --prod --yes --project urbia-isp --scope teste-tor-s-projects
 O projeto atual foi criado para upload direto do módulo: sua raiz remota é `.`. A opção de importação GitHub acima exige configurar `isp-demo` como Root Directory antes de conectar o repositório. Não conecte a branch `main` como produção para este protótipo.
 
 A verificação real de upload da CLI incluiu 30 arquivos (3.817.108 bytes), sem caches, coletores, CSVs ou envs. Para incluir diretórios em `.vercelignore`, as exceções usam `!api`, `!web` e `!data` sem barra final; a lista de upload foi conferida antes de publicar.
+
+
+### Atualização com leis e IBGE — 20/10/2026
+
+A função também empacota `knowledge.py`, `planner_errors.py`, `territory.json` e `regulations.json`. O build gera 28 arquivos estáticos; ZIPs originais, coletores e caches do IBGE não são enviados. Nenhum env foi acrescentado. A triagem usa fontes versionadas; não consulta legislação nem baixa cadastros em tempo de requisição.
+
+Para validar antes de trocar o domínio público:
+
+```sh
+vercel deploy --prod --skip-domain --yes --project urbia-isp --scope teste-tor-s-projects
+# Verificar a URL devolvida, os snapshots e POST /api/plan.
+vercel promote URL_DO_DEPLOY_VERIFICADO --scope teste-tor-s-projects
+```

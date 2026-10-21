@@ -10,8 +10,8 @@ from collections import defaultdict
 from pathlib import Path
 
 
-class PlanningError(ValueError):
-    pass
+from planner_errors import PlanningError
+from knowledge import Knowledge, validate_context
 
 
 def number(value, name, lower, upper):
@@ -146,7 +146,8 @@ class RoadGraph:
 
 
 class Planner:
-    def __init__(self, inventory, road_data, radar):
+    def __init__(self, inventory, road_data, radar, knowledge=None):
+        self.knowledge=knowledge
         self.inventory,self.road_data,self.radar=inventory,road_data,radar
         self.cities={c['id']:c for c in road_data['cities']}
         self.graphs={cid:RoadGraph(c) for cid,c in self.cities.items()}
@@ -163,9 +164,10 @@ class Planner:
     @classmethod
     def from_directory(cls,path):
         path=Path(path)
-        return cls(*(json.loads((path/name).read_text()) for name in ['simulation.json','roads.json','radar.json']))
+        return cls(*(json.loads((path/name).read_text()) for name in ['simulation.json','roads.json','radar.json']), knowledge=Knowledge.from_directory(path))
 
     def plan(self, payload):
+        context=validate_context(payload.get('regulatory_context'))
         cid=payload.get('city_id')
         if not isinstance(cid,str) or cid not in self.cities:raise PlanningError('Selecione uma cidade com grafo viário disponível.')
         lat=number(payload.get('lat'),'Latitude',-90,90)
@@ -235,7 +237,11 @@ class Planner:
         reason='Estudar atendimento em CTO existente dentro do limite adotado.' if proposals and proposals[0]['kind']=='existing' else ('Estudar ampliação, condicionada à validação da derivação e da capacidade óptica.' if proposals else 'Sem rota conectada à infraestrutura no grafo disponível; não foi inventada uma ligação em linha reta.')
         if local_incidents and not any(p['kind']=='existing' for p in proposals):
             reason='Investigue primeiro a ocorrência em '+', '.join(local_incidents)+'. As alternativas de ampliação abaixo não comprovam solução da falha.'
-        return {'local_incidents':local_incidents,'status':'study' if proposals else 'no_route','recommendation':reason,'target':{'lat':lat,'lng':lng,'request_id':request_id,'street':target['edge']['name'],'street_projection':list(target['point']),'access_gap_m':round(target['gap_m'],1)},'city_id':cid,'parameters':{'max_drop_m':max_drop,'slack_pct':slack,'priority':priority,**costs},'nearest_ctos':[{k:v for k,v in c.items() if k not in ['route','cto']} for c in near_ctos[:5]],'proposals':proposals,'metadata':{'inventory':'synthetic','requests':'synthetic','street_source':'OpenStreetMap / ODbL','routing':'undirected street graph, approximate local metric projection; no road driving directions','satellite':'real historical screening, 2024/2025; not future customer count','site_search':'up to 24 spaced street vertices within drop radius; heuristic, not global optimum','ranking_metric':'declared_cost' if use_cost else 'cable_meters','source_snapshot':self.inventory['meta']['as_of'],'limitations':['O grafo usa coordenadas compartilhadas e não modela sentidos viários, níveis de viadutos ou passagem de cabos. Rota geométrica pelas vias; não comprova postes, dutos, travessias, permissões, reserva de fibras ou orçamento óptico.','Nova CTO usa hipótese de 16 portas e derivação em um ponto do traçado cadastrado; ambos exigem validação técnica.','O acesso entre o ponto marcado e a rua é um segmento indicativo separado, incluído na estimativa de cabo e não validado como percurso físico.','Pedidos próximos não são vendas e sinais de satélite não são contagem de futuros clientes.','Custos são referências informadas no formulário. Sem todos os custos necessários, o orçamento fica pendente. Não inclui postes, licenças, travessias, equipamentos ativos, deslocamentos, impostos ou contingências.','Não há reserva de portas, alteração de cadastro ou aprovação automática de instalação.']}}
+        if self.knowledge:
+            for proposal in proposals:
+                proposal['real_territory']=self.knowledge.nearby(cid,proposal['site'],max_drop)
+                proposal['regulatory']=self.knowledge.assess(cid,context,proposal['kind'])
+        return {'regulatory':self.knowledge.assess(cid,context) if self.knowledge else None,'local_incidents':local_incidents,'status':'study' if proposals else 'no_route','recommendation':reason,'target':{'lat':lat,'lng':lng,'request_id':request_id,'street':target['edge']['name'],'street_projection':list(target['point']),'access_gap_m':round(target['gap_m'],1)},'city_id':cid,'parameters':{'max_drop_m':max_drop,'slack_pct':slack,'priority':priority,**costs},'nearest_ctos':[{k:v for k,v in c.items() if k not in ['route','cto']} for c in near_ctos[:5]],'proposals':proposals,'metadata':{'inventory':'synthetic','requests':'synthetic','street_source':'OpenStreetMap / ODbL','routing':'undirected street graph, approximate local metric projection; no road driving directions','satellite':'real historical screening, 2024/2025; not future customer count','site_search':'up to 24 spaced street vertices within drop radius; heuristic, not global optimum','ranking_metric':'declared_cost' if use_cost else 'cable_meters','source_snapshot':self.inventory['meta']['as_of'],'limitations':['O grafo usa coordenadas compartilhadas e não modela sentidos viários, níveis de viadutos ou passagem de cabos. Rota geométrica pelas vias; não comprova postes, dutos, travessias, permissões, reserva de fibras ou orçamento óptico.','Nova CTO usa hipótese de 16 portas e derivação em um ponto do traçado cadastrado; ambos exigem validação técnica.','O acesso entre o ponto marcado e a rua é um segmento indicativo separado, incluído na estimativa de cabo e não validado como percurso físico.','Pedidos próximos não são vendas e sinais de satélite não são contagem de futuros clientes.','Custos são referências informadas no formulário. Sem todos os custos necessários, o orçamento fica pendente. Não inclui postes, licenças, travessias, equipamentos ativos, deslocamentos, impostos ou contingências.','Não há reserva de portas, alteração de cadastro ou aprovação automática de instalação.']}}
 
     def proposal(self,kind,site,drop,trunk,target,cid,max_drop,slack,costs,request_id,ports,graph,cto_id):
         site_snap=graph.snap(site)

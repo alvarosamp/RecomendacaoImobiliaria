@@ -6,3 +6,5 @@ data/*.geojson
 data/radar-cache-c1/
 test_*.py
 test_*.cjs
+
+data/territory-cache/

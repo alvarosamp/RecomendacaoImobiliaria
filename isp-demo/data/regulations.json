@@ -1,0 +1,196 @@
+{
+  "meta": {
+    "checked_on": "2026-10-20",
+    "title": "Base de referências e triagem regulatória",
+    "decision": "Triagem documental; não é parecer jurídico nem aprovação de instalação.",
+    "limitations": [
+      "Incidência depende da obra e do órgão competente; a lista não esgota normas federais, estaduais, municipais, técnicas ou contratuais.",
+      "Consulta de texto não certifica consolidação ou inexistência de alterações. Confirmar a versão antes de executar.",
+      "Não há cadastro de postes, documentos aprovados, zoneamento, áreas protegidas ou faixas de domínio georreferenciadas nesta triagem.",
+      "Não são inferidas licenças, contratos, autorizações, disponibilidade de postes ou situação do provedor por imagens de satélite."
+    ]
+  },
+  "references": [
+    {
+      "id": "lgt",
+      "title": "Lei 9.472/1997 · Lei Geral de Telecomunicações",
+      "kind": "Lei federal",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/l9472.htm",
+      "summary": "Base da prestação de telecomunicações. Compartilhamento de infraestrutura e observância de normas de engenharia e de construção civil.",
+      "articles": "Arts. 73 e 74",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "infra",
+      "title": "Lei 13.116/2015 · Infraestrutura de telecomunicações",
+      "kind": "Lei federal",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2015/lei/l13116.htm",
+      "summary": "Licenciamento, implantação, compartilhamento e direito de passagem. Cabos e infraestrutura de suporte também integram seu escopo; eventual dispensa depende do enquadramento concreto.",
+      "articles": "Arts. 3, 5 a 12 e 14",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "rgst",
+      "title": "Resolução Anatel 777/2025 · Regulamento Geral dos Serviços",
+      "kind": "Regulamento",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://informacoes.anatel.gov.br/legislacao/resolucoes/2025/2022-resolucao-777",
+      "summary": "Referência para as condições gerais de prestação dos serviços e o enquadramento do SCM. Não substitui a conferência da autorização da empresa.",
+      "articles": "Regulamento anexo",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "outorga",
+      "title": "Anatel · situação da dispensa de autorização SCM",
+      "kind": "Orientação oficial",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.gov.br/anatel/pt-br/regulado/outorga/dispensa-de-autorizacao",
+      "summary": "A página oficial informa a suspensão cautelar da dispensa do art. 13 do RGO para SCM pelo Acórdão 176/2025. Conferir regularidade da prestadora na Anatel; não presumir dispensa por porte.",
+      "articles": "Acórdão 176/2025; RGO, art. 13",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "postes",
+      "title": "Compartilhamento de postes · Anatel/Aneel",
+      "kind": "Regulamento / orientação",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.gov.br/anatel/pt-br/regulado/prestadoras-de-pequeno-porte/compartilhamento-de-postes",
+      "summary": "Ocupação exige conferir condições técnicas e comerciais com a detentora da infraestrutura. O portal referencia a Resolução Conjunta 4/2014.",
+      "articles": "Resolução Conjunta 4/2014",
+      "checked_on": "2026-10-20",
+      "review_note": "Há reavaliação regulatória em andamento. Não foram adotados preços nem propostas ainda não publicadas como regra vigente."
+    },
+    {
+      "id": "revisao-postes",
+      "title": "Reavaliação das regras de postes · agenda 2025–2026",
+      "kind": "Acompanhamento regulatório",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.gov.br/anatel/pt-br/regulado/agenda-regulatoria/agenda-regulatoria-2025-2026-item-14",
+      "summary": "Processo de revisão das regras de compartilhamento. Use para acompanhar alterações; uma proposta não é autorização nem norma automaticamente vigente.",
+      "articles": "Item 14; processo 53500.014686/2018-89",
+      "checked_on": "2026-10-20",
+      "review_note": "Referência de acompanhamento; não aplicada como obrigação nova pelo motor."
+    },
+    {
+      "id": "cemig",
+      "title": "Cemig ND-6.6 · compartilhamento de postes",
+      "kind": "Norma técnica da detentora",
+      "scope": "utility",
+      "city_id": null,
+      "url": "https://www.cemig.com.br/wp-content/uploads/2025/10/nd-6-6-compartilhamento-postes-redes-distribuicao.pdf",
+      "summary": "Requisitos de viabilidade, projeto executivo, equipamentos, afastamentos e liberação da construção. Aplicável somente quando os postes são da Cemig e o caso está no escopo da norma.",
+      "articles": "Itens 8, 9, 12 e 14",
+      "checked_on": "2026-10-20",
+      "review_note": "Versão inicial de 13/12/2024 consultada. Confirmar a versão e o procedimento da detentora. Não é lei municipal."
+    },
+    {
+      "id": "snuc",
+      "title": "Lei 9.985/2000 · Unidades de Conservação",
+      "kind": "Lei federal",
+      "scope": "federal",
+      "city_id": null,
+      "url": "https://www.planalto.gov.br/ccivil_03/leis/l9985.htm",
+      "summary": "A implantação em unidade de conservação depende da categoria, do plano de manejo e das competências do órgão gestor. O painel não dispõe de perímetro ambiental para decidir incidência.",
+      "articles": "Arts. 27 e 28",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "patrimonio",
+      "title": "IEPHA-MG · antenas e mobiliário em áreas protegidas",
+      "kind": "Procedimento estadual",
+      "scope": "state",
+      "city_id": null,
+      "url": "https://www.mg.gov.br/servico/solicitar-licenciamento-de-antenas-e-mobiliario-urbano-em-bens-e-areas-protegidas-pelo-estado",
+      "summary": "Consultar a necessidade de manifestação do órgão de patrimônio quando houver intervenção em bem ou área protegida pelo Estado.",
+      "articles": "Procedimento de licenciamento",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto oficial consultado; confirmar atualizações antes da execução."
+    },
+    {
+      "id": "municipal-pouso",
+      "title": "Pouso Alegre · Lei 6.553/2022",
+      "kind": "Lei municipal",
+      "scope": "municipal",
+      "city_id": "pouso-alegre",
+      "url": "https://cmpousoalegre.gwlegis.com.br/doc/norma-juridica/1166",
+      "summary": "Normas locais para infraestrutura de suporte e telecomunicações. O texto contempla ETR/antenas; o enquadramento de fibra e CTO deve ser confirmado com a prefeitura conforme a intervenção.",
+      "articles": "Art. 1 e capítulos de licenciamento e restrições",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto localizado e consultado. Consolidação, alterações posteriores e enquadramento específico ainda precisam de confirmação municipal."
+    },
+    {
+      "id": "municipal-santa",
+      "title": "Santa Rita do Sapucaí · Lei 5.406/2021",
+      "kind": "Lei municipal",
+      "scope": "municipal",
+      "city_id": "santa-rita",
+      "url": "https://arquivos.pmsrs.mg.gov.br/wp-content/uploads/2022/07/Untitled_20220610_084033.pdf",
+      "summary": "Normas locais para infraestrutura de suporte e telecomunicações. O texto contempla ETR/antenas; o enquadramento de fibra e CTO deve ser confirmado com a prefeitura conforme a intervenção.",
+      "articles": "Arts. 1 e 2; capítulos de licenciamento",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto localizado e consultado. Consolidação, alterações posteriores e enquadramento específico ainda precisam de confirmação municipal."
+    },
+    {
+      "id": "municipal-itajuba",
+      "title": "Itajubá · Lei 3.469/2022",
+      "kind": "Lei municipal",
+      "scope": "municipal",
+      "city_id": "itajuba",
+      "url": "https://itajuba.siscam.com.br/arquivo?Id=66591",
+      "summary": "Normas locais para infraestrutura de suporte e telecomunicações. O texto contempla ETR/antenas; o enquadramento de fibra e CTO deve ser confirmado com a prefeitura conforme a intervenção.",
+      "articles": "Arts. 1 e 2; capítulos de licenciamento",
+      "checked_on": "2026-10-20",
+      "review_note": "Texto localizado e consultado. Consolidação, alterações posteriores e enquadramento específico ainda precisam de confirmação municipal."
+    }
+  ],
+  "projects": [
+    {
+      "id": "santa-ftth",
+      "city_id": "santa-rita",
+      "title": "Santa Rita · contratação de internet FTTH para secretarias",
+      "date": "2022-01-12",
+      "url": "https://www.pmsrs.mg.gov.br/licitacao/prc-n-217-2021-internet/",
+      "summary": "Processo PRC 217/2021, Pregão 130/2021. Referência histórica de contratação com edital e resultados. Não fornece inventário atual de CTOs nem capacidade disponível.",
+      "type": "Contratação pública histórica"
+    },
+    {
+      "id": "pouso-travessia",
+      "city_id": "pouso-alegre",
+      "title": "Pouso Alegre · travessia de fibra na BR-381",
+      "date": "2020-12-24",
+      "url": "https://pesquisa.in.gov.br/imprensa/servlet/INPDFViewer?captchafield=firstAccess&data=04%2F01%2F2021&jornal=515&pagina=59",
+      "summary": "Portaria 212/SUROD: autorização de travessia no km 857+848 para a American Tower. Não comprova execução, traçado completo, disponibilidade ou direito de uso por outro provedor.",
+      "type": "Autorização histórica"
+    },
+    {
+      "id": "itajuba-redecomep",
+      "city_id": "itajuba",
+      "title": "Itajubá · articulação de rede óptica metropolitana",
+      "date": "2013-09-20",
+      "url": "https://memoria-redecomep.rnp.br/memoria.redecomep.rnp.br/documentos/Boletim%20Redecomep-%20set%2020131730.pdf?arquivo=1881",
+      "summary": "Boletim histórico da RNP relata articulação entre UNIFEI e LNA para uma rede óptica. Não foi importado como rede em operação nem como geometria de fibra.",
+      "type": "Relato institucional histórico"
+    }
+  ],
+  "external_data": [
+    {
+      "title": "Anatel · dados e indicadores municipais de telecomunicações",
+      "url": "https://www.gov.br/anatel/pt-br/dados/dados-abertos",
+      "status": "Referência externa; números municipais não importados nesta versão.",
+      "use": "Mercado e conectividade municipal; não é inventário de CTOs ou assinantes por imóvel."
+    }
+  ]
+}

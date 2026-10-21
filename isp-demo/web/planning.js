@@ -12,7 +12,7 @@ function initPlanning(){
     drawPlanningTarget();
     if(planningMap)planningMap.setView([Number($('plan-lat').value),Number($('plan-lng').value)],16);
   };
-  ['plan-lat','plan-lng','plan-max-drop','plan-slack','plan-drop-cost','plan-fiber-cost','plan-cto-cost','plan-priority'].forEach(id=>$(id).oninput=()=>{
+  ['plan-lat','plan-lng','plan-max-drop','plan-slack','plan-drop-cost','plan-fiber-cost','plan-cto-cost','plan-priority','plan-installation','plan-support-owner','plan-public-works','plan-crossing','plan-protected-area'].forEach(id=>$(id).oninput=()=>{
     if(['plan-lat','plan-lng'].includes(id)){$('plan-request').value='manual';drawPlanningTarget();}
     invalidatePlanning('Premissas alteradas. Recalcule para comparar as rotas.');
   });
@@ -31,7 +31,7 @@ function refreshPlanningCity(){
   $('plan-street').value='';
   const streetNames=[...new Set(roads.cities.find(c=>c.id===city).roads.map(r=>r.name))].filter(name=>name!=='Via sem nome no OSM').sort((a,b)=>a.localeCompare(b,'pt-BR'));
   $('plan-streets').innerHTML=streetNames.map(name=>`<option value="${escapeHTML(name)}"></option>`).join('');
-  if(planningMap){drawPlanningBase();drawPlanningTarget();fitPlanningCity();}
+  if(planningMap){drawPlanningBase();drawPlanningTarget();fitPlanningCity();drawPlanningTerritory();}
 }
 function openPlanning(){
   if(!planningMap){
@@ -48,6 +48,7 @@ function openPlanning(){
     drawPlanningBase();drawPlanningTarget();fitPlanningCity();
   }
   planningMap.invalidateSize();
+  drawPlanningTerritory();
   if(planningData?.proposals.length)drawPlanningRoute(planningData.proposals[planningSelection]);
 }
 function invalidatePlanning(message){
@@ -97,7 +98,7 @@ async function calculatePlanning(){
   planningAbort=new AbortController();
   $('plan-calculate').disabled=true;$('plan-calculate').textContent='Calculando alternativas…';
   const p=planningCoordinates();
-  const payload={city_id:$('plan-city').value,...p,request_id:$('plan-request').value==='manual'?null:$('plan-request').value,max_drop_m:$('plan-max-drop').value,slack_pct:$('plan-slack').value,priority:$('plan-priority').value,drop_per_m:$('plan-drop-cost').value,fiber_per_m:$('plan-fiber-cost').value,new_cto_cost:$('plan-cto-cost').value};
+  const payload={city_id:$('plan-city').value,...p,request_id:$('plan-request').value==='manual'?null:$('plan-request').value,max_drop_m:$('plan-max-drop').value,slack_pct:$('plan-slack').value,priority:$('plan-priority').value,drop_per_m:$('plan-drop-cost').value,fiber_per_m:$('plan-fiber-cost').value,new_cto_cost:$('plan-cto-cost').value,regulatory_context:{installation:$('plan-installation').value,support_owner:$('plan-support-owner').value,public_works:$('plan-public-works').value,crossing:$('plan-crossing').value,protected_area:$('plan-protected-area').value}};
   try{
     const response=await fetch('/api/plan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:planningAbort.signal});
     const result=await response.json();
@@ -118,9 +119,10 @@ function renderPlanningResults(){
   const options=result.proposals;
   $('plan-summary').innerHTML=`<div class="planning-evidence-label">PRIMEIRA ALTERNATIVA PARA ESTUDAR</div><h2>${escapeHTML(result.recommendation)}</h2><p>Pedido em ${escapeHTML(result.target.street)}. Acesso até a rua: ${n(result.target.access_gap_m)} m, indicativo e ainda não validado. Ordenação: ${result.parameters.priority==='current'?'atender o pedido atual, priorizando CTO existente':'agrupar outros pedidos, limitado pelas portas'}; comparação por ${result.metadata.ranking_metric==='declared_cost'?'custos informados':'metragem de cabo com reserva (custos completos não informados)'}.</p>`;
   $('plan-nearest').innerHTML=result.nearest_ctos.length?result.nearest_ctos.map(c=>`<tr><td>${escapeHTML(c.id)}</td><td>${n(c.cable_distance_m)} m</td><td>${c.free_ports}</td><td>${badge(c.status)}</td><td>${c.status!=='operational'?'Verificar ocorrência':c.free_ports===0?'Sem porta livre':c.cable_distance_m>result.parameters.max_drop_m?'Além do limite adotado':'Candidata a atendimento'}</td></tr>`).join(''):'<tr><td colspan="5">Não há CTO conectada ao ponto no grafo viário disponível.</td></tr>';
-  $('plan-options').innerHTML=options.map((option,index)=>`<button class="planning-option ${index===planningSelection?'selected':''}" data-plan-option="${index}"><span class="planning-option-kind">${option.kind==='existing'?'CTO EXISTENTE':'NOVA CTO · HIPÓTESE DE 16 PORTAS'}</span><strong>${option.kind==='existing'?escapeHTML(option.cto_id):'Local '+(index+1)+' para estudar'}</strong><p>${n(option.drop_cable_m)} m de percurso de drop · ${n(option.fiber_extension_m)} m de extensão</p><span>${option.additional_by_ports} outros endereços em estudo, limitados por portas</span><b>${option.estimated_cost===null?'Custo pendente':money(option.estimated_cost)}</b><small>Engenharia e disponibilidade física pendentes</small></button>`).join('')||'<div class="empty">Nenhuma alternativa conectada ao traçado cadastrado. Amplie o inventário ou a malha viária antes de estimar uma implantação.</div>';
+  $('plan-options').innerHTML=options.map((option,index)=>`<button class="planning-option ${index===planningSelection?'selected':''}" data-plan-option="${index}"><span class="planning-option-kind">${option.kind==='existing'?'CTO EXISTENTE':'NOVA CTO · HIPÓTESE DE 16 PORTAS'}</span><strong>${option.kind==='existing'?escapeHTML(option.cto_id):'Local '+(index+1)+' para estudar'}</strong><p>${n(option.drop_cable_m)} m de percurso de drop · ${n(option.fiber_extension_m)} m de extensão</p><span>${option.additional_by_ports} outros endereços em estudo, limitados por portas</span><b>${option.estimated_cost===null?'Custo pendente':money(option.estimated_cost)}</b>${option.real_territory?`<p class="knowledge-option-context">IBGE 2022: ${n(option.real_territory.residential_addresses)} endereços residenciais no entorno em linha reta · não são clientes</p>`:''}<small>Engenharia e disponibilidade física pendentes</small></button>`).join('')||'<div class="empty">Nenhuma alternativa conectada ao traçado cadastrado. Amplie o inventário ou a malha viária antes de estimar uma implantação.</div>';
   $('plan-options').querySelectorAll('[data-plan-option]').forEach(button=>button.onclick=()=>{planningSelection=Number(button.dataset.planOption);renderPlanningResults();});
   $('plan-selected').hidden=!options.length;
+  renderPlanningKnowledge(options[planningSelection]);
   if(options.length){renderPlanningDetail(options[planningSelection]);drawPlanningRoute(options[planningSelection]);}
 }
 function renderPlanningDetail(option){
@@ -138,11 +140,12 @@ function drawPlanningRoute(option){
   L.polyline(option.access_guide,{color:'#8b8076',dashArray:'4 5',weight:2,interactive:false}).addTo(planningLayers.route);
   L.circleMarker(option.site,{radius:8,color:'#fff',weight:2,fillColor:option.kind==='existing'?'#426e95':'#d48f4d',fillOpacity:1}).bindTooltip(option.kind==='existing'?option.cto_id:'Local proposto para CTO · não é poste verificado').addTo(planningLayers.route);
   if(option.kind==='new_cto')L.circleMarker(option.network_origin,{radius:6,color:'#426e95',weight:2,fillColor:'white',fillOpacity:1}).bindTooltip('Ponto no traçado para investigar derivação; fibra livre desconhecida').addTo(planningLayers.route);
+  if($('plan-show-territory').checked)L.circle(option.site,{radius:planningData.parameters.max_drop_m,color:'#638bae',weight:1,dashArray:'5 5',fillOpacity:0,interactive:false}).addTo(planningLayers.route);
   const points=[...option.drop_route.points,...option.fiber_route.points,...option.access_guide];
   if(points.length)planningMap.fitBounds(L.latLngBounds(points),{padding:[45,45],maxZoom:17});
 }
 function exportPlanning(){
   if(!planningData)return;
-  const result={...planningData,selected_proposal:planningData.proposals[planningSelection]?.id||null,exported_at:new Date().toISOString(),purpose:'Estudo preliminar sobre inventário e pedidos fictícios; não é projeto aprovado.'};
+  const result={...planningData,selected_proposal:planningData.proposals[planningSelection]?.id||null,exported_at:new Date().toISOString(),purpose:'Estudo preliminar com rede e pedidos fictícios, endereços históricos agregados do IBGE e triagem documental; não é projeto aprovado.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`ESTUDO-expansao-${result.city_id}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Estudo exportado com rotas, premissas e pendências.');
 }

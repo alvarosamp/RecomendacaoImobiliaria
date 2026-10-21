@@ -2,7 +2,7 @@
 
 Mapa e análise de **instalações de clientes e infraestrutura de rede**, em uma operação de provedor inteiramente fictícia em três cidades do Sul de Minas: Pouso Alegre, Santa Rita do Sapucaí e Itajubá.
 
-Esta versão está na branch `codex/urbia-isp`, criada em worktree a partir do HEAD commitado de `main`. As alterações não commitadas do checkout original foram preservadas e não foram copiadas. O radar acrescenta imagens e índices reais, com identificação explícita de sua origem. O módulo é independente da aplicação imobiliária e pode ser integrado à Urbia depois da validação com um parceiro.
+Esta versão está na branch `codex/urbia-isp-vercel`, criada em worktree a partir do HEAD commitado de `main`. As alterações não commitadas do checkout original foram preservadas e não foram copiadas. O radar acrescenta imagens e índices reais, com identificação explícita de sua origem. O módulo é independente da aplicação imobiliária e pode ser integrado à Urbia depois da validação com um parceiro.
 
 ## Executar separado no Docker
 
@@ -187,3 +187,25 @@ Use **Como usar** no menu ou no cabeçalho para abrir o roteiro de operação, a
 ### Vercel
 
 Para publicar somente o protótipo ISP, importe a branch `codex/urbia-isp-vercel` com **Root Directory = `isp-demo`** e preset **Other**. Não exige Docker ou envs. A interface e os snapshots são estáticos; `POST /api/plan` roda como função Python reutilizando o motor atual. Configuração e passo a passo em [VERCEL.md](VERCEL.md).
+
+
+## Leis e dados reais — 20/10/2026
+
+O menu **Leis e dados reais** reúne a camada de endereços do IBGE, 12 referências legais/técnicas e três referências históricas de projetos regionais. As leis municipais localizadas são 6.553/2022 (Pouso Alegre), 5.406/2021 (Santa Rita do Sapucaí) e 3.469/2022 (Itajubá). Cada cartão contém fonte oficial, trecho de referência, data da consulta e limites de aplicação. A consulta ao texto não certifica consolidação ou enquadramento da obra; as normas municipais incluem ETR/antenas, portanto não são aplicadas como obrigação automática para toda CTO ou fibra.
+
+`data/territory.json` contém **136.269 endereços únicos mapeados**, dos quais **112.356 de domicílio particular**, em 7.008 células de 200 m nas três cidades. Fonte: IBGE CNEFE/Censo 2022, edição GeoJSON municipal de 10/09/2024, coletada em 20/10/2026. Deduplicação por COD_UNICO_ENDERECO; somente coordenadas originais NV_GEO_COORD=1; finalidade residencial COD_ESPECIE=1. Coordenadas estimadas/centroides foram excluídas. Os metadados registram contagens brutas, repetidas, excluídas, link do arquivo original e SHA-256. A camada publica apenas contagens agregadas, sem nomes, números, logradouros ou identificadores individuais. Os endereços são históricos, não assinantes ou previsão de adesão.
+
+Para reproduzir a camada, em `isp-demo/`:
+
+```sh
+python3 collect_territory.py --download
+python3 -m unittest -v test_knowledge.py test_planner.py test_vercel.py
+```
+
+O coletor usa três arquivos públicos do FTP do IBGE e conserva os ZIPs em `data/territory-cache/` (ignorados por Git, Docker e Vercel). Nenhuma coleta externa é executada no build ou em uma requisição. O snapshot versionado é suficiente para operar o painel. A reprodução foi comparada byte a byte com os arquivos originais.
+
+No planejador, o **Contexto regulatório do estudo** identifica implantação aérea/subterrânea, detentora declarada, intervenção em espaço público, travessia e área protegida. A API associa cada alternativa às verificações e fontes pertinentes; Cemig ND-6.6 só é aplicada quando a detentora é declarada como Cemig. Ausência declarada de condição não equivale a validação por mapa. Não há aprovação automática, verificação de documentos ou cruzamento com zoneamento, postes, áreas protegidas e faixas de domínio.
+
+Cada alternativa mostra a contagem de endereços residenciais em células com centro no raio em linha reta da CTO e uma faixa geométrica aproximada pelas bordas das células. Essa faixa não é intervalo estatístico; o raio não equivale a percurso de cabo ou alcance técnico. As contagens não entram na ordenação nem aumentam os pedidos compatíveis ou as portas. O estudo JSON inclui esses dados, as premissas e suas fontes; a tela de dados permite exportar células GeoJSON.
+
+`data/regulations.json` é o catálogo curado de fontes, sem consultas externas durante o cálculo. O acompanhamento da revisão de postes fica separado das regras aplicadas; não se presume dispensa SCM por porte, preço de compartilhamento ou disponibilidade de rede de terceiros. Projetos históricos são referências documentais, não rede cadastrada. Números municipais da Anatel não foram importados. A rede operacional e os pedidos continuam fictícios.

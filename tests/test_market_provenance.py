@@ -11,13 +11,19 @@ def test_compare_without_real_listings_has_no_reference(monkeypatch):
     assert result["reference_price_m2"] is None
 
 
-def test_compare_uses_neighborhood_only_with_enough_listings(monkeypatch):
+def test_compare_filters_and_requires_explicit_city_expansion(monkeypatch):
     rows = [("Centro", 6000.0)] * 5 + [("Jardim Yara", 3000.0)] * 2
-    monkeypatch.setattr(market, "_real_listings", lambda: pd.DataFrame(rows, columns=["neighborhood", "price_per_m2"]))
-    centro = market.compare_market_price("centro", 600_000, 100)
-    yara = market.compare_market_price("Jardim Yara", 300_000, 100)
-    assert (centro["scope"], centro["reference_price_m2"], centro["status"]) == ("bairro", 6000.0, "compativel")
-    assert yara["scope"] == "municipio" and yara["comparables"] == 7
+    frame = pd.DataFrame(rows, columns=["neighborhood", "price_per_m2"])
+    frame['city']='Pouso Alegre';frame['property_type']='casa';frame['transaction']='venda';frame['area_m2']=100
+    frame['collected_at']=pd.Timestamp.now(tz='UTC')
+    unrelated=frame.iloc[:1].copy();unrelated['property_type']='apartamento';unrelated['price_per_m2']=99999
+    monkeypatch.setattr(market, "_real_listings", lambda: pd.concat([frame,unrelated],ignore_index=True))
+    centro=market.compare_market_price("centro",600_000,100,property_type='casa')
+    assert centro['scope']=='bairro' and centro['reference_price_m2']==6000
+    assert market.compare_market_price("Jardim Yara",300_000,100,property_type='casa')['status']=='sem_dados'
+    expanded=market.compare_market_price("Jardim Yara",300_000,100,property_type='casa',allow_city_expansion=True)
+    assert expanded['scope']=='municipio' and expanded['comparables']==7 and expanded['expanded'] is True
+    assert market.compare_market_price("centro",600_000,100,city='Outra',property_type='casa')['status']=='sem_dados'
 
 
 def test_models_without_real_provenance_are_flagged():

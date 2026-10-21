@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
@@ -22,6 +22,8 @@ class Settings:
     cors_origins: tuple[str, ...] = ("http://localhost:5173", "http://localhost:3000")
     # Contas que podem disparar o pipeline de dados (e-mails, minúsculos).
     admin_emails: tuple[str, ...] = ()
+    demo_registration_code: str = field(default='', repr=False)
+    demo_allowed_emails: tuple[str, ...] = ()
 
     @property
     def database_url(self) -> str:
@@ -59,4 +61,6 @@ def load_settings(env_file: str | None = None) -> Settings:
         admin_emails=tuple(
             email.strip().lower() for email in os.getenv("ADMIN_EMAILS", "").split(",") if email.strip()
         ),
+        demo_registration_code=os.getenv('DEMO_REGISTRATION_CODE',''),
+        demo_allowed_emails=tuple(email.strip().lower() for email in os.getenv('DEMO_ALLOWED_EMAILS','').split(',') if email.strip()),
     )

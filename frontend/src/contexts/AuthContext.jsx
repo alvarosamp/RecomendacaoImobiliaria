@@ -33,8 +33,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem('user', JSON.stringify(meRes));
   };
 
-  const register = async (name, email, password, profile) => {
-    await api.post('/auth/register', { name, email, password, profile });
+  const register = async (name, email, password, profile, invitationCode = '') => {
+    await api.post('/auth/register', { name, email, password, profile, invitation_code: invitationCode });
     await login(email, password);
   };
 

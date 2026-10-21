@@ -24,10 +24,12 @@ const PROFILE_OBJECTIVE = {
   investidor: 'real_estate',
   corretor: 'real_estate',
   incorporadora: 'real_estate',
+  construtora: 'real_estate',
+  empreendedor: 'commerce',
   governo: 'government',
 }
 
-export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange, onOpenConcept, profile }) {
+export default function MapPage({ scores, timeDates, timeRecords, selectedDate, onDateChange, onOpenConcept, profile, selectedAreaId, onSelectArea }) {
   const [priorityFilter, setPriorityFilter] = useState('')
   const [riskFilter, setRiskFilter]         = useState('')
   const [mapMode, setMapMode]               = useState('score')
@@ -189,6 +191,8 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         influenceRadius={influenceRadius}
         labelMode={labelMode}
         onOpenConcept={onOpenConcept}
+        selectedAreaId={selectedAreaId}
+        onSelectArea={onSelectArea}
         onModeChange={setMapMode}
         onToggleLayer={toggleLayer}
         onTogglePoiType={togglePoiType}

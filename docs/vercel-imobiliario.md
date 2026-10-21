@@ -2,7 +2,7 @@
 
 ## Demonstração pública publicada
 
-Endereço: https://urbia-imobiliario-demo-teste-tor-s-projects.vercel.app/app
+Endereço: https://urbia-imobiliario-demo.vercel.app/app
 
 Projeto `urbia-imobiliario-demo`, equipe `teste-tor-s-projects`. Acesso público,
 sem login do aplicativo ou proteção de login da Vercel. O projeto ISP é separado.
@@ -34,7 +34,7 @@ ativa: `npm run build` não habilita a demonstração pública.
 Validação no endereço público:
 
 ```powershell
-$env:URBIA_UI_URL = 'https://urbia-imobiliario-demo-teste-tor-s-projects.vercel.app'
+$env:URBIA_UI_URL = 'https://urbia-imobiliario-demo.vercel.app'
 node frontend/tests/public-demo.cjs
 ```
 

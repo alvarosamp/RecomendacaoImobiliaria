@@ -163,7 +163,26 @@
     return { stops, straight_km: round(total / 1000, 2) };
   }
 
-  const api = { distance, revenueSeries, revenueBreakdown, capacityForecast, cellIndex, territoryCells, rankTerritory, buildWorkOrders, applyOverrides, autoAssign, dayRoute, isOverdue, SLA_HOURS, occupiedAt, billedAt };
+  /* Real Anatel market for one or more municipalities, merged by CNPJ. HHI is only meaningful inside one market. */
+  function marketView(market, cityIds) {
+    const cities = market.cities.filter(c => cityIds.includes(c.id)), providers = new Map(), sum = (a, b) => { Object.entries(b).forEach(([k, v]) => a[k] = (a[k] || 0) + v); return a; };
+    cities.forEach(c => c.providers.forEach(p => {
+      const merged = providers.get(p.cnpj) || { ...p, acessos: 0, acessos_12m_antes: 0, series: p.series.map(() => 0), cities: [] };
+      merged.acessos += p.acessos; merged.acessos_12m_antes += p.acessos_12m_antes; merged.series = merged.series.map((v, i) => v + p.series[i]); merged.cities.push(c.id);
+      providers.set(p.cnpj, merged);
+    }));
+    const total = cities.reduce((s, c) => s + c.total, 0), months = cities[0]?.series.map(s => s.month) || [];
+    const list = [...providers.values()].map(p => ({ ...p, variacao_12m: p.acessos - p.acessos_12m_antes, share_pct: total ? round(p.acessos / total * 100, 2) : 0 })).sort((a, b) => b.acessos - a.acessos || a.cnpj.localeCompare(b.cnpj));
+    return {
+      cities: cities.map(c => c.id), total, total_12m_antes: cities.reduce((s, c) => s + c.total_12m_antes, 0), providers: list,
+      hhi: cities.length === 1 ? cities[0].hhi_grupos : null,
+      absent: cities.flatMap(c => (c.absent_in_reference || []).map(p => ({ ...p, city_id: c.id }))).sort((a, b) => b.ultimos_acessos - a.ultimos_acessos),
+      tecnologia: cities.reduce((a, c) => sum(a, c.tecnologia), {}), tipo_pessoa: cities.reduce((a, c) => sum(a, c.tipo_pessoa), {}),
+      series: months.map((month, i) => ({ month, total: cities.reduce((s, c) => s + c.series[i].total, 0) })),
+    };
+  }
+
+  const api = { marketView, distance, revenueSeries, revenueBreakdown, capacityForecast, cellIndex, territoryCells, rankTerritory, buildWorkOrders, applyOverrides, autoAssign, dayRoute, isOverdue, SLA_HOURS, occupiedAt, billedAt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ManagementEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

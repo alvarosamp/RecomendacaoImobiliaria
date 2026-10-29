@@ -34,8 +34,44 @@ function initManagement(){
 function openManagement(){renderManagement();}
 function renderManagement(){
   document.querySelectorAll('[data-mgmt-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.mgmtTab===mgmtTab);b.setAttribute('aria-selected',b.dataset.mgmtTab===mgmtTab);});
-  ['revenue','territory','capacity','orders'].forEach(t=>$('mgmt-'+t).hidden=t!==mgmtTab);
-  ({revenue:renderRevenue,territory:renderMgmtTerritory,capacity:renderCapacity,orders:renderOrders})[mgmtTab]();
+  ['revenue','territory','capacity','orders','market'].forEach(t=>$('mgmt-'+t).hidden=t!==mgmtTab);
+  ({revenue:renderRevenue,territory:renderMgmtTerritory,capacity:renderCapacity,orders:renderOrders,market:renderMarket})[mgmtTab]();
+}
+
+/* Real market: Anatel fixed-broadband accesses per provider. Kept apart from the synthetic operation. */
+let mgmtMarket=null,mgmtMarketPromise=null,mgmtMarketLimit=15;
+const monthLabel=m=>`${m.slice(5)}/${m.slice(2,4)}`;
+async function loadMarket(){
+  if(!mgmtMarketPromise)mgmtMarketPromise=fetch('/api/market').then(async r=>{if(!r.ok)throw new Error('Base da Anatel indisponível.');const data=await r.json();if(data.meta.synthetic!==false)throw new Error('A base de mercado deve ter origem pública real.');mgmtMarket=data;}).catch(error=>{mgmtMarketPromise=null;throw error;});
+  await mgmtMarketPromise;
+}
+async function renderMarket(){
+  try{await loadMarket();}catch(error){$('mgmt-market-status').textContent=error.message;return;}
+  const meta=mgmtMarket.meta,ids=mgmtTerritoryCities(),view=ME.marketView(mgmtMarket,ids),leader=view.providers[0],change=view.total-view.total_12m_antes;
+  const pf=view.tipo_pessoa['Pessoa Física']||0,ftth=view.tecnologia.FTTH||0;
+  let homes=null;try{await loadKnowledge();homes=knowledgeTerritory.cities.filter(c=>ids.includes(c.id)).reduce((s,c)=>s+c.mapped_residential_addresses,0);}catch(error){/* IBGE comparison is optional */}
+  const sim=db.clients.filter(c=>ids.includes(c.city_id)&&c.status!=='cancelled').length;
+  $('mgmt-market-status').textContent=`Mês de referência ${monthLabel(meta.reference_month)}, comparado com ${monthLabel(meta.comparison_month)}. Arquivo de ${formatDate(meta.source_last_modified)}, coletado em ${formatDate(meta.retrieved_at)}. A SerraLink e sua rede continuam fictícias.`;
+  $('mgmt-market-kpis').innerHTML=kpi('Acessos fixos reais',n(view.total),`<em>${change>=0?'+':''}${n(change)}</em> em 12 meses · ${n((ftth/view.total*100).toFixed(1))}% FTTH`,'network')+kpi('Prestadoras ativas',n(view.providers.length),view.hhi===null?'Três mercados municipais somados':`Concentração HHI ${n(view.hhi)} · ${view.hhi>2500?'alta':view.hhi>1500?'moderada':'baixa'}`,'users')+kpi('Líder',escapeHTML(leader.empresa),`${n(leader.share_pct)}% dos acessos · ${escapeHTML(leader.porte)}`,'spark')+kpi('Acessos residenciais ÷ domicílios IBGE',homes?`${n(Math.round(pf/homes*100))}%`:'—',homes?`${n(pf)} acessos PF · ${n(homes)} domicílios mapeados (teto, não taxa exata)`:'Camada IBGE indisponível','pin');
+  const absentTotal=view.absent.reduce((s,p)=>s+p.ultimos_acessos,0);
+  $('mgmt-market-absent').hidden=!view.absent.length;
+  $('mgmt-market-absent').innerHTML=view.absent.length?`<strong>${n(view.absent.length)} prestadora(s) sem declaração em ${monthLabel(meta.reference_month)}, que somavam ${n(absentTotal)} acessos no último mês declarado.</strong> Parte da variação do total pode ser declaração ausente ou atrasada, não perda de clientes. <ul>${view.absent.slice(0,6).map(p=>`<li>${escapeHTML(p.empresa)} · ${escapeHTML(cityName(p.city_id))} · ${n(p.ultimos_acessos)} acessos em ${monthLabel(p.ultimo_mes)}</li>`).join('')}</ul>`:'';
+  const top=view.providers.slice(0,8),rest=view.providers.slice(8),restTotal=rest.reduce((s,p)=>s+p.acessos,0),max=Math.max(1,top[0]?.acessos||1,restTotal);
+  $('mgmt-market-share-caption').textContent=`${monthLabel(meta.reference_month)} · ${ids.length===1?cityName(ids[0]):'três cidades somadas'} · simulação SerraLink: ${n(sim)} conexões ≈ ${n((sim/view.total*100).toFixed(1))}% do total real`;
+  $('mgmt-market-share').innerHTML=top.map(p=>`<div class="mgmt-bar-row"><span title="${escapeHTML(p.empresa)} · CNPJ ${escapeHTML(p.cnpj)}">${escapeHTML(p.empresa)}</span><div class="mgmt-bar"><i style="width:${p.acessos/max*100}%" class="${p.porte==='Grande Porte'?'large':''}"></i></div><b>${n(p.share_pct)}%</b></div>`).join('')+(rest.length?`<div class="mgmt-bar-row muted"><span>Demais ${n(rest.length)} prestadoras</span><div class="mgmt-bar"><i style="width:${restTotal/max*100}%"></i></div><b>${n((restTotal/view.total*100).toFixed(1))}%</b></div>`:'')+'<div class="chart-legend"><span><i style="background:#5f9c7f"></i>Pequeno porte</span><span><i style="background:#668bba"></i>Grande porte</span></div>';
+  const smax=Math.max(...view.series.map(s=>s.total)),smin=Math.min(...view.series.map(s=>s.total))*.97;
+  $('mgmt-market-series').innerHTML=`<div class="mgmt-chart mgmt-chart-dense">${view.series.map(s=>{const label=`${monthLabel(s.month)}: ${n(s.total)} acessos`;return `<div class="mgmt-chart-col" tabindex="0" aria-label="${label}" data-tip="${label}"><div class="mgmt-chart-stack"><i class="mrr" style="height:${(s.total-smin)/(smax-smin||1)*92+8}%"></i></div><span>${s.month.endsWith('-01')||s.month===view.series.at(-1).month?monthLabel(s.month):''}</span></div>`;}).join('')}</div><p class="mini-caption">Eixo vertical a partir de ${n(Math.round(smin))} acessos para evidenciar a variação.</p>`;
+  $('mgmt-market-mix').innerHTML=Object.entries(view.tecnologia).slice(0,5).map(([k,v])=>`<span class="small-tag">${escapeHTML(k)} ${n((v/view.total*100).toFixed(1))}%</span>`).join(' ')+` <span class="small-tag">Pessoa jurídica ${n(((view.tipo_pessoa['Pessoa Jurídica']||0)/view.total*100).toFixed(1))}%</span>`;
+  renderMarketTable(view);
+  $('mgmt-market-search').oninput=()=>{mgmtMarketLimit=15;renderMarketTable(view);};
+  $('mgmt-market-export').onclick=()=>{downloadCSV(`ANATEL-banda-larga-fixa-${meta.reference_month}-${$('city').value}.csv`,['empresa','cnpj','grupo','porte','acessos','share_pct','acessos_12m_antes','variacao_12m','cidades'],view.providers.map(p=>({...p,cidades:p.cities.map(cityName).join(' | ')})));toast(`${n(view.providers.length)} prestadoras exportadas · fonte Anatel.`);};
+  $('mgmt-market-method').innerHTML=`<p>Arquivos ${meta.files.map(escapeHTML).join(', ')} do pacote <a href="${escapeHTML(meta.url)}" target="_blank" rel="noopener noreferrer">acessos_banda_larga_fixa.zip ↗</a> (<a href="${escapeHTML(meta.panel_url)}" target="_blank" rel="noopener noreferrer">dados abertos da Anatel ↗</a>). Filtro pelo código IBGE do município; soma de todas as linhas por CNPJ e mês. SHA-256 do arquivo: <code>${escapeHTML(meta.source_sha256.slice(0,16))}…</code>. Reproduzir com <code>python3 collect_market.py --download</code>.</p><ul>${meta.limitations.map(l=>`<li>${escapeHTML(l)}</li>`).join('')}</ul><p>A razão entre acessos de pessoa física e domicílios do IBGE é um teto: o Censo é de 2022 e a camada exclui endereços com coordenada aproximada; um domicílio pode ter mais de um acesso.</p>`;
+}
+function renderMarketTable(view){
+  const q=$('mgmt-market-search').value.trim().toLocaleLowerCase('pt-BR'),rows=view.providers.filter(p=>!q||[p.empresa,p.cnpj,p.grupo].join(' ').toLocaleLowerCase('pt-BR').includes(q));
+  const spark=s=>{const max=Math.max(...s),min=Math.min(...s),w=72,h=20;return `<svg class="mgmt-spark" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${s.map((v,i)=>`${(i/(s.length-1)*w).toFixed(1)},${(h-2-(max===min?.5:(v-min)/(max-min))*(h-4)).toFixed(1)}`).join(' ')}"/></svg>`;};
+  $('mgmt-market-table').innerHTML=mgmtTable(['Prestadora','Grupo · porte','Acessos','Fatia','12 meses','Últimos 13 meses'],rows.slice(0,mgmtMarketLimit).map(p=>`<tr><td><strong>${escapeHTML(p.empresa)}</strong><small>CNPJ ${escapeHTML(p.cnpj)}${view.cities.length>1?' · '+p.cities.map(cityName).map(escapeHTML).join(', '):''}</small></td><td>${escapeHTML(p.grupo)}<small>${escapeHTML(p.porte)}</small></td><td>${n(p.acessos)}</td><td>${n(p.share_pct)}%<div class="progress"><span style="width:${Math.min(100,p.share_pct)}%"></span></div></td><td class="${p.variacao_12m<0?'mgmt-neg':'mgmt-pos'}">${p.variacao_12m>=0?'+':''}${n(p.variacao_12m)}${p.acessos_12m_antes===0?'<small>sem acessos 12 meses antes neste CNPJ</small>':''}</td><td>${spark(p.series)}</td></tr>`),'Nenhuma prestadora encontrada.')+(rows.length>mgmtMarketLimit?`<div class="mgmt-pad"><button class="button mgmt-more" id="mgmt-market-more">Mostrar mais ${n(Math.min(15,rows.length-mgmtMarketLimit))} de ${n(rows.length-mgmtMarketLimit)}</button></div>`:'');
+  $('mgmt-market-more')?.addEventListener('click',()=>{mgmtMarketLimit+=15;renderMarketTable(view);});
 }
 function mgmtTable(head,rows,empty='Nenhum registro neste recorte.'){return `<div class="table-scroll"><table><thead><tr>${head.map(h=>`<th scope="col">${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}" class="empty">${empty}</td></tr>`}</tbody></table></div>`;}
 

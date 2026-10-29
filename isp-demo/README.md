@@ -227,3 +227,19 @@ node --test test_management.cjs
 ```
 
 Os testes cobrem receita com suspensos e meses sem instalação, conciliação com o inventário, ordenação de risco de capacidade, localização das instalações nas células do IBGE sem dupla contagem, critérios das ações territoriais, independência da ação em relação ao satélite, unicidade e SLA das ordens, distribuição restrita à cidade e balanceada, e prioridade no roteiro.
+
+### Mercado real · Anatel
+
+A aba **Gestão › Mercado real · Anatel** usa dados públicos reais: acessos de banda larga fixa que cada prestadora declara à Anatel, por município e mês. Mostra total de acessos e variação em 12 meses, participação por prestadora (CNPJ), concentração HHI por grupo econômico (só dentro de um município), tecnologia, pessoa física/jurídica, a série mensal e, à parte, as prestadoras que declararam nos 6 meses anteriores e não aparecem no mês de referência. Também compara os acessos de pessoa física com os domicílios do IBGE (um teto, não uma taxa exata) e indica quanto a SerraLink fictícia representaria do total real. A rede e os clientes continuam fictícios.
+
+Snapshot: `data/market.json` (cerca de 40 KB), mês de referência 08/2026, arquivo da Anatel de 08/10/2026 coletado em 28/10/2026, com SHA-256 nos metadados. Fonte: <https://www.anatel.gov.br/dadosabertos/paineis_de_dados/acessos/acessos_banda_larga_fixa.zip>.
+
+```sh
+# Recoletar (cerca de 1 GB; cache em data/market-cache/, ignorado por Git, Docker e Vercel):
+python3 collect_market.py --download
+# ou com um arquivo já baixado:
+python3 collect_market.py --zip /caminho/acessos_banda_larga_fixa.zip --last-modified "<Last-Modified do arquivo>"
+python3 -m unittest -v test_market.py
+```
+
+Limites: acessos não são domicílios nem cobertura por rua. Meses com queda brusca seguida de recuperação e prestadoras que somem costumam ser declaração ausente; em Pouso Alegre, por exemplo, três prestadoras com cerca de 8,4 mil acessos deixaram de declarar entre 05 e 08/2026, o que explica boa parte da queda do total. Variação por CNPJ pode refletir troca de CNPJ ou incorporação.

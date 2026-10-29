@@ -38,6 +38,10 @@
     {
       "source": "/api/regulations",
       "destination": "/snapshots/regulations.json"
+    },
+    {
+      "source": "/api/market",
+      "destination": "/snapshots/market.json"
     }
   ],
   "headers": [

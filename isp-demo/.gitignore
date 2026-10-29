@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 
 /data/territory-cache/
+/data/market-cache/

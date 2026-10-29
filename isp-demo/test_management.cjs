@@ -102,6 +102,20 @@ test('local edits are merged without mutating the generated orders; auto assignm
   assert.equal(E.isOverdue(done.at(-1), '2100-01-01'), false);
 });
 
+test('real market view merges cities by CNPJ and only reports HHI inside one municipality', () => {
+  const market = load('market.json'), ids = market.cities.map(c => c.id);
+  const all = E.marketView(market, ids), one = E.marketView(market, [ids[0]]);
+  assert.equal(all.total, market.cities.reduce((s, c) => s + c.total, 0));
+  assert.equal(all.providers.reduce((s, p) => s + p.acessos, 0), all.total);
+  assert.equal(new Set(all.providers.map(p => p.cnpj)).size, all.providers.length);
+  assert.equal(all.hhi, null); assert.equal(one.hhi, market.cities[0].hhi_grupos);
+  assert.equal(all.series.at(-1).total, all.total);
+  const shared = all.providers.find(p => p.cities.length > 1);
+  assert.ok(shared, 'some provider operates in more than one city');
+  assert.equal(shared.acessos, market.cities.reduce((s, c) => s + (c.providers.find(p => p.cnpj === shared.cnpj)?.acessos || 0), 0));
+  all.providers.slice(1).forEach((p, i) => assert.ok(all.providers[i].acessos >= p.acessos));
+});
+
 test('day route visits each assigned stop once, in nearest-neighbour order from the base', () => {
   const base = { lat: 0, lng: 0 };
   const stops = [{ id:'far', lat:0, lng:0.02, priority:'low', due_at:'2' , status:'open' }, { id:'near', lat:0, lng:0.005, priority:'low', due_at:'1', status:'open' }, { id:'done', lat:0, lng:0.001, priority:'low', due_at:'0', status:'done' }];

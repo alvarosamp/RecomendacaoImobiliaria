@@ -8,3 +8,4 @@ test_*.py
 test_*.cjs
 
 data/territory-cache/
+data/market-cache/

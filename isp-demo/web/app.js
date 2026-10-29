@@ -22,7 +22,7 @@ const paths = {
 };
 const icon = name => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name]||paths.info}</svg>`;
 document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-const titles = {management:['Gestão','Gerencie receita, território e equipes.','Acompanhe a base faturável, a penetração sobre domicílios reais, o esgotamento de portas e as ordens de serviço.'],knowledge:['Leis e dados reais','Planeje com fontes e evidências.','Explore endereços do Censo, referências legais e projetos documentados da região.'],help:['Como usar','Como usar o Urbia Telecom','Um roteiro para explorar a operação, estudar atendimento e planejar a expansão.'],overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],planning:['Planejar expansão','Qual caminho leva ao próximo cliente?','Compare atendimento pela rede atual e locais para estudar uma ampliação.'],radar:['Radar de crescimento','Encontre mudanças perto da sua rede.','Compare cenas reais e transforme sinais territoriais em uma agenda de investigação.'],inspection:['Inspeção ao vivo','Inspecione a rede, passo a passo.','Acompanhe sinal, conectividade e vínculos em uma sessão inteiramente simulada.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
+const titles = {crm:['CRM','Do pedido ao cliente instalado.','Acompanhe cada negócio pelo funil, com checklist, concorrente, próxima ação e histórico.'],management:['Gestão','Gerencie receita, território e equipes.','Acompanhe a base faturável, a penetração sobre domicílios reais, o esgotamento de portas e as ordens de serviço.'],knowledge:['Leis e dados reais','Planeje com fontes e evidências.','Explore endereços do Censo, referências legais e projetos documentados da região.'],help:['Como usar','Como usar o Urbia Telecom','Um roteiro para explorar a operação, estudar atendimento e planejar a expansão.'],overview:['Visão geral','Seu território, conectado.','Entenda onde estão seus clientes, sua rede e as próximas oportunidades.'],network:['Rede e capacidade','Sua rede, em perspectiva.','Acompanhe POPs, caixas de atendimento, enlaces e portas disponíveis.'],clients:['Instalações','Cada conexão tem um lugar.','Explore o cadastro fictício e o vínculo entre instalação, CTO e porta.'],opportunities:['Oportunidades','O próximo passo está no mapa.','Transforme capacidade e pedidos em uma agenda de investigação.'],planning:['Planejar expansão','Qual caminho leva ao próximo cliente?','Compare atendimento pela rede atual e locais para estudar uma ampliação.'],radar:['Radar de crescimento','Encontre mudanças perto da sua rede.','Compare cenas reais e transforme sinais territoriais em uma agenda de investigação.'],inspection:['Inspeção ao vivo','Inspecione a rede, passo a passo.','Acompanhe sinal, conectividade e vínculos em uma sessão inteiramente simulada.'],sources:['Dados e premissas','Transparência em cada camada.','Saiba o que é público, o que foi simulado e o que ainda precisa ser validado.']};
 const labels = {active:'Ativa',suspended:'Suspensa',cancelled:'Cancelada',operational:'Operacional',maintenance:'Manutenção',offline:'Indisponível',survey:'Validar em vistoria',capacity:'Sem porta livre',outside:'Fora da triagem',incident:'Verificar incidente'};
 const badge = status => `<span class="status ${escapeHTML(status)}">${labels[status]||escapeHTML(status)}</span>`;
 let db, roads, map, tiles, groups = {}, selected = null, page = 0, view = 'overview', tileErrorShown = false;
@@ -180,15 +180,17 @@ function setView(next){
   $('help-section').hidden=next!=='help';
   $('knowledge-section').hidden=next!=='knowledge';
   $('management-section').hidden=next!=='management';
-  $('kpis').hidden=['sources','inspection','radar','planning','help','knowledge','management'].includes(next);$('filters').hidden=['sources','radar','planning','help','knowledge'].includes(next);$('export').hidden=['sources','inspection','radar','planning','help','knowledge','management'].includes(next);
+  $('crm-section').hidden=next!=='crm';
+  $('kpis').hidden=['sources','inspection','radar','planning','help','knowledge','management','crm'].includes(next);$('filters').hidden=['sources','radar','planning','help','knowledge'].includes(next);$('export').hidden=['sources','inspection','radar','planning','help','knowledge','management','crm'].includes(next);
   if(next==='management')openManagement();
+  if(next==='crm')openCrm();
   if(next==='planning')openPlanning();
   if(next==='knowledge')openKnowledge();
   if(next==='radar')openRadar();
   if(next==='inspection'){refreshInspectionTargets();renderInspection();}
   renderTable();if(map&&!$('map-section').hidden){map.invalidateSize();drawMap();}
 }
-function renderAll(fit=false){refreshInspectionTargets();renderKPIs();renderDetail();renderHistory();renderTable();renderOpportunities();drawMap(fit);if(view==='management')renderManagement();}
+function renderAll(fit=false){refreshInspectionTargets();renderKPIs();renderDetail();renderHistory();renderTable();renderOpportunities();drawMap(fit);if(view==='management')renderManagement();if(view==='crm')renderCrm();}
 function exportCSV(){
   const columns=['id','city_id','sector','street','lat','lng','cto_id','port','status','installed_at','cancelled_at','speed_mbps','monthly_price','synthetic'];
   const rows=clientRows();
@@ -213,7 +215,7 @@ async function boot(){
     $('fit-map').onclick=fitMap;$('export').onclick=exportCSV;$('see-sources').onclick=()=>setView('sources');$('all-opportunities').onclick=()=>setView('opportunities');
     $('open-help').onclick=()=>{setView('help');$('page-title').scrollIntoView({block:'start'});};
     document.querySelectorAll('[data-guide-view]').forEach(button=>button.onclick=()=>{setView(button.dataset.guideView);$('page-title').scrollIntoView({block:'start'});});
-    initMap();initInspection();initPlanning();initKnowledge();initManagement();renderSources();renderAll();
+    initMap();initInspection();initPlanning();initKnowledge();initManagement();initCrm();renderSources();renderAll();
     initRadar().catch(handleRadarError);
     window.ISP_DEMO={getSummary:()=>({city:$('city').value,sector:$('sector').value,clients:clientRows().length,ctos:scoped('ctos').length,requests:scoped('requests').length,view}),selectEntity};
   }catch(error){$('fatal-error').hidden=false;$('fatal-error').textContent=`Não foi possível carregar a simulação. ${error.message} Recarregue a página ou verifique o serviço Docker.`;console.error(error);}

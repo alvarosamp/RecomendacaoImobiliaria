@@ -259,3 +259,21 @@ Snapshot `data/market-companies.json` (cerca de 430 KB), gerado por `collect_mar
 ```sh
 python3 collect_municipalities.py --download   # cache em data/municipality-cache/
 ```
+
+
+## CRM comercial — 29/10/2026
+
+O menu **CRM** acompanha cada negócio do pedido ao cliente instalado. A ideia vem do CRM do RagMatch: funil por etapas, resultado com motivo, checklist obrigatório, concorrentes por negócio, histórico de ações e execução após o ganho. O motor é `web/crm-engine.js`, com funções puras e testes em `test_crm.cjs`.
+
+- **Funil:** Novo lead → Qualificação → Viabilidade → Proposta → Negociação → Instalação → Resultado (ganho, perdido com motivo, descartado). Os cartões são arrastados entre etapas ou movidos pelo seletor no detalhe. As probabilidades por etapa (5% a 90%) são premissas para a previsão ponderada.
+- **Leads:** os 108 pedidos fictícios entram como leads (pedidos fora da triagem em *Novo lead*, os demais em *Qualificação*). Também há leads manuais (residencial, empresarial ou condomínio, posicionados junto a uma CTO) e leads criados em Gestão › Território, a partir de células de campanha.
+- **Detalhe do negócio:** checklist por tipo, cujos itens obrigatórios liberam *Instalação* e *Ganho*; provedor atual do cliente e preço, com sugestões da lista real da Anatel para a cidade; próxima ação; responsável; notas; e histórico com data e hora. *Estudar viabilidade* abre o planejador no local do lead.
+- **Ganho:** cria automaticamente a ordem de **Instalação** em Gestão › Ordens de serviço e registra o vínculo no histórico.
+- **Painel:** negócios abertos e valor mensal no funil, previsão ponderada, taxa de ganho, funil por etapa, ganhos e perdas por concorrente e motivos de perda.
+- **Agenda:** atrasados, hoje, próximos e sem próxima ação, usando a data atual de Brasília.
+
+Os dados ficam no `localStorage` (`urbia-isp-crm-v1`), que guarda só os negócios criados ou alterados. **Backup JSON** e **Importar backup** permitem levar o CRM para outro navegador; o backup é validado ao importar. Não há contas, permissões, sincronização entre usuários nem integração com ERP. Use apenas dados de teste.
+
+```sh
+node --test test_crm.cjs
+```

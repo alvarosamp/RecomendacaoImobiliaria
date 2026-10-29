@@ -209,3 +209,21 @@ No planejador, o **Contexto regulatório do estudo** identifica implantação a�
 Cada alternativa mostra a contagem de endereços residenciais em células com centro no raio em linha reta da CTO e uma faixa geométrica aproximada pelas bordas das células. Essa faixa não é intervalo estatístico; o raio não equivale a percurso de cabo ou alcance técnico. As contagens não entram na ordenação nem aumentam os pedidos compatíveis ou as portas. O estudo JSON inclui esses dados, as premissas e suas fontes; a tela de dados permite exportar células GeoJSON.
 
 `data/regulations.json` é o catálogo curado de fontes, sem consultas externas durante o cálculo. O acompanhamento da revisão de postes fica separado das regras aplicadas; não se presume dispensa SCM por porte, preço de compartilhamento ou disponibilidade de rede de terceiros. Projetos históricos são referências documentais, não rede cadastrada. Números municipais da Anatel não foram importados. A rede operacional e os pedidos continuam fictícios.
+
+
+## Gestão — 28/10/2026
+
+O menu **Gestão** reúne quatro ferramentas sobre o mesmo recorte de cidade/setor. Nada é enviado a servidor; o motor de cálculo é `web/management-engine.js`, sem dependências.
+
+- **Receita e base:** receita recorrente faturável (mensalidades hipotéticas de contratos sem suspensão), receita em risco (suspensos, que continuam ocupando porta), ticket médio, churn mensal (cancelamentos do mês ÷ base no fim do mês anterior) e quebras por cidade e plano. Outubro é parcial até o retrato. Não é DRE, previsão de faturamento nem ERP.
+- **Território e penetração:** cruza as células de 200 m do IBGE/CNEFE 2022 (real), as instalações conectadas (fictícias) e as áreas do radar Sentinel-2 (real). Penetração = instalações ÷ endereços de domicílio particular na célula. Ações, com raio em linha reta, meta e mínimo de domicílios editáveis: *campanha comercial* (CTO operacional com porta no raio e penetração abaixo da meta), *ampliar capacidade* (CTO no raio, nenhuma operacional com porta) e *estudar expansão* (nenhuma CTO no raio, rede a até 1,5 km). O sinal de satélite a até 300 m é contexto e desempate; não muda a ação. Cada célula abre o planejador no seu centro ou gera uma ordem de vistoria. Exportação CSV.
+- **Capacidade das CTOs:** saldo de instalações − cancelamentos em 90 dias, extrapolado linearmente para estimar quando cada caixa esgota; pedidos cuja CTO mais próxima é a caixa elevam o risco. Tendência, não previsão de vendas; não considera splitters, orçamento óptico ou portas PON.
+- **Ordens de serviço:** geradas do retrato (ocorrência → corretiva; sinal simulado < −25 dBm → preventiva; pedido em vistoria → vistoria; pedido sem porta → projeto; suspenso → retenção, de escritório) com SLA por prioridade (4 h / 24 h / 72 h / 5 dias) no relógio do retrato, 18/10/2026 18h. Quadro por situação, distribuição automática balanceada entre as equipes fictícias da cidade, ordens manuais (também pelo painel de detalhe de CTO/instalação), exportação CSV e **roteiro do dia**: críticas e altas primeiro, depois vizinho mais próximo a partir do POP, em linha reta — não é trajeto viário.
+
+Situação, equipe e ordens manuais ficam salvas apenas no `localStorage` deste navegador (`urbia-isp-gestao-v1`); não há contas, sincronização entre usuários ou trilha de auditoria. “Restaurar retrato” descarta essas alterações. Não registrar dados pessoais reais nas ordens.
+
+```sh
+node --test test_management.cjs
+```
+
+Os testes cobrem receita com suspensos e meses sem instalação, conciliação com o inventário, ordenação de risco de capacidade, localização das instalações nas células do IBGE sem dupla contagem, critérios das ações territoriais, independência da ação em relação ao satélite, unicidade e SLA das ordens, distribuição restrita à cidade e balanceada, e prioridade no roteiro.

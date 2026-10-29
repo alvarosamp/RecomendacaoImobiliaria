@@ -254,4 +254,8 @@ A aba **Gestão › Empresa acompanhada** acompanha uma empresa real escolhida e
 - **Mix de velocidade contratada** da empresa contra o mercado, em MG ou por cidade.
 - **Tabela de presença em MG**, com filtro por sinal, ordenação, busca e exportação CSV.
 
-Snapshot `data/market-companies.json` (cerca de 430 KB), gerado por `collect_market.py` junto com `data/market.json`. As faixas de velocidade da Anatel foram descartadas (mais de 95% em "> 34 Mbps"); usamos a velocidade contratada declarada. Os sinais são regras de triagem, não previsão de vendas. Sem coordenadas municipais, esta aba não tem mapa.
+Snapshot `data/market-companies.json` (cerca de 430 KB), gerado por `collect_market.py` junto com `data/market.json`. As faixas de velocidade da Anatel foram descartadas (mais de 95% em "> 34 Mbps"); usamos a velocidade contratada declarada. Os sinais são regras de triagem, não previsão de vendas. O **mapa de presença** usa os contornos municipais do IBGE (`data/mg-municipalities.json`, cerca de 420 KB, API de malhas v3, qualidade mínima, coletada em 28/10/2026) e colore cada município por participação, variação em 12 meses ou sinal comercial. O enquadramento cobre os municípios que somam 95% da base da empresa. As três cidades do estudo ficam contornadas. Clicar em um município filtra a tabela.
+
+```sh
+python3 collect_municipalities.py --download   # cache em data/municipality-cache/
+```

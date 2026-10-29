@@ -9,3 +9,4 @@ test_*.cjs
 
 data/territory-cache/
 data/market-cache/
+data/municipality-cache/

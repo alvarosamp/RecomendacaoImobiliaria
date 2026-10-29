@@ -107,3 +107,19 @@ class SnapshotTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class MunicipalityTests(unittest.TestCase):
+    def test_boundaries_cover_every_municipality_of_the_company_snapshot(self):
+        mesh = json.loads((ROOT / 'data' / 'mg-municipalities.json').read_text(encoding='utf-8'))
+        companies = json.loads((ROOT / 'data' / 'market-companies.json').read_text(encoding='utf-8'))
+        codes = {f['code'] for f in mesh['features']}
+        self.assertEqual(len(codes), 853)
+        self.assertTrue(set(companies['municipalities']) <= codes)
+        for f in mesh['features']:
+            lat, lng = f['centroid']
+            self.assertTrue(-23 < lat < -14 and -52 < lng < -39, f['code'])
+            self.assertTrue(all(len(ring) >= 4 for ring in f['rings']))
+        pouso = next(f for f in mesh['features'] if f['code'] == '3152501')
+        self.assertAlmostEqual(pouso['centroid'][0], -22.27, delta=0.1)
+        self.assertLess((ROOT / 'data' / 'mg-municipalities.json').stat().st_size, 1_000_000)

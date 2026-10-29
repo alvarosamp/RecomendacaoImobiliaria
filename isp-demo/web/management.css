@@ -27,3 +27,4 @@
 tr.mgmt-own td{background:#f3f8f4}
 .mgmt-speed-row{display:grid;grid-template-columns:110px 1fr 60px;gap:12px;align-items:center;font-size:11px;padding:5px 0}.mgmt-speed-row>div{display:flex;flex-direction:column;gap:3px}.mgmt-speed-row b{text-align:right;font-weight:600}.mgmt-speed-row b small{display:block;color:var(--muted);font-weight:400}.mgmt-bar.market i{background:#b8c4cf}
 #mgmt-company-speed-scope{padding:8px;border:1px solid var(--line);border-radius:6px;font-size:11px}
+#mgmt-company-map-mode{padding:8px;border:1px solid var(--line);border-radius:6px;font-size:11px}#mgmt-company-map-legend i{height:10px;width:14px;border-radius:2px}

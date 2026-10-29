@@ -46,6 +46,10 @@
     {
       "source": "/api/companies",
       "destination": "/snapshots/market-companies.json"
+    },
+    {
+      "source": "/api/municipalities",
+      "destination": "/snapshots/mg-municipalities.json"
     }
   ],
   "headers": [

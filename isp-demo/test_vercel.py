@@ -74,7 +74,7 @@ class VercelArtifactTests(unittest.TestCase):
 
     def test_snapshot_rewrites_preserve_the_data(self):
         paths = {r['source']:r['destination'] for r in self.config['rewrites']}
-        for name, file in (('simulation','simulation'),('roads','roads'),('radar','radar'),('territory','territory'),('regulations','regulations'),('market','market'),('companies','market-companies')):
+        for name, file in (('simulation','simulation'),('roads','roads'),('radar','radar'),('territory','territory'),('regulations','regulations'),('market','market'),('companies','market-companies'),('municipalities','mg-municipalities')):
             target = OUTPUT / paths[f'/api/{name}'].lstrip('/')
             self.assertEqual(json.loads(target.read_text()), json.loads((ROOT/'data'/f'{file}.json').read_text()))
         self.assertEqual(json.loads((OUTPUT/'health.json').read_text())['status'], 'ok')

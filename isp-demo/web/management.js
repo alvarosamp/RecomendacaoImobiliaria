@@ -60,6 +60,7 @@ async function renderCompany(){
   $('mgmt-company-status').textContent=`${monthLabel(meta.reference_month)} comparado com ${monthLabel(meta.comparison_month)} · ${c.grupo==='OUTROS'?`CNPJ ${c.cnpjs.join(', ')}`:`grupo ${c.grupo}, ${c.cnpjs.length} CNPJ(s)`}. Dados públicos agregados; não há clientes, endereços ou cobertura por rua.`;
   $('mgmt-company-kpis').innerHTML=kpi('Acessos em Minas Gerais',n(v.acessos),`<em>${change>=0?'+':''}${n(change)}</em> em 12 meses · mercado nesses municípios ${marketNow>=marketBefore?'+':''}${n(((marketNow/marketBefore-1)*100).toFixed(1))}%`,'users')+kpi('Municípios com presença',n(v.municipios),`${n(v.counts.lead||0)} liderança · ${n(v.counts.grow||0)} crescendo · ${n(v.counts.defend||0)} defender`,'pin')+kpi('Participação nas 3 cidades do estudo',v.study_share===null?'—':`${n(v.study_share.toFixed(1))}%`,'Pouso Alegre, Santa Rita do Sapucaí e Itajubá somadas','spark')+kpi('Base em planos ≥ 500 Mbps',v.fast_pct===null?'—':`${n(v.fast_pct)}%`,v.market_fast_pct===null?'Velocidade não declarada':`Mercado de MG: ${n(v.market_fast_pct)}%`,'network');
   renderCompanySignals(v);
+  drawCompanyMap(v).catch(error=>{$('mgmt-company-map-legend').textContent='Contornos do IBGE indisponíveis: '+error.message;});
   const code=$('mgmt-company-city').value,comp=ME.municipalityCompetition(mgmtCompanies,code),own=comp.find(x=>x.id===c.id),rivals=comp.filter(x=>x.id!==c.id).slice(0,3);
   $('mgmt-company-trend-title').textContent=`Participação em ${mgmtCompanies.municipalities[code].name}`;
   const lines=[...(own?[{...own,own:true}]:[]),...rivals],colors=['#247d64','#668bba','#c08a4a','#9a7bb5'],max=Math.max(5,...lines.flatMap(l=>l.share_series)),w=520,h=190,x=i=>30+i/(v.months.length-1)*(w-40),y=val=>h-22-val/max*(h-36);
@@ -73,6 +74,43 @@ async function renderCompany(){
   $('mgmt-company-speed').innerHTML=sp?meta.speed_labels.map((label,i)=>`<div class="mgmt-speed-row"><span>${escapeHTML(label)}</span><div><div class="mgmt-bar"><i style="width:${sp.company[i]}%"></i></div><div class="mgmt-bar market"><i style="width:${sp.market[i]}%"></i></div></div><b>${n(sp.company[i])}%<small>${n(sp.market[i])}%</small></b></div>`).join('')+'<div class="chart-legend"><span><i style="background:#5f9c7f"></i>Empresa</span><span><i style="background:#b8c4cf"></i>Mercado no mesmo recorte</span></div>':'<p class="empty">Sem velocidade declarada neste recorte.</p>';
   renderCompanyTable();
   $('mgmt-company-method').innerHTML=`<p>Empresa = ${escapeHTML(meta.company_key)} Participação = acessos da empresa ÷ acessos de todas as prestadoras no município e mês. Janela: ${monthLabel(meta.series_months[0])} a ${monthLabel(meta.reference_month)}. Limiares: liderança ≥ ${ME.SIGNAL.lead}%, movimento ≥ ${ME.SIGNAL.move_pp} p.p., espaço quando participação &lt; ${ME.SIGNAL.room_share}% em mercado ≥ ${n(ME.SIGNAL.room_market)} acessos. São regras de triagem, não previsão de vendas, retorno ou viabilidade de rede.</p><ul>${meta.limitations.map(l=>`<li>${escapeHTML(l)}</li>`).join('')}</ul><p>Fonte: <a href="${escapeHTML(meta.url)}" target="_blank" rel="noopener noreferrer">Anatel, acessos de banda larga fixa ↗</a>, arquivo de ${formatDate(meta.source_last_modified)}, coletado em ${formatDate(meta.retrieved_at)}.</p>`;
+}
+let mgmtMunicipalities=null,mgmtMunicipalitiesPromise=null,mgmtCompanyMap=null,mgmtCompanyMapLayer=null,mgmtCompanyMapFit=null;
+const signalColors={lead:'#2e7656',grow:'#7fbf9c',defend:'#c0804a',room:'#6c86b8',stable:'#b9c3c0',absent:'#e0e4e3'};
+async function loadMunicipalities(){
+  if(!mgmtMunicipalitiesPromise)mgmtMunicipalitiesPromise=fetch('/api/municipalities').then(async r=>{if(!r.ok)throw new Error('API respondeu '+r.status);mgmtMunicipalities=await r.json();}).catch(error=>{mgmtMunicipalitiesPromise=null;throw error;});
+  await mgmtMunicipalitiesPromise;
+}
+function companyMapColor(mode,r){
+  if(!r)return null;
+  if(mode==='signal')return signalColors[r.signal];
+  if(mode==='delta'){const d=r.delta_pp??0;return d<=-5?'#b5643a':d<=-2?'#dca27c':d<2?'#e9ecea':d<5?'#93c6a8':'#2e8a5f';}
+  const s=r.share_pct||0;return s<5?'#c3e0cd':s<15?'#a6d1b6':s<30?'#62a984':'#24704f';
+}
+async function drawCompanyMap(v){
+  await loadMunicipalities();
+  if(!mgmtCompanyMap){
+    mgmtCompanyMap=L.map('mgmt-company-map',{preferCanvas:true});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:12,minZoom:5,attribution:'© OpenStreetMap contributors · malhas © IBGE'}).addTo(mgmtCompanyMap);
+    mgmtCompanyMapLayer=L.layerGroup().addTo(mgmtCompanyMap);
+    $('mgmt-company-map-mode').onchange=()=>drawCompanyMap(mgmtCompanyView);
+  }
+  mgmtCompanyMap.invalidateSize();mgmtCompanyMapLayer.clearLayers();
+  const mode=$('mgmt-company-map-mode').value,byCode=new Map(v.rows.map(r=>[r.code,r])),bounds=[];
+  // Frame the municipalities that hold 95% of the base, so a few tiny outposts do not zoom out to the whole state.
+  const core=new Set();let acc=0;v.rows.forEach(r=>{if(acc<v.acessos*.95||!core.size){core.add(r.code);acc+=r.acessos;}});
+  mgmtMunicipalities.features.forEach(f=>{
+    const r=byCode.get(f.code),color=companyMapColor(mode,r),name=mgmtCompanies.municipalities[f.code]?.name||f.code;
+    const layer=L.polygon(f.rings,{color:r?'#ffffff':'#c9d0ce',weight:r?.6:.4,fillColor:color||'#e6e9e8',fillOpacity:r?.88:.55});
+    layer.bindTooltip(r?`<strong>${escapeHTML(name)}</strong><br>${n(r.acessos)} acessos · ${r.share_pct===null?'—':n(r.share_pct.toFixed(1))+'%'} do município<br>${pp(r.delta_pp)} em 12 meses · ${signalNames[r.signal]}`:`${escapeHTML(name)} · sem acessos da empresa`,{sticky:true});
+    if(r){layer.on('click',()=>{$('mgmt-company-filter').value='all';$('mgmt-company-search').value=name;mgmtCompanyLimit=15;renderCompanyTable();$('mgmt-company-table').scrollIntoView({behavior:'smooth',block:'center'});});if(core.has(f.code))bounds.push(...f.rings[0]);}
+    layer.addTo(mgmtCompanyMapLayer);
+  });
+  // Study cities outlined so the operation's area stays visible on any company.
+  mgmtCompanies.meta.study_municipalities.forEach(code=>{const f=mgmtMunicipalities.features.find(x=>x.code===code);if(f)L.polygon(f.rings,{color:'#112a30',weight:1.8,fill:false,interactive:false}).addTo(mgmtCompanyMapLayer);});
+  if(mgmtCompanyMapFit!==v.company.id){mgmtCompanyMapFit=v.company.id;if(bounds.length)mgmtCompanyMap.fitBounds(L.latLngBounds(bounds),{padding:[20,20],maxZoom:10});else mgmtCompanyMap.setView([-18.5,-44.5],6);}
+  const legend={share:[['< 5%','#c3e0cd'],['5–15%','#a6d1b6'],['15–30%','#62a984'],['≥ 30%','#24704f']],delta:[['≤ −5 p.p.','#b5643a'],['−5 a −2','#dca27c'],['estável','#e9ecea'],['+2 a +5','#93c6a8'],['≥ +5 p.p.','#2e8a5f']],signal:Object.entries(signalColors).map(([k,c])=>[signalNames[k],c])}[mode];
+  $('mgmt-company-map-legend').innerHTML=legend.map(([l,c])=>`<span><i style="background:${c}"></i>${escapeHTML(l)}</span>`).join('')+'<span><i style="background:#e6e9e8;border:1px solid #c9d0ce"></i>Sem presença</span><span><i style="background:none;border:2px solid #112a30"></i>Cidades do estudo</span>';
 }
 function renderCompanySignals(v){
   const present=v.rows.filter(r=>!r.absent),signals=[],name=escapeHTML(v.company.name);

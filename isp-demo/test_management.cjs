@@ -116,6 +116,29 @@ test('real market view merges cities by CNPJ and only reports HHI inside one mun
   all.providers.slice(1).forEach((p, i) => assert.ok(all.providers[i].acessos >= p.acessos));
 });
 
+test('company view: shares reconcile with municipal totals and signals follow their thresholds', () => {
+  const data = load('market-companies.json'), market = load('market.json'), last = data.meta.series_months.length - 1;
+  for (const company of data.companies.slice(0, 15)) {
+    const v = E.companyView(data, company.id);
+    assert.equal(v.acessos, company.footprint.reduce((s, r) => s + r[r.length - 1], 0));
+    v.rows.forEach(r => {
+      assert.ok(r.acessos <= r.mercado, `${company.id} ${r.code}`);
+      if (r.signal === 'lead') assert.ok(r.share_pct >= E.SIGNAL.lead);
+      if (r.signal === 'defend') { assert.ok(r.delta_pp <= -E.SIGNAL.move_pp); assert.ok(r.variacao < 0); }
+      if (r.signal === 'grow') assert.ok(r.delta_pp >= E.SIGNAL.move_pp);
+      if (r.signal === 'room') { assert.ok(r.share_pct < E.SIGNAL.room_share); assert.ok(r.mercado >= E.SIGNAL.room_market); }
+      if (r.signal === 'absent') assert.equal(r.acessos, 0);
+    });
+    if (v.speed.MG) assert.ok(Math.abs(v.speed.MG.company.reduce((s, x) => s + x, 0) - 100) < 0.5);
+  }
+  // Municipal totals of the study cities match the per-provider market snapshot.
+  market.cities.forEach(c => assert.equal(data.municipalities[c.ibge_code].total[last], c.total));
+  const competition = E.municipalityCompetition(data, '3132404');
+  assert.equal(competition[0].name, 'G6 INTERNET');
+  assert.ok(Math.abs(competition.reduce((s, x) => s + x.share_pct, 0) - 100) < 0.5);
+  assert.equal(E.companyView(data, 'nope'), null);
+});
+
 test('day route visits each assigned stop once, in nearest-neighbour order from the base', () => {
   const base = { lat: 0, lng: 0 };
   const stops = [{ id:'far', lat:0, lng:0.02, priority:'low', due_at:'2' , status:'open' }, { id:'near', lat:0, lng:0.005, priority:'low', due_at:'1', status:'open' }, { id:'done', lat:0, lng:0.001, priority:'low', due_at:'0', status:'done' }];

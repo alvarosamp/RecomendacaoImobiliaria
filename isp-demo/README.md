@@ -243,3 +243,15 @@ python3 -m unittest -v test_market.py
 ```
 
 Limites: acessos não são domicílios nem cobertura por rua. Meses com queda brusca seguida de recuperação e prestadoras que somem costumam ser declaração ausente; em Pouso Alegre, por exemplo, três prestadoras com cerca de 8,4 mil acessos deixaram de declarar entre 05 e 08/2026, o que explica boa parte da queda do total. Variação por CNPJ pode refletir troca de CNPJ ou incorporação.
+
+### Empresa acompanhada · inteligência comercial
+
+A aba **Gestão › Empresa acompanhada** acompanha uma empresa real escolhida entre as 99 presentes nas três cidades do estudo, em todos os 853 municípios de Minas Gerais. Empresa = grupo econômico declarado (Vivo, Claro, Oi, TIM, Alares, Sky/Zaaz…) ou, para independentes, a raiz do CNPJ, que junta matriz e filiais.
+
+- **Indicadores:** acessos em MG e variação em 12 meses contra o mercado dos mesmos municípios, municípios com presença, participação nas três cidades do estudo e parcela da base em planos de 500 Mbps ou mais.
+- **Sinais comerciais**, com o número que disparou cada um: *defender* (perdeu ≥ 2 p.p. e acessos), *crescendo* (ganhou ≥ 2 p.p.), *espaço para crescer* (participação < 10% em mercado ≥ 2.000 acessos), *liderança* (≥ 30%), posicionamento de velocidade contra o mercado (diferença ≥ 10 p.p. em ≥ 500 Mbps) e municípios sem declaração no mês.
+- **Concorrência** em cada cidade do estudo: participação mensal da empresa e dos três maiores concorrentes; quem ganhou e quem perdeu participação; entradas por aquisição ou troca de CNPJ ficam identificadas.
+- **Mix de velocidade contratada** da empresa contra o mercado, em MG ou por cidade.
+- **Tabela de presença em MG**, com filtro por sinal, ordenação, busca e exportação CSV.
+
+Snapshot `data/market-companies.json` (cerca de 430 KB), gerado por `collect_market.py` junto com `data/market.json`. As faixas de velocidade da Anatel foram descartadas (mais de 95% em "> 34 Mbps"); usamos a velocidade contratada declarada. Os sinais são regras de triagem, não previsão de vendas. Sem coordenadas municipais, esta aba não tem mapa.

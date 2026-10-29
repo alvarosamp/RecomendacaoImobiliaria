@@ -182,7 +182,44 @@
     };
   }
 
-  const api = { marketView, distance, revenueSeries, revenueBreakdown, capacityForecast, cellIndex, territoryCells, rankTerritory, buildWorkOrders, applyOverrides, autoAssign, dayRoute, isOverdue, SLA_HOURS, occupiedAt, billedAt };
+  /* Commercial intelligence for one real company over its Minas Gerais footprint (Anatel accesses).
+     Signals are rules on declared accesses and shares, not forecasts. */
+  const SIGNAL = { lead: 30, move_pp: 2, room_share: 10, room_market: 2000 };
+  const share = (a, t) => t ? a / t * 100 : null;
+  function companyView(data, id) {
+    const company = data.companies.find(c => c.id === id); if (!company) return null;
+    const study = new Set(data.meta.study_municipalities), last = data.meta.series_months.length - 1;
+    const rows = company.footprint.map(([code, ...series]) => {
+      const total = data.municipalities[code].total, now = share(series[last], total[last]), before = share(series[0], total[0]);
+      const r = { code, name: data.municipalities[code].name, study: study.has(code), series, acessos: series[last], acessos_antes: series[0], variacao: series[last] - series[0], mercado: total[last], mercado_antes: total[0], share_pct: now === null ? null : round(now, 2), share_antes_pct: before === null ? null : round(before, 2) };
+      r.delta_pp = r.share_pct !== null && r.share_antes_pct !== null ? round(r.share_pct - r.share_antes_pct, 2) : null;
+      r.absent = series[last] === 0;
+      r.signal = r.absent ? 'absent' : r.share_pct >= SIGNAL.lead ? 'lead' : r.delta_pp <= -SIGNAL.move_pp && r.variacao < 0 ? 'defend' : r.delta_pp >= SIGNAL.move_pp ? 'grow' : r.share_pct < SIGNAL.room_share && r.mercado >= SIGNAL.room_market ? 'room' : 'stable';
+      return r;
+    }).sort((a, b) => b.acessos - a.acessos || a.code.localeCompare(b.code));
+    const present = rows.filter(r => !r.absent), sum = (list, k) => list.reduce((s, r) => s + r[k], 0);
+    const studyRows = present.filter(r => r.study);
+    const pct = buckets => { const t = buckets.reduce((s, v) => s + v, 0); return t ? buckets.map(v => round(v / t * 100, 1)) : null; };
+    const fast = mix => mix ? round(mix.slice(3).reduce((s, v) => s + v, 0), 1) : null; // ≥ 500 Mbps
+    const speed = {};
+    ['MG', ...data.meta.study_municipalities].forEach(code => { if (company.speed[code]) speed[code] = { company: pct(company.speed[code]), market: pct(data.market_speed[code]) }; });
+    return {
+      company, rows, months: data.meta.series_months,
+      acessos: sum(present, 'acessos'), acessos_antes: sum(rows, 'acessos_antes'), municipios: present.length,
+      counts: rows.reduce((a, r) => (a[r.signal] = (a[r.signal] || 0) + 1, a), {}),
+      study_share: studyRows.length ? round(share(sum(studyRows, 'acessos'), sum(studyRows, 'mercado')), 2) : null,
+      speed, fast_pct: fast(speed.MG?.company), market_fast_pct: fast(speed.MG?.market),
+    };
+  }
+  /* Competitors in one municipality at the same company level, with share movement over the window. */
+  function municipalityCompetition(data, code) {
+    const total = data.municipalities[code]?.total, last = data.meta.series_months.length - 1;
+    if (!total) return [];
+    return data.companies.map(c => { const row = c.footprint.find(r => r[0] === code); if (!row) return null; const s = row.slice(1); return { id: c.id, name: c.name, porte: c.porte, series: s, acessos: s[last], variacao: s[last] - s[0], share_pct: round(share(s[last], total[last]), 2), delta_pp: round(share(s[last], total[last]) - share(s[0], total[0]), 2), share_series: s.map((v, i) => round(share(v, total[i]) || 0, 2)) }; })
+      .filter(Boolean).sort((a, b) => b.acessos - a.acessos || a.id.localeCompare(b.id));
+  }
+
+  const api = { companyView, municipalityCompetition, SIGNAL, marketView, distance, revenueSeries, revenueBreakdown, capacityForecast, cellIndex, territoryCells, rankTerritory, buildWorkOrders, applyOverrides, autoAssign, dayRoute, isOverdue, SLA_HOURS, occupiedAt, billedAt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ManagementEngine = api;
 })(typeof window !== 'undefined' ? window : globalThis);

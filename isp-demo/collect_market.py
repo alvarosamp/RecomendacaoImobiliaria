@@ -111,6 +111,88 @@ def collect(zip_path, retrieved_at, last_modified=None):
     }
 
 
+SPEED_EDGES = (100, 300, 500, 700, 1000)
+SPEED_LABELS = ['< 100 Mbps', '100–299 Mbps', '300–499 Mbps', '500–699 Mbps', '700–999 Mbps', '≥ 1 Gbps']
+
+
+def company_key(row):
+    """Economic group for national groups; CNPJ root (same company, any branch) for independents."""
+    group = row['Grupo Econômico'].strip()
+    return group if group and group != 'OUTROS' else 'CNPJ-' + row['CNPJ'].strip()[:8]
+
+
+def speed_bucket(value):
+    try:
+        mbps = float(value.replace(',', '.'))
+    except ValueError:
+        return None
+    return sum(mbps >= edge for edge in SPEED_EDGES)
+
+
+def collect_companies(zip_path, market):
+    """Footprint in every Minas Gerais municipality for each company present in the three study cities."""
+    study = {c['ibge_code'] for c in market['cities']}
+    months = market['meta']['series_months']
+    last, index = months[-1], {m: i for i, m in enumerate(months)}
+    accesses = defaultdict(int)       # (municipality, month, company) -> accesses
+    city_names, names, cnpjs = {}, defaultdict(lambda: defaultdict(int)), defaultdict(set)
+    porte = {}
+    speed = defaultdict(lambda: [0] * len(SPEED_LABELS))  # (company or '*', municipality or 'MG') -> buckets
+    mix = defaultdict(lambda: defaultdict(int))           # (company, field) -> value -> accesses
+    with zipfile.ZipFile(zip_path) as archive:
+        for year in sorted({int(m[:4]) for m in months}):
+            for row in read_csv(archive, f'Acessos_Banda_Larga_Fixa_{year}.csv'):
+                if row['UF'] != 'MG':
+                    continue
+                month = f"{int(row['Ano']):04d}-{int(row['Mês']):02d}"
+                if month not in index:
+                    continue
+                code, key, value = row['Código IBGE Município'], company_key(row), int(row['Acessos'] or 0)
+                accesses[code, month, key] += value
+                city_names[code] = row['Município'].strip()
+                if month == last:
+                    names[key][row['Empresa'].strip()] += value
+                    cnpjs[key].add(row['CNPJ'].strip())
+                    porte[key] = row['Porte da Prestadora'].strip()
+                    bucket = speed_bucket(row['Velocidade'])
+                    if bucket is not None:
+                        for target in ((key, 'MG'), (key, code), ('*', 'MG'), ('*', code)):
+                            speed[target][bucket] += value
+                    mix[key, 'tecnologia'][row['Tecnologia'].strip()] += value
+                    mix[key, 'pessoa'][row['Tipo de Pessoa'].strip()] += value
+    tracked = sorted({k for (code, month, k) in accesses if code in study and month == last})
+    totals = defaultdict(lambda: [0] * len(months))
+    for (code, month, _), value in accesses.items():
+        totals[code][index[month]] += value
+    footprints = defaultdict(dict)
+    for (code, month, key), value in accesses.items():
+        if key in tracked:
+            footprints[key].setdefault(code, [0] * len(months))[index[month]] += value
+    used = set()
+    companies = []
+    for key in tracked:
+        rows = sorted(([code] + series for code, series in footprints[key].items() if any(series)), key=lambda r: -r[-1])
+        used.update(r[0] for r in rows)
+        companies.append({
+            'id': key, 'name': max(names[key].items(), key=lambda x: x[1])[0], 'grupo': key if not key.startswith('CNPJ-') else 'OUTROS',
+            'porte': porte.get(key, ''), 'cnpjs': sorted(cnpjs[key]), 'footprint': rows,
+            'speed': {code: speed[key, code] for code in ['MG', *sorted(study)] if any(speed[key, code])},
+            'tecnologia': dict(sorted(mix[key, 'tecnologia'].items(), key=lambda x: -x[1])), 'pessoa': dict(mix[key, 'pessoa']),
+        })
+    companies.sort(key=lambda c: -sum(r[-1] for r in c['footprint'] if r[0] in study))
+    return {
+        'meta': {**{k: market['meta'][k] for k in ('source', 'synthetic', 'url', 'panel_url', 'source_last_modified', 'source_sha256', 'retrieved_at', 'reference_month', 'comparison_month', 'series_months')},
+                 'scope': 'Minas Gerais', 'study_municipalities': sorted(study), 'speed_labels': SPEED_LABELS,
+                 'company_key': 'Grupo econômico declarado; prestadoras do grupo "OUTROS" agrupadas pela raiz do CNPJ (8 dígitos).',
+                 'footprint_row': 'código IBGE, acessos nos meses de series_months',
+                 'limitations': market['meta']['limitations'] + ['Velocidade é a contratada declarada, não a medida. Faixas de velocidade da Anatel foram descartadas: mais de 95% dos acessos estão em "> 34 Mbps".',
+                                                                 'Participação = acessos da empresa ÷ acessos de todas as prestadoras no município e mês; meses com declarações ausentes de terceiros inflam a participação.']},
+        'municipalities': {code: {'name': city_names[code], 'total': totals[code]} for code in sorted(used)},
+        'market_speed': {code: speed['*', code] for code in ['MG', *sorted(study)]},
+        'companies': companies,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--zip', type=Path, default=REPO / 'data/market-cache/acessos_banda_larga_fixa.zip')
@@ -118,6 +200,7 @@ def main():
     parser.add_argument('--retrieved-at', default='2026-10-28')
     parser.add_argument('--last-modified', default='Thu, 08 Oct 2026 10:32:37 GMT', help='Last-Modified header of the collected archive.')
     parser.add_argument('--output', type=Path, default=REPO / 'data/market.json')
+    parser.add_argument('--companies-output', type=Path, default=REPO / 'data/market-companies.json')
     args = parser.parse_args()
     modified = args.last_modified
     if not args.zip.exists():
@@ -130,6 +213,9 @@ def main():
     for c in result['cities']:
         print(c['id'], c['total'], 'acessos', c['providers_count'], 'prestadoras', 'HHI', c['hhi_grupos'], c['providers'][0]['empresa'])
     print('bytes', args.output.stat().st_size)
+    companies = collect_companies(args.zip, result)
+    args.companies_output.write_text(json.dumps(companies, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+    print(len(companies['companies']), 'empresas', len(companies['municipalities']), 'municípios de MG', 'bytes', args.companies_output.stat().st_size)
 
 
 if __name__ == '__main__':

@@ -42,6 +42,10 @@
     {
       "source": "/api/market",
       "destination": "/snapshots/market.json"
+    },
+    {
+      "source": "/api/companies",
+      "destination": "/snapshots/market-companies.json"
     }
   ],
   "headers": [

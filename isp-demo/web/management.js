@@ -34,8 +34,80 @@ function initManagement(){
 function openManagement(){renderManagement();}
 function renderManagement(){
   document.querySelectorAll('[data-mgmt-tab]').forEach(b=>{b.classList.toggle('active',b.dataset.mgmtTab===mgmtTab);b.setAttribute('aria-selected',b.dataset.mgmtTab===mgmtTab);});
-  ['revenue','territory','capacity','orders','market'].forEach(t=>$('mgmt-'+t).hidden=t!==mgmtTab);
-  ({revenue:renderRevenue,territory:renderMgmtTerritory,capacity:renderCapacity,orders:renderOrders,market:renderMarket})[mgmtTab]();
+  ['revenue','territory','capacity','orders','market','company'].forEach(t=>$('mgmt-'+t).hidden=t!==mgmtTab);
+  ({revenue:renderRevenue,territory:renderMgmtTerritory,capacity:renderCapacity,orders:renderOrders,market:renderMarket,company:renderCompany})[mgmtTab]();
+}
+
+/* One real company: footprint, share movement, competition and product mix from Anatel accesses. */
+let mgmtCompanies=null,mgmtCompaniesPromise=null,mgmtCompanyLimit=15,mgmtCompanyView=null;
+const signalNames={lead:'Liderança',defend:'Defender',grow:'Crescendo',room:'Espaço para crescer',stable:'Estável',absent:'Sem declaração'};
+const pp=v=>v===null?'—':`${v>0?'+':''}${n(v.toFixed(1))} p.p.`;
+async function loadCompanies(){
+  if(!mgmtCompaniesPromise)mgmtCompaniesPromise=fetch('/api/companies').then(async r=>{if(!r.ok)throw new Error('Base de empresas da Anatel indisponível.');const data=await r.json();if(data.meta.synthetic!==false)throw new Error('A base de empresas deve ter origem pública real.');mgmtCompanies=data;
+    $('mgmt-company-select').innerHTML=data.companies.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)} · ${escapeHTML(c.porte)} · ${n(c.footprint.length)} municípios</option>`).join('');
+    $('mgmt-company-city').innerHTML=data.meta.study_municipalities.map(code=>`<option value="${code}">${escapeHTML(data.municipalities[code].name)}</option>`).join('');
+    ['mgmt-company-select','mgmt-company-city','mgmt-company-speed-scope'].forEach(id=>$(id).onchange=()=>{mgmtCompanyLimit=15;renderCompany();});
+    ['mgmt-company-filter','mgmt-company-sort'].forEach(id=>$(id).onchange=()=>{mgmtCompanyLimit=15;renderCompanyTable();});
+    $('mgmt-company-search').oninput=()=>{mgmtCompanyLimit=15;renderCompanyTable();};
+    $('mgmt-company-export').onclick=exportCompany;
+  }).catch(error=>{mgmtCompaniesPromise=null;throw error;});
+  await mgmtCompaniesPromise;
+}
+async function renderCompany(){
+  try{await loadCompanies();}catch(error){$('mgmt-company-status').textContent=error.message;return;}
+  const meta=mgmtCompanies.meta,v=ME.companyView(mgmtCompanies,$('mgmt-company-select').value);mgmtCompanyView=v;
+  const c=v.company,change=v.acessos-v.acessos_antes,marketNow=v.rows.reduce((s,r)=>s+r.mercado,0),marketBefore=v.rows.reduce((s,r)=>s+r.mercado_antes,0);
+  $('mgmt-company-status').textContent=`${monthLabel(meta.reference_month)} comparado com ${monthLabel(meta.comparison_month)} · ${c.grupo==='OUTROS'?`CNPJ ${c.cnpjs.join(', ')}`:`grupo ${c.grupo}, ${c.cnpjs.length} CNPJ(s)`}. Dados públicos agregados; não há clientes, endereços ou cobertura por rua.`;
+  $('mgmt-company-kpis').innerHTML=kpi('Acessos em Minas Gerais',n(v.acessos),`<em>${change>=0?'+':''}${n(change)}</em> em 12 meses · mercado nesses municípios ${marketNow>=marketBefore?'+':''}${n(((marketNow/marketBefore-1)*100).toFixed(1))}%`,'users')+kpi('Municípios com presença',n(v.municipios),`${n(v.counts.lead||0)} liderança · ${n(v.counts.grow||0)} crescendo · ${n(v.counts.defend||0)} defender`,'pin')+kpi('Participação nas 3 cidades do estudo',v.study_share===null?'—':`${n(v.study_share.toFixed(1))}%`,'Pouso Alegre, Santa Rita do Sapucaí e Itajubá somadas','spark')+kpi('Base em planos ≥ 500 Mbps',v.fast_pct===null?'—':`${n(v.fast_pct)}%`,v.market_fast_pct===null?'Velocidade não declarada':`Mercado de MG: ${n(v.market_fast_pct)}%`,'network');
+  renderCompanySignals(v);
+  const code=$('mgmt-company-city').value,comp=ME.municipalityCompetition(mgmtCompanies,code),own=comp.find(x=>x.id===c.id),rivals=comp.filter(x=>x.id!==c.id).slice(0,3);
+  $('mgmt-company-trend-title').textContent=`Participação em ${mgmtCompanies.municipalities[code].name}`;
+  const lines=[...(own?[{...own,own:true}]:[]),...rivals],colors=['#247d64','#668bba','#c08a4a','#9a7bb5'],max=Math.max(5,...lines.flatMap(l=>l.share_series)),w=520,h=190,x=i=>30+i/(v.months.length-1)*(w-40),y=val=>h-22-val/max*(h-36);
+  $('mgmt-company-trend').innerHTML=`<svg class="mgmt-lines" viewBox="0 0 ${w} ${h}" role="img" aria-label="Participação mensal da empresa e concorrentes">${[0,.5,1].map(f=>`<line x1="30" x2="${w-10}" y1="${y(max*f)}" y2="${y(max*f)}" class="grid"/><text x="0" y="${y(max*f)+3}">${n(Math.round(max*f))}%</text>`).join('')}${lines.map((l,i)=>`<polyline points="${l.share_series.map((s,j)=>`${x(j).toFixed(1)},${y(s).toFixed(1)}`).join(' ')}" style="stroke:${colors[i]}" class="${l.own?'own':''}"/>`).join('')}${v.months.map((m,j)=>j%3===0||j===v.months.length-1?`<text x="${x(j)-10}" y="${h-4}">${monthLabel(m)}</text>`:'').join('')}</svg><div class="chart-legend">${lines.map((l,i)=>`<span><i style="background:${colors[i]}"></i>${escapeHTML(l.name)}${l.own?' (acompanhada)':''}</span>`).join('')}</div>${own?'':`<p class="mini-caption">${escapeHTML(c.name)} não declarou acessos neste município no mês de referência.</p>`}`;
+  const movers=comp.slice().sort((a,b)=>b.delta_pp-a.delta_pp),shown=[...movers.slice(0,4),...movers.slice(-3).filter(m=>!movers.slice(0,4).includes(m))];
+  if(own&&!shown.includes(own))shown.push(own);
+  $('mgmt-company-competition').innerHTML=mgmtTable(['Empresa','Participação','12 meses','Acessos 12 meses'],shown.sort((a,b)=>b.delta_pp-a.delta_pp).map(m=>`<tr class="${m.id===c.id?'mgmt-own':''}"><td><strong>${escapeHTML(m.name)}</strong><small>${escapeHTML(m.porte)}${m.series[0]===0?' · sem acessos 12 meses antes: entrada, aquisição ou troca de CNPJ':''}</small></td><td>${n(m.share_pct)}%</td><td class="${m.delta_pp<0?'mgmt-neg':'mgmt-pos'}">${pp(m.delta_pp)}</td><td>${m.variacao>=0?'+':''}${n(m.variacao)}</td></tr>`))+'<p class="mini-caption mgmt-pad">Maiores ganhos e perdas entre as empresas presentes no mês de referência. Quedas bruscas de um mês costumam ser declaração ausente.</p>';
+  const scopes=['MG',...meta.study_municipalities].filter(k=>v.speed[k]);
+  if($('mgmt-company-speed-scope').dataset.company!==c.id){$('mgmt-company-speed-scope').innerHTML=scopes.map(k=>`<option value="${k}">${k==='MG'?'Minas Gerais':escapeHTML(mgmtCompanies.municipalities[k].name)}</option>`).join('');$('mgmt-company-speed-scope').dataset.company=c.id;}
+  const sp=v.speed[$('mgmt-company-speed-scope').value];
+  $('mgmt-company-speed').innerHTML=sp?meta.speed_labels.map((label,i)=>`<div class="mgmt-speed-row"><span>${escapeHTML(label)}</span><div><div class="mgmt-bar"><i style="width:${sp.company[i]}%"></i></div><div class="mgmt-bar market"><i style="width:${sp.market[i]}%"></i></div></div><b>${n(sp.company[i])}%<small>${n(sp.market[i])}%</small></b></div>`).join('')+'<div class="chart-legend"><span><i style="background:#5f9c7f"></i>Empresa</span><span><i style="background:#b8c4cf"></i>Mercado no mesmo recorte</span></div>':'<p class="empty">Sem velocidade declarada neste recorte.</p>';
+  renderCompanyTable();
+  $('mgmt-company-method').innerHTML=`<p>Empresa = ${escapeHTML(meta.company_key)} Participação = acessos da empresa ÷ acessos de todas as prestadoras no município e mês. Janela: ${monthLabel(meta.series_months[0])} a ${monthLabel(meta.reference_month)}. Limiares: liderança ≥ ${ME.SIGNAL.lead}%, movimento ≥ ${ME.SIGNAL.move_pp} p.p., espaço quando participação &lt; ${ME.SIGNAL.room_share}% em mercado ≥ ${n(ME.SIGNAL.room_market)} acessos. São regras de triagem, não previsão de vendas, retorno ou viabilidade de rede.</p><ul>${meta.limitations.map(l=>`<li>${escapeHTML(l)}</li>`).join('')}</ul><p>Fonte: <a href="${escapeHTML(meta.url)}" target="_blank" rel="noopener noreferrer">Anatel, acessos de banda larga fixa ↗</a>, arquivo de ${formatDate(meta.source_last_modified)}, coletado em ${formatDate(meta.retrieved_at)}.</p>`;
+}
+function renderCompanySignals(v){
+  const present=v.rows.filter(r=>!r.absent),signals=[],name=escapeHTML(v.company.name);
+  const top=(list,k,dir=-1)=>list.slice().sort((a,b)=>dir*(a[k]-b[k])).slice(0,3);
+  const defend=top(present.filter(r=>r.signal==='defend'),'variacao',1);
+  if(defend.length)signals.push({type:'defend',title:'Defender a base',text:defend.map(r=>`<b>${escapeHTML(r.name)}</b>: ${pp(r.delta_pp)}, ${n(r.variacao)} acessos`).join(' · '),hint:'Investigar churn, preço e concorrência local; nas cidades do estudo, veja quem ganhou.',code:defend[0].code});
+  const grow=top(present.filter(r=>r.signal==='grow'),'delta_pp');
+  if(grow.length)signals.push({type:'grow',title:'Onde está ganhando',text:grow.map(r=>`<b>${escapeHTML(r.name)}</b>: ${pp(r.delta_pp)}, +${n(r.variacao)} acessos`).join(' · '),hint:'Entender o que funciona aqui (oferta, canal, rede) e replicar.',code:grow[0].code});
+  const room=top(present.filter(r=>r.signal==='room'),'mercado');
+  if(room.length)signals.push({type:'room',title:'Mercados grandes com participação baixa',text:room.map(r=>`<b>${escapeHTML(r.name)}</b>: ${n(r.share_pct.toFixed(1))}% de ${n(r.mercado)} acessos`).join(' · '),hint:'Avaliar cobertura e oferta antes de campanhas; participação baixa pode ser falta de rede.',code:room[0].code});
+  if(v.fast_pct!==null&&v.market_fast_pct!==null&&Math.abs(v.fast_pct-v.market_fast_pct)>=10)signals.push(v.fast_pct<v.market_fast_pct?{type:'room',title:'Base em planos mais lentos que o mercado',text:`${n(v.fast_pct)}% da base em ≥ 500 Mbps contra ${n(v.market_fast_pct)}% no mercado de MG.`,hint:'Espaço para campanha de upgrade; confirmar se a rede comporta.'}:{type:'lead',title:'Posicionamento em velocidades altas',text:`${n(v.fast_pct)}% da base em ≥ 500 Mbps contra ${n(v.market_fast_pct)}% no mercado de MG.`,hint:'Diferencial a proteger frente a ofertas de preço.'});
+  const lead=present.filter(r=>r.signal==='lead');
+  if(lead.length)signals.push({type:'lead',title:`Lidera ${n(lead.length)} município(s)`,text:top(lead,'acessos').map(r=>`<b>${escapeHTML(r.name)}</b>: ${n(r.share_pct.toFixed(1))}%`).join(' · '),hint:'Mercados a proteger; acompanhe entrantes e grandes operadoras.',code:lead[0]?.code});
+  const absent=v.rows.filter(r=>r.absent);
+  if(absent.length)signals.push({type:'absent',title:'Sem declaração no mês de referência',text:`${n(absent.length)} município(s) com acessos antes e zero em ${monthLabel(mgmtCompanies.meta.reference_month)}: ${absent.slice(0,3).map(r=>escapeHTML(r.name)).join(', ')}.`,hint:'Provável atraso de declaração ou saída; não tratar como perda sem confirmar.'});
+  $('mgmt-company-signals').innerHTML=signals.map(s=>`<article class="mgmt-signal ${s.type}"><span class="mgmt-action ${s.type}">${signalNames[s.type]}</span><strong>${s.title}</strong><p>${s.text}</p><small>${s.hint}</small>${s.code?`<button class="text-button" data-signal-code="${s.code}">Ver ${escapeHTML(mgmtCompanies.municipalities[s.code].name)} na tabela ↓</button>`:''}</article>`).join('')||`<p class="empty">Nenhum sinal acima dos limiares para ${name}.</p>`;
+  $('mgmt-company-signals').querySelectorAll('[data-signal-code]').forEach(b=>b.onclick=()=>{const code=b.dataset.signalCode;$('mgmt-company-filter').value='all';$('mgmt-company-search').value=mgmtCompanies.municipalities[code].name;if(mgmtCompanies.meta.study_municipalities.includes(code)){$('mgmt-company-city').value=code;renderCompany();}else renderCompanyTable();$('mgmt-company-table').scrollIntoView({behavior:'smooth',block:'center'});});
+}
+function companyRows(){
+  const filter=$('mgmt-company-filter').value,q=$('mgmt-company-search').value.trim().toLocaleLowerCase('pt-BR'),sort=$('mgmt-company-sort').value;
+  const rows=mgmtCompanyView.rows.filter(r=>(filter==='all'||r.signal===filter)&&(!q||r.name.toLocaleLowerCase('pt-BR').includes(q)));
+  const key={acessos:(a,b)=>b.acessos-a.acessos,delta:(a,b)=>(a.delta_pp??0)-(b.delta_pp??0),gain:(a,b)=>(b.delta_pp??0)-(a.delta_pp??0),market:(a,b)=>b.mercado-a.mercado}[sort];
+  return rows.sort((a,b)=>key(a,b)||a.code.localeCompare(b.code));
+}
+function renderCompanyTable(){
+  if(!mgmtCompanyView)return;
+  const rows=companyRows();
+  $('mgmt-company-table').innerHTML=mgmtTable(['Município','Acessos','12 meses','Participação','Variação','Mercado do município','Sinal'],rows.slice(0,mgmtCompanyLimit).map(r=>`<tr class="${r.study?'mgmt-own':''}"><td><strong>${escapeHTML(r.name)}</strong><small>IBGE ${r.code}${r.study?' · cidade do estudo':''}</small></td><td>${n(r.acessos)}</td><td class="${r.variacao<0?'mgmt-neg':'mgmt-pos'}">${r.variacao>=0?'+':''}${n(r.variacao)}</td><td>${r.share_pct===null?'—':n(r.share_pct.toFixed(1))+'%'}<div class="progress"><span style="width:${Math.min(100,r.share_pct||0)}%"></span></div></td><td class="${(r.delta_pp||0)<0?'mgmt-neg':'mgmt-pos'}">${pp(r.delta_pp)}</td><td>${n(r.mercado)}<small>${r.mercado>=r.mercado_antes?'+':''}${n(r.mercado-r.mercado_antes)} em 12 meses</small></td><td><span class="mgmt-action ${r.signal}">${signalNames[r.signal]}</span></td></tr>`),'Nenhum município para os filtros.')+(rows.length>mgmtCompanyLimit?`<div class="mgmt-pad"><button class="button mgmt-more" id="mgmt-company-more">Mostrar mais ${n(Math.min(15,rows.length-mgmtCompanyLimit))} de ${n(rows.length-mgmtCompanyLimit)}</button></div>`:'');
+  $('mgmt-company-more')?.addEventListener('click',()=>{mgmtCompanyLimit+=15;renderCompanyTable();});
+}
+function exportCompany(){
+  if(!mgmtCompanyView)return;
+  const c=mgmtCompanyView.company,rows=companyRows().map(r=>({...r,sinal:signalNames[r.signal],empresa:c.name}));
+  downloadCSV(`ANATEL-${c.name.replace(/[^\w-]+/g,'_')}-${mgmtCompanies.meta.reference_month}.csv`,['empresa','code','name','acessos','acessos_antes','variacao','share_pct','share_antes_pct','delta_pp','mercado','mercado_antes','sinal'],rows);
+  toast(`${n(rows.length)} municípios exportados · fonte Anatel.`);
 }
 
 /* Real market: Anatel fixed-broadband accesses per provider. Kept apart from the synthetic operation. */

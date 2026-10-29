@@ -52,6 +52,23 @@ class CollectorTests(unittest.TestCase):
         self.assertEqual([p['empresa'] for p in pouso['providers']], ['Fica'])
         self.assertEqual(pouso['absent_in_reference'], [{'cnpj': '1', 'empresa': 'Sumiu', 'grupo': 'OUTROS', 'porte': 'Pequeno Porte', 'ultimo_mes': '2026-07', 'ultimos_acessos': 380}])
 
+    def test_companies_group_branches_by_cnpj_root_and_follow_them_across_minas_gerais(self):
+        path = self.build({2026: [
+            row(2026, 8, '11111111000101', 'Indep', '3152501', 60), row(2026, 8, '11111111000282', 'Indep filial', '3100104', 40),
+            row(2026, 8, '22222222000101', 'Vivo', '3152501', 30, grupo='TELEFONICA'), row(2026, 8, '33333333000101', 'Vivo 2', '3152501', 10, grupo='TELEFONICA'),
+            row(2026, 8, '44444444000101', 'Outra cidade só', '3100104', 500),
+        ]})
+        from collect_market import collect_companies
+        data = collect_companies(path, collect(path, 'x'))
+        ids = {c['id']: c for c in data['companies']}
+        self.assertEqual(set(ids), {'CNPJ-11111111', 'TELEFONICA'})  # only companies present in a study city
+        indep = ids['CNPJ-11111111']
+        self.assertEqual(indep['name'], 'Indep')
+        self.assertEqual(sorted(r[0] for r in indep['footprint']), ['3100104', '3152501'])
+        self.assertEqual(sum(r[-1] for r in ids['TELEFONICA']['footprint']), 40)
+        self.assertEqual(data['municipalities']['3100104']['total'][-1], 540)
+        self.assertEqual(indep['speed']['MG'], [0, 100, 0, 0, 0, 0])  # 100 Mbps falls in 100–299
+
     def test_economic_groups_are_merged_for_concentration(self):
         path = self.build({2026: [row(2026, 8, '1', 'A1', '3159605', 50, grupo='GRUPO X'), row(2026, 8, '2', 'A2', '3159605', 50, grupo='GRUPO X')]})
         santa = next(c for c in collect(path, 'x')['cities'] if c['id'] == 'santa-rita')

@@ -10,8 +10,8 @@
   "functions": {
     "api/plan.py": {
       "maxDuration": 30,
-      "includeFiles": "{server.py,planner.py,planner_errors.py,knowledge.py,data/simulation.json,data/roads.json,data/radar.json,data/territory.json,data/regulations.json}",
-      "excludeFiles": "{web/**,public/**,data/radar-cache*/**,test_*,build_vercel.py,README.md,VALIDACAO.md}"
+      "includeFiles": "{server.py,planner.py,planner_errors.py,knowledge.py,data/simulation.json,data/roads.json,data/radar.json,data/territory.json,data/regulations.json,data/market.json}",
+      "excludeFiles": "{web/**,public/**,data/radar-cache*/**,data/anatel-cache/**,test_*,build_vercel.py,README.md,VALIDACAO.md}"
     }
   },
   "rewrites": [
@@ -38,6 +38,10 @@
     {
       "source": "/api/regulations",
       "destination": "/snapshots/regulations.json"
+    },
+    {
+      "source": "/api/market",
+      "destination": "/snapshots/market.json"
     }
   ],
   "headers": [

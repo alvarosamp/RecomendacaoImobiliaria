@@ -1,0 +1,2374 @@
+{
+  "meta": {
+    "source": "ANATEL — Acessos em Serviço do SCM (banda larga fixa)",
+    "source_url": "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/acessos/acessos_banda_larga_fixa.zip",
+    "dataset_page": "https://dados.gov.br/dados/conjuntos-dados/acessos---banda-larga-fixa",
+    "methodology_url": "https://sistemas.anatel.gov.br/anexar-api/publico/anexos/download/c29c9ceb173725ba2e0d49c0b30cdc0d",
+    "license": "Creative Commons Attribution",
+    "synthetic": false,
+    "periodicity": "Mensal",
+    "retrieved_at": "2026-11-02",
+    "unit": "Acessos em serviço declarados pelas prestadoras à ANATEL, por município",
+    "limitations": [
+      "Autodeclarado pelas prestadoras; nem todas enviam dados todo mês, o que pode subestimar provedores pequenos.",
+      "Contagem por acesso em serviço (linha/contrato ativo na prestadora), não é número de domicílios, pessoas ou participação de mercado validada em campo.",
+      "Município é o de registro da prestadora para aquele acesso; não há endereço, rua ou coordenada nesta base.",
+      "Sem relação com o cadastro fictício de clientes, CTOs ou rede do cenário SerraLink: nenhuma empresa aqui foi convertida em infraestrutura ou cliente simulado.",
+      "\"Grupo Econômico\" agrega marcas de um mesmo grupo; \"Empresa\" é a razão social individual usada nesta base — os dois recortes podem divergir para grupos com múltiplas prestadoras."
+    ]
+  },
+  "cities": [
+    {
+      "id": "pouso-alegre",
+      "name": "Pouso Alegre",
+      "uf": "MG",
+      "scope": "network",
+      "reference_month": "2026-09",
+      "total_accesses": 49645,
+      "distinct_providers": 85,
+      "ranking": [
+        {
+          "company": "VIVO",
+          "accesses": 12408,
+          "share": 0.2499
+        },
+        {
+          "company": "CLARO",
+          "accesses": 11584,
+          "share": 0.2333
+        },
+        {
+          "company": "OI",
+          "accesses": 5655,
+          "share": 0.1139
+        },
+        {
+          "company": "ALARES",
+          "accesses": 5409,
+          "share": 0.109
+        },
+        {
+          "company": "SKY/ZAAZ",
+          "accesses": 2980,
+          "share": 0.06
+        },
+        {
+          "company": "Agnet Bandalarga",
+          "accesses": 2672,
+          "share": 0.0538
+        },
+        {
+          "company": "KORE BRASIL",
+          "accesses": 1990,
+          "share": 0.0401
+        },
+        {
+          "company": "Viva Vox Telecom",
+          "accesses": 1601,
+          "share": 0.0322
+        },
+        {
+          "company": "Turbonet",
+          "accesses": 1429,
+          "share": 0.0288
+        },
+        {
+          "company": "Fullnet Telecomunicacoes",
+          "accesses": 934,
+          "share": 0.0188
+        },
+        {
+          "company": "TIM",
+          "accesses": 570,
+          "share": 0.0115
+        },
+        {
+          "company": "G6 INTERNET",
+          "accesses": 496,
+          "share": 0.01
+        },
+        {
+          "company": "Fullnet Telecom",
+          "accesses": 350,
+          "share": 0.0071
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 293,
+          "share": 0.0059
+        },
+        {
+          "company": "Barbosa Net",
+          "accesses": 234,
+          "share": 0.0047
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 142,
+          "share": 0.0029
+        },
+        {
+          "company": "NETWAY",
+          "accesses": 141,
+          "share": 0.0028
+        },
+        {
+          "company": "Sulnet",
+          "accesses": 98,
+          "share": 0.002
+        },
+        {
+          "company": "J.a Telecom",
+          "accesses": 96,
+          "share": 0.0019
+        },
+        {
+          "company": "American Tower do Brasil-comunicacao Multimidia Ltda.",
+          "accesses": 85,
+          "share": 0.0017
+        },
+        {
+          "company": "Starnet",
+          "accesses": 84,
+          "share": 0.0017
+        },
+        {
+          "company": "Eletro Sat Telecom",
+          "accesses": 56,
+          "share": 0.0011
+        },
+        {
+          "company": "BELMAKE TELECOMUNICACOES",
+          "accesses": 43,
+          "share": 0.0009
+        },
+        {
+          "company": "Sergio das Gracas Paulino",
+          "accesses": 41,
+          "share": 0.0008
+        },
+        {
+          "company": "Wikilink",
+          "accesses": 36,
+          "share": 0.0007
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 22,
+          "share": 0.0004
+        },
+        {
+          "company": "GIGA MAIS FIBRA",
+          "accesses": 20,
+          "share": 0.0004
+        },
+        {
+          "company": "Infonet Telecomunicacoes",
+          "accesses": 13,
+          "share": 0.0003
+        },
+        {
+          "company": "YIPI CLOUD SERVIÇOS LTDA",
+          "accesses": 11,
+          "share": 0.0002
+        },
+        {
+          "company": "Martins Telecomunicacoes Ltda",
+          "accesses": 11,
+          "share": 0.0002
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 10,
+          "share": 0.0002
+        },
+        {
+          "company": "DATANET PROVEDOR DE INTERNET LTDA.",
+          "accesses": 9,
+          "share": 0.0002
+        },
+        {
+          "company": "Sbs - Net Telecomunicacoes",
+          "accesses": 8,
+          "share": 0.0002
+        },
+        {
+          "company": "Ufinet Brasil",
+          "accesses": 7,
+          "share": 0.0001
+        },
+        {
+          "company": "ITACOLOMI COMUNICAÇÃO LTDA",
+          "accesses": 7,
+          "share": 0.0001
+        },
+        {
+          "company": "NORTH TECNOLOGIA",
+          "accesses": 7,
+          "share": 0.0001
+        },
+        {
+          "company": "Cirion Technologies do Brasil Ltda",
+          "accesses": 6,
+          "share": 0.0001
+        },
+        {
+          "company": "LINX TELECOMUNICAÇÕES",
+          "accesses": 5,
+          "share": 0.0001
+        },
+        {
+          "company": "Latwan Conectividade Ltda",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "LOGICLINK TELECOM",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "ATIVE TELECOMUNICACOES S.A.",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "Dtc Telecom",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "Netwii",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "Cnc Telecomunicacoes Ltda",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "Wipi",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "Infotec",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "HELIODORA ONLINE LTDA",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "Flix Fibra",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "BT",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "ORANGE BUSINESS SERVICES",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "Viasat Brasil Servicos de Comunicacoes Ltda",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "IMAX WIRELESS",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "IN PROVEDOR DE INTERNET LTDA",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "INFOMAISNET TELECOM",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "TELECAB TELECOMUNICAÇOES",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Wasat Telecom Ltda",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "MEGATELECOM",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Infinit Fibra Provedor de Internet",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "HISPAMAR",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Jane Claudia Ramalho de Araujo",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Verizon Telecomunicacoes do Brasil Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ICONECTA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "UTIL TECNOLOGIA VG",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "TECNET - PROVEDOR INTERNET BANDA LARGA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Axtelecom Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "XXX",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Century Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "UAI LINK",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "RL NET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "TERA NETWORK",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "G.v.r. Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Online Conect Telecom Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Netonda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Tuddo Telecom Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Belli Net",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "AT&T GLOBAL NETWORK SERVICES BRASIL LTDA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "REDE BRASIL NETWORKS",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ST1 INTERNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "HIDRONET TELECOM",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "PRG NET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "COGENT BRASIL TELECOMUNICACOES LTDA.",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Ragtek Tecnologia",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Via 01",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Vr Internet Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "MAXNET TELECOM",
+          "accesses": 1,
+          "share": 0.0
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 48669
+        },
+        {
+          "month": "2025-02",
+          "accesses": 48824
+        },
+        {
+          "month": "2025-03",
+          "accesses": 49173
+        },
+        {
+          "month": "2025-04",
+          "accesses": 49177
+        },
+        {
+          "month": "2025-05",
+          "accesses": 48647
+        },
+        {
+          "month": "2025-06",
+          "accesses": 49066
+        },
+        {
+          "month": "2025-07",
+          "accesses": 48914
+        },
+        {
+          "month": "2025-08",
+          "accesses": 49517
+        },
+        {
+          "month": "2025-09",
+          "accesses": 50891
+        },
+        {
+          "month": "2025-10",
+          "accesses": 51141
+        },
+        {
+          "month": "2025-11",
+          "accesses": 48389
+        },
+        {
+          "month": "2025-12",
+          "accesses": 52673
+        },
+        {
+          "month": "2026-01",
+          "accesses": 51779
+        },
+        {
+          "month": "2026-02",
+          "accesses": 52173
+        },
+        {
+          "month": "2026-03",
+          "accesses": 54070
+        },
+        {
+          "month": "2026-04",
+          "accesses": 53387
+        },
+        {
+          "month": "2026-05",
+          "accesses": 53134
+        },
+        {
+          "month": "2026-06",
+          "accesses": 48996
+        },
+        {
+          "month": "2026-07",
+          "accesses": 48985
+        },
+        {
+          "month": "2026-08",
+          "accesses": 49356
+        },
+        {
+          "month": "2026-09",
+          "accesses": 49645
+        }
+      ]
+    },
+    {
+      "id": "itajuba",
+      "name": "Itajubá",
+      "uf": "MG",
+      "scope": "network",
+      "reference_month": "2026-09",
+      "total_accesses": 39033,
+      "distinct_providers": 36,
+      "ranking": [
+        {
+          "company": "G6 INTERNET",
+          "accesses": 21522,
+          "share": 0.5514
+        },
+        {
+          "company": "ALARES",
+          "accesses": 3611,
+          "share": 0.0925
+        },
+        {
+          "company": "CLARO",
+          "accesses": 3477,
+          "share": 0.0891
+        },
+        {
+          "company": "ATIVE TELECOMUNICACOES S.A.",
+          "accesses": 3365,
+          "share": 0.0862
+        },
+        {
+          "company": "VIVO",
+          "accesses": 3071,
+          "share": 0.0787
+        },
+        {
+          "company": "SKY/ZAAZ",
+          "accesses": 1867,
+          "share": 0.0478
+        },
+        {
+          "company": "Moov Telecom",
+          "accesses": 489,
+          "share": 0.0125
+        },
+        {
+          "company": "UAI FAI TELECOM",
+          "accesses": 440,
+          "share": 0.0113
+        },
+        {
+          "company": "JETWEB INTERNET ACCESS LTDA",
+          "accesses": 344,
+          "share": 0.0088
+        },
+        {
+          "company": "Agronet",
+          "accesses": 337,
+          "share": 0.0086
+        },
+        {
+          "company": "Flash Telecom",
+          "accesses": 145,
+          "share": 0.0037
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 87,
+          "share": 0.0022
+        },
+        {
+          "company": "OI",
+          "accesses": 86,
+          "share": 0.0022
+        },
+        {
+          "company": "Fullnet Telecom",
+          "accesses": 63,
+          "share": 0.0016
+        },
+        {
+          "company": "American Tower do Brasil-comunicacao Multimidia Ltda.",
+          "accesses": 39,
+          "share": 0.001
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 13,
+          "share": 0.0003
+        },
+        {
+          "company": "Sbs - Net Telecomunicacoes",
+          "accesses": 13,
+          "share": 0.0003
+        },
+        {
+          "company": "Nova Fiber Internet Ltda",
+          "accesses": 8,
+          "share": 0.0002
+        },
+        {
+          "company": "Fullnet Telecomunicacoes",
+          "accesses": 8,
+          "share": 0.0002
+        },
+        {
+          "company": "ITACOLOMI COMUNICAÇÃO LTDA",
+          "accesses": 8,
+          "share": 0.0002
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 6,
+          "share": 0.0002
+        },
+        {
+          "company": "Martins Telecomunicacoes Ltda",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "KORE BRASIL",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "MEGATELECOM",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 4,
+          "share": 0.0001
+        },
+        {
+          "company": "DINAMICA TELECOM",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "WAY TELECOM",
+          "accesses": 3,
+          "share": 0.0001
+        },
+        {
+          "company": "SENCINET",
+          "accesses": 2,
+          "share": 0.0001
+        },
+        {
+          "company": "R2net Solucoes em Internet",
+          "accesses": 2,
+          "share": 0.0001
+        },
+        {
+          "company": "GIGA MAIS FIBRA",
+          "accesses": 2,
+          "share": 0.0001
+        },
+        {
+          "company": "Viasat Brasil Servicos de Comunicacoes Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Infotec",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "G.v.r. Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "INFO HOUSE INFORMÁTICA E PAPEIS LTDA - ME",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ORANGE BUSINESS SERVICES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "S&n Telecom",
+          "accesses": 1,
+          "share": 0.0
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 36397
+        },
+        {
+          "month": "2025-02",
+          "accesses": 37086
+        },
+        {
+          "month": "2025-03",
+          "accesses": 36765
+        },
+        {
+          "month": "2025-04",
+          "accesses": 36793
+        },
+        {
+          "month": "2025-05",
+          "accesses": 36153
+        },
+        {
+          "month": "2025-06",
+          "accesses": 36808
+        },
+        {
+          "month": "2025-07",
+          "accesses": 36886
+        },
+        {
+          "month": "2025-08",
+          "accesses": 36919
+        },
+        {
+          "month": "2025-09",
+          "accesses": 36843
+        },
+        {
+          "month": "2025-10",
+          "accesses": 35278
+        },
+        {
+          "month": "2025-11",
+          "accesses": 37609
+        },
+        {
+          "month": "2025-12",
+          "accesses": 37615
+        },
+        {
+          "month": "2026-01",
+          "accesses": 37649
+        },
+        {
+          "month": "2026-02",
+          "accesses": 37796
+        },
+        {
+          "month": "2026-03",
+          "accesses": 38082
+        },
+        {
+          "month": "2026-04",
+          "accesses": 38466
+        },
+        {
+          "month": "2026-05",
+          "accesses": 35280
+        },
+        {
+          "month": "2026-06",
+          "accesses": 38771
+        },
+        {
+          "month": "2026-07",
+          "accesses": 38841
+        },
+        {
+          "month": "2026-08",
+          "accesses": 38978
+        },
+        {
+          "month": "2026-09",
+          "accesses": 39033
+        }
+      ]
+    },
+    {
+      "id": "santa-rita",
+      "name": "Santa Rita do Sapucaí",
+      "uf": "MG",
+      "scope": "network",
+      "reference_month": "2026-09",
+      "total_accesses": 15542,
+      "distinct_providers": 31,
+      "ranking": [
+        {
+          "company": "Viva Vox Telecom",
+          "accesses": 7604,
+          "share": 0.4893
+        },
+        {
+          "company": "SKY/ZAAZ",
+          "accesses": 2572,
+          "share": 0.1655
+        },
+        {
+          "company": "VIVO",
+          "accesses": 2336,
+          "share": 0.1503
+        },
+        {
+          "company": "ALARES",
+          "accesses": 1447,
+          "share": 0.0931
+        },
+        {
+          "company": "OI",
+          "accesses": 479,
+          "share": 0.0308
+        },
+        {
+          "company": "G6 INTERNET",
+          "accesses": 217,
+          "share": 0.014
+        },
+        {
+          "company": "Fullnet Telecom",
+          "accesses": 161,
+          "share": 0.0104
+        },
+        {
+          "company": "CLARO",
+          "accesses": 147,
+          "share": 0.0095
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 127,
+          "share": 0.0082
+        },
+        {
+          "company": "NETWAY",
+          "accesses": 103,
+          "share": 0.0066
+        },
+        {
+          "company": "REGIS NET INFORMATICA LTDA",
+          "accesses": 88,
+          "share": 0.0057
+        },
+        {
+          "company": "Vale & Vale Telecomunicacoes Ltda",
+          "accesses": 82,
+          "share": 0.0053
+        },
+        {
+          "company": "ATIVE TELECOMUNICACOES S.A.",
+          "accesses": 80,
+          "share": 0.0051
+        },
+        {
+          "company": "American Tower do Brasil-comunicacao Multimidia Ltda.",
+          "accesses": 27,
+          "share": 0.0017
+        },
+        {
+          "company": "TIM",
+          "accesses": 20,
+          "share": 0.0013
+        },
+        {
+          "company": "Axtelecom Ltda",
+          "accesses": 13,
+          "share": 0.0008
+        },
+        {
+          "company": "Fullnet Telecomunicacoes",
+          "accesses": 11,
+          "share": 0.0007
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 5,
+          "share": 0.0003
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 4,
+          "share": 0.0003
+        },
+        {
+          "company": "ITACOLOMI COMUNICAÇÃO LTDA",
+          "accesses": 4,
+          "share": 0.0003
+        },
+        {
+          "company": "LINX TELECOMUNICAÇÕES",
+          "accesses": 3,
+          "share": 0.0002
+        },
+        {
+          "company": "Verizon Telecomunicacoes do Brasil Ltda",
+          "accesses": 2,
+          "share": 0.0001
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 2,
+          "share": 0.0001
+        },
+        {
+          "company": "OMEGA TELECOM",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "ENGETRONICS FRABRICA DE SOLUÇÕES",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "HISPAMAR",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "Gox",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "Century Telecom",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "Sbs - Net Telecomunicacoes",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "Martins Telecomunicacoes Ltda",
+          "accesses": 1,
+          "share": 0.0001
+        },
+        {
+          "company": "MINAS NET MAIS",
+          "accesses": 1,
+          "share": 0.0001
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 14789
+        },
+        {
+          "month": "2025-02",
+          "accesses": 15680
+        },
+        {
+          "month": "2025-03",
+          "accesses": 14977
+        },
+        {
+          "month": "2025-04",
+          "accesses": 15024
+        },
+        {
+          "month": "2025-05",
+          "accesses": 15081
+        },
+        {
+          "month": "2025-06",
+          "accesses": 15309
+        },
+        {
+          "month": "2025-07",
+          "accesses": 15334
+        },
+        {
+          "month": "2025-08",
+          "accesses": 15305
+        },
+        {
+          "month": "2025-09",
+          "accesses": 15275
+        },
+        {
+          "month": "2025-10",
+          "accesses": 12424
+        },
+        {
+          "month": "2025-11",
+          "accesses": 15187
+        },
+        {
+          "month": "2025-12",
+          "accesses": 15313
+        },
+        {
+          "month": "2026-01",
+          "accesses": 15166
+        },
+        {
+          "month": "2026-02",
+          "accesses": 15247
+        },
+        {
+          "month": "2026-03",
+          "accesses": 15286
+        },
+        {
+          "month": "2026-04",
+          "accesses": 15339
+        },
+        {
+          "month": "2026-05",
+          "accesses": 15318
+        },
+        {
+          "month": "2026-06",
+          "accesses": 15365
+        },
+        {
+          "month": "2026-07",
+          "accesses": 15376
+        },
+        {
+          "month": "2026-08",
+          "accesses": 15455
+        },
+        {
+          "month": "2026-09",
+          "accesses": 15542
+        }
+      ]
+    },
+    {
+      "id": "vila-velha",
+      "name": "Vila Velha",
+      "uf": "ES",
+      "scope": "benchmark",
+      "reference_month": "2026-09",
+      "total_accesses": 178032,
+      "distinct_providers": 65,
+      "ranking": [
+        {
+          "company": "CLARO",
+          "accesses": 50098,
+          "share": 0.2814
+        },
+        {
+          "company": "R7 TELECOMUNICACOES LTDA",
+          "accesses": 41603,
+          "share": 0.2337
+        },
+        {
+          "company": "VIVO",
+          "accesses": 39343,
+          "share": 0.221
+        },
+        {
+          "company": "GIGA MAIS FIBRA",
+          "accesses": 19321,
+          "share": 0.1085
+        },
+        {
+          "company": "OI",
+          "accesses": 13797,
+          "share": 0.0775
+        },
+        {
+          "company": "VELOCINET",
+          "accesses": 2148,
+          "share": 0.0121
+        },
+        {
+          "company": "SUPERNETMAIS TELECOMUNICACOES LTDA",
+          "accesses": 2038,
+          "share": 0.0114
+        },
+        {
+          "company": "PW INTERNET BANDA LARGA",
+          "accesses": 1425,
+          "share": 0.008
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 998,
+          "share": 0.0056
+        },
+        {
+          "company": "Conect Ja",
+          "accesses": 884,
+          "share": 0.005
+        },
+        {
+          "company": "TIM",
+          "accesses": 820,
+          "share": 0.0046
+        },
+        {
+          "company": "Connectvilla Telecom",
+          "accesses": 806,
+          "share": 0.0045
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 620,
+          "share": 0.0035
+        },
+        {
+          "company": "Exo",
+          "accesses": 513,
+          "share": 0.0029
+        },
+        {
+          "company": "Start Telecomunicacoes",
+          "accesses": 443,
+          "share": 0.0025
+        },
+        {
+          "company": "Xyber Net Telecom",
+          "accesses": 429,
+          "share": 0.0024
+        },
+        {
+          "company": "GIGANET COMUNICAÇÕES MULTIMÍDIA LTDA-ME",
+          "accesses": 406,
+          "share": 0.0023
+        },
+        {
+          "company": "Conexao Brasil",
+          "accesses": 297,
+          "share": 0.0017
+        },
+        {
+          "company": "Voe Telecom",
+          "accesses": 289,
+          "share": 0.0016
+        },
+        {
+          "company": "GIG@NET",
+          "accesses": 276,
+          "share": 0.0016
+        },
+        {
+          "company": "Skynet Telecom",
+          "accesses": 269,
+          "share": 0.0015
+        },
+        {
+          "company": "FIBRAMAR TELECOMUNICAÇÕES LTDA",
+          "accesses": 214,
+          "share": 0.0012
+        },
+        {
+          "company": "VIA TELECOM",
+          "accesses": 211,
+          "share": 0.0012
+        },
+        {
+          "company": "Submit Telecom",
+          "accesses": 188,
+          "share": 0.0011
+        },
+        {
+          "company": "DINAMICA TELECOM",
+          "accesses": 145,
+          "share": 0.0008
+        },
+        {
+          "company": "SDG TELECOM E SERVICOS LTDA - ME",
+          "accesses": 86,
+          "share": 0.0005
+        },
+        {
+          "company": "M V F Telecom e Servicos Ltda.",
+          "accesses": 63,
+          "share": 0.0004
+        },
+        {
+          "company": "ALFACOM TELECOMUNICACOES E MULTIMIDIA LTDA",
+          "accesses": 54,
+          "share": 0.0003
+        },
+        {
+          "company": "PRIME TELECOM",
+          "accesses": 31,
+          "share": 0.0002
+        },
+        {
+          "company": "Goin",
+          "accesses": 28,
+          "share": 0.0002
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 25,
+          "share": 0.0001
+        },
+        {
+          "company": "RENATO L SILVA TELECOMUNICAÇÕES ME",
+          "accesses": 25,
+          "share": 0.0001
+        },
+        {
+          "company": "LINX TELECOMUNICAÇÕES",
+          "accesses": 23,
+          "share": 0.0001
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 18,
+          "share": 0.0001
+        },
+        {
+          "company": "ALTERNA TELECOMUNICACOES E CONECTIVIDADE LTDA",
+          "accesses": 13,
+          "share": 0.0001
+        },
+        {
+          "company": "Fazzy Telecom",
+          "accesses": 10,
+          "share": 0.0001
+        },
+        {
+          "company": "MEGATELECOM",
+          "accesses": 7,
+          "share": 0.0
+        },
+        {
+          "company": "CLESAT TELECOM",
+          "accesses": 7,
+          "share": 0.0
+        },
+        {
+          "company": "Open Conect",
+          "accesses": 7,
+          "share": 0.0
+        },
+        {
+          "company": "Connect World",
+          "accesses": 6,
+          "share": 0.0
+        },
+        {
+          "company": "FORTE TELECOM",
+          "accesses": 5,
+          "share": 0.0
+        },
+        {
+          "company": "Telcoweb",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "INTERPLUS INTERNET",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "KORE BRASIL",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Barra Fibra Ltda",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Velocidade.net",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Venn",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "JPP PANCINI LTDA - ME",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "ALTA REDE CORPORATE",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Novaredenet Ltda Me",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "HIT TELECOMUNICACOES LTDA.",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "COGENT BRASIL TELECOMUNICACOES LTDA.",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "BT",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Verizon Telecomunicacoes do Brasil Ltda",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "BDNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Ultra Brasil Telecom Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ORANGE BUSINESS SERVICES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "TUDDO INTERNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "L A INTERNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "FUTURACONNECT",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "WIRELESS COMM SERVICES LTDA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Tuddo Telecom Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "CONECTMAIS COMUNICACOES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Tech Pignaton",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Loga Internet",
+          "accesses": 1,
+          "share": 0.0
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 162355
+        },
+        {
+          "month": "2025-02",
+          "accesses": 163130
+        },
+        {
+          "month": "2025-03",
+          "accesses": 163646
+        },
+        {
+          "month": "2025-04",
+          "accesses": 164308
+        },
+        {
+          "month": "2025-05",
+          "accesses": 164603
+        },
+        {
+          "month": "2025-06",
+          "accesses": 166460
+        },
+        {
+          "month": "2025-07",
+          "accesses": 167570
+        },
+        {
+          "month": "2025-08",
+          "accesses": 168115
+        },
+        {
+          "month": "2025-09",
+          "accesses": 128502
+        },
+        {
+          "month": "2025-10",
+          "accesses": 171286
+        },
+        {
+          "month": "2025-11",
+          "accesses": 163952
+        },
+        {
+          "month": "2025-12",
+          "accesses": 162931
+        },
+        {
+          "month": "2026-01",
+          "accesses": 165339
+        },
+        {
+          "month": "2026-02",
+          "accesses": 126564
+        },
+        {
+          "month": "2026-03",
+          "accesses": 167667
+        },
+        {
+          "month": "2026-04",
+          "accesses": 168957
+        },
+        {
+          "month": "2026-05",
+          "accesses": 129043
+        },
+        {
+          "month": "2026-06",
+          "accesses": 170241
+        },
+        {
+          "month": "2026-07",
+          "accesses": 170851
+        },
+        {
+          "month": "2026-08",
+          "accesses": 171016
+        },
+        {
+          "month": "2026-09",
+          "accesses": 178032
+        }
+      ]
+    },
+    {
+      "id": "vitoria",
+      "name": "Vitória",
+      "uf": "ES",
+      "scope": "benchmark",
+      "reference_month": "2026-09",
+      "total_accesses": 145460,
+      "distinct_providers": 72,
+      "ranking": [
+        {
+          "company": "CLARO",
+          "accesses": 53396,
+          "share": 0.3671
+        },
+        {
+          "company": "VIVO",
+          "accesses": 48605,
+          "share": 0.3341
+        },
+        {
+          "company": "OI",
+          "accesses": 19719,
+          "share": 0.1356
+        },
+        {
+          "company": "GIGA MAIS FIBRA",
+          "accesses": 6303,
+          "share": 0.0433
+        },
+        {
+          "company": "R7 TELECOMUNICACOES LTDA",
+          "accesses": 4372,
+          "share": 0.0301
+        },
+        {
+          "company": "Conect Ja",
+          "accesses": 3984,
+          "share": 0.0274
+        },
+        {
+          "company": "ARION SERVICES",
+          "accesses": 1481,
+          "share": 0.0102
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 1374,
+          "share": 0.0094
+        },
+        {
+          "company": "Razao Assessoria Empresarial Ltda",
+          "accesses": 1194,
+          "share": 0.0082
+        },
+        {
+          "company": "TIM",
+          "accesses": 892,
+          "share": 0.0061
+        },
+        {
+          "company": "CLESAT TELECOM",
+          "accesses": 800,
+          "share": 0.0055
+        },
+        {
+          "company": "INTERPLUS INTERNET",
+          "accesses": 683,
+          "share": 0.0047
+        },
+        {
+          "company": "Exo",
+          "accesses": 642,
+          "share": 0.0044
+        },
+        {
+          "company": "Hebert Cypriano Renon",
+          "accesses": 637,
+          "share": 0.0044
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 577,
+          "share": 0.004
+        },
+        {
+          "company": "DINAMICA TELECOM",
+          "accesses": 159,
+          "share": 0.0011
+        },
+        {
+          "company": "SDG TELECOM E SERVICOS LTDA - ME",
+          "accesses": 133,
+          "share": 0.0009
+        },
+        {
+          "company": "M V F Telecom e Servicos Ltda.",
+          "accesses": 90,
+          "share": 0.0006
+        },
+        {
+          "company": "VERO",
+          "accesses": 70,
+          "share": 0.0005
+        },
+        {
+          "company": "ALTERNA TELECOMUNICACOES E CONECTIVIDADE LTDA",
+          "accesses": 47,
+          "share": 0.0003
+        },
+        {
+          "company": "CONCOURSE TELECOMUNICACOES BRASIL LTDA.",
+          "accesses": 44,
+          "share": 0.0003
+        },
+        {
+          "company": "LINX TELECOMUNICAÇÕES",
+          "accesses": 34,
+          "share": 0.0002
+        },
+        {
+          "company": "RENATO L SILVA TELECOMUNICAÇÕES ME",
+          "accesses": 27,
+          "share": 0.0002
+        },
+        {
+          "company": "Voe Telecom",
+          "accesses": 26,
+          "share": 0.0002
+        },
+        {
+          "company": "PRIME TELECOM",
+          "accesses": 21,
+          "share": 0.0001
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 16,
+          "share": 0.0001
+        },
+        {
+          "company": "ALTA REDE CORPORATE",
+          "accesses": 13,
+          "share": 0.0001
+        },
+        {
+          "company": "NORTH TECNOLOGIA",
+          "accesses": 13,
+          "share": 0.0001
+        },
+        {
+          "company": "KORE BRASIL",
+          "accesses": 12,
+          "share": 0.0001
+        },
+        {
+          "company": "Goin",
+          "accesses": 11,
+          "share": 0.0001
+        },
+        {
+          "company": "Megalink Servicos",
+          "accesses": 9,
+          "share": 0.0001
+        },
+        {
+          "company": "HELP-INFO",
+          "accesses": 6,
+          "share": 0.0
+        },
+        {
+          "company": "REDENET",
+          "accesses": 6,
+          "share": 0.0
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 5,
+          "share": 0.0
+        },
+        {
+          "company": "Connect World",
+          "accesses": 5,
+          "share": 0.0
+        },
+        {
+          "company": "EQUINIX DO BRASIL TELECOMUNICAÇÕES LTDA.",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "Mega Grupo de Telecomunicacoes Ltda",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "Tuddo Telecom Ltda",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "Ufinet Brasil",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "SENCINET",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "JPP PANCINI LTDA - ME",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "WKVE TELECOM",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "ORBITEL",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "COGENT BRASIL TELECOMUNICACOES LTDA.",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Telcoweb",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "PJR INTERNET",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "JC TELECOMUNICACOES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Viasat Brasil Servicos de Comunicacoes Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Valesat Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "L A INTERNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Zafex",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Alleo Tecnologia",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "NET DRP",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "INET TELECOMUNICACAO",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ULTRAGIGA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Infinit Fibra Provedor de Internet",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Viaon Fibra",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Fazzy Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Mowry Telecomunicacoes",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Avanca - K2 Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "BT",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Jej Net",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "BDNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "MRM FIBRA",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Mix Celulares",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Tech Pignaton",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "TELE ARTE CELULARES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Cirion Technologies do Brasil Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "ORANGE BUSINESS SERVICES",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Start Telecomunicacoes",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "S&n Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "MULTICAST TELECOM",
+          "accesses": 1,
+          "share": 0.0
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 135910
+        },
+        {
+          "month": "2025-02",
+          "accesses": 133560
+        },
+        {
+          "month": "2025-03",
+          "accesses": 136233
+        },
+        {
+          "month": "2025-04",
+          "accesses": 136076
+        },
+        {
+          "month": "2025-05",
+          "accesses": 135974
+        },
+        {
+          "month": "2025-06",
+          "accesses": 137864
+        },
+        {
+          "month": "2025-07",
+          "accesses": 137128
+        },
+        {
+          "month": "2025-08",
+          "accesses": 138108
+        },
+        {
+          "month": "2025-09",
+          "accesses": 133226
+        },
+        {
+          "month": "2025-10",
+          "accesses": 139021
+        },
+        {
+          "month": "2025-11",
+          "accesses": 140080
+        },
+        {
+          "month": "2025-12",
+          "accesses": 142266
+        },
+        {
+          "month": "2026-01",
+          "accesses": 142054
+        },
+        {
+          "month": "2026-02",
+          "accesses": 140773
+        },
+        {
+          "month": "2026-03",
+          "accesses": 146149
+        },
+        {
+          "month": "2026-04",
+          "accesses": 146238
+        },
+        {
+          "month": "2026-05",
+          "accesses": 142295
+        },
+        {
+          "month": "2026-06",
+          "accesses": 145998
+        },
+        {
+          "month": "2026-07",
+          "accesses": 145697
+        },
+        {
+          "month": "2026-08",
+          "accesses": 147066
+        },
+        {
+          "month": "2026-09",
+          "accesses": 145460
+        }
+      ]
+    },
+    {
+      "id": "serra",
+      "name": "Serra",
+      "uf": "ES",
+      "scope": "benchmark",
+      "reference_month": "2026-09",
+      "total_accesses": 143959,
+      "distinct_providers": 65,
+      "ranking": [
+        {
+          "company": "VIVO",
+          "accesses": 44731,
+          "share": 0.3107
+        },
+        {
+          "company": "CLARO",
+          "accesses": 33751,
+          "share": 0.2344
+        },
+        {
+          "company": "OI",
+          "accesses": 33589,
+          "share": 0.2333
+        },
+        {
+          "company": "GIGA MAIS FIBRA",
+          "accesses": 7062,
+          "share": 0.0491
+        },
+        {
+          "company": "VIXNET",
+          "accesses": 4824,
+          "share": 0.0335
+        },
+        {
+          "company": "INTERPLUS INTERNET",
+          "accesses": 4790,
+          "share": 0.0333
+        },
+        {
+          "company": "CONECTMAIS COMUNICACOES",
+          "accesses": 2079,
+          "share": 0.0144
+        },
+        {
+          "company": "R7 TELECOMUNICACOES LTDA",
+          "accesses": 1894,
+          "share": 0.0132
+        },
+        {
+          "company": "TIM",
+          "accesses": 1782,
+          "share": 0.0124
+        },
+        {
+          "company": "Conect Ja",
+          "accesses": 1488,
+          "share": 0.0103
+        },
+        {
+          "company": "Netja Telecom",
+          "accesses": 1398,
+          "share": 0.0097
+        },
+        {
+          "company": "LAN TELECOM",
+          "accesses": 1011,
+          "share": 0.007
+        },
+        {
+          "company": "Net Planety",
+          "accesses": 932,
+          "share": 0.0065
+        },
+        {
+          "company": "ALGAR (CTBC TELECOM)",
+          "accesses": 916,
+          "share": 0.0064
+        },
+        {
+          "company": "STARLINK BRAZIL SERVICOS DE INTERNET LTDA.",
+          "accesses": 761,
+          "share": 0.0053
+        },
+        {
+          "company": "HENRIQUE LEÃO RODRIGUES COELHO - ME",
+          "accesses": 483,
+          "share": 0.0034
+        },
+        {
+          "company": "Exo",
+          "accesses": 332,
+          "share": 0.0023
+        },
+        {
+          "company": "Volplink",
+          "accesses": 302,
+          "share": 0.0021
+        },
+        {
+          "company": "INTER LINK",
+          "accesses": 275,
+          "share": 0.0019
+        },
+        {
+          "company": "Voe Telecom",
+          "accesses": 237,
+          "share": 0.0016
+        },
+        {
+          "company": "Playnet Telecom",
+          "accesses": 229,
+          "share": 0.0016
+        },
+        {
+          "company": "S-NET",
+          "accesses": 146,
+          "share": 0.001
+        },
+        {
+          "company": "I.p Telecon",
+          "accesses": 124,
+          "share": 0.0009
+        },
+        {
+          "company": "DINAMICA TELECOM",
+          "accesses": 109,
+          "share": 0.0008
+        },
+        {
+          "company": "Thundernet",
+          "accesses": 108,
+          "share": 0.0008
+        },
+        {
+          "company": "BRASIL TECPAR",
+          "accesses": 95,
+          "share": 0.0007
+        },
+        {
+          "company": "SDG TELECOM E SERVICOS LTDA - ME",
+          "accesses": 93,
+          "share": 0.0006
+        },
+        {
+          "company": "M V F Telecom e Servicos Ltda.",
+          "accesses": 72,
+          "share": 0.0005
+        },
+        {
+          "company": "Connect World",
+          "accesses": 64,
+          "share": 0.0004
+        },
+        {
+          "company": "Bn Net Telecom",
+          "accesses": 57,
+          "share": 0.0004
+        },
+        {
+          "company": "GO FIBRA TELECOM",
+          "accesses": 33,
+          "share": 0.0002
+        },
+        {
+          "company": "RENATO L SILVA TELECOMUNICAÇÕES ME",
+          "accesses": 29,
+          "share": 0.0002
+        },
+        {
+          "company": "HUGHES",
+          "accesses": 23,
+          "share": 0.0002
+        },
+        {
+          "company": "ALTERNA TELECOMUNICACOES E CONECTIVIDADE LTDA",
+          "accesses": 20,
+          "share": 0.0001
+        },
+        {
+          "company": "PRIME TELECOM",
+          "accesses": 16,
+          "share": 0.0001
+        },
+        {
+          "company": "LINX TELECOMUNICAÇÕES",
+          "accesses": 14,
+          "share": 0.0001
+        },
+        {
+          "company": "Speed Net Telecom",
+          "accesses": 12,
+          "share": 0.0001
+        },
+        {
+          "company": "Open Conect",
+          "accesses": 11,
+          "share": 0.0001
+        },
+        {
+          "company": "Venn",
+          "accesses": 10,
+          "share": 0.0001
+        },
+        {
+          "company": "NV7 TELECOM",
+          "accesses": 5,
+          "share": 0.0
+        },
+        {
+          "company": "Zafex",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "SSNET TELECOM",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "MEGATELECOM",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "Tuddo Telecom Ltda",
+          "accesses": 4,
+          "share": 0.0
+        },
+        {
+          "company": "SENCINET",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Flix Fibra",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "VERO",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Inforbarra",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "NORTH TECNOLOGIA",
+          "accesses": 3,
+          "share": 0.0
+        },
+        {
+          "company": "Viasat Brasil Servicos de Comunicacoes Ltda",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Interviva Telecom e Servicos Ltda",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "ORANGE BUSINESS SERVICES",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "BT",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "Telcoweb",
+          "accesses": 2,
+          "share": 0.0
+        },
+        {
+          "company": "CLIK@NET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Century Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "L A INTERNET",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Fazzy Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Redfox Internet",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Link Ceara Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Avanca - K2 Telecom",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "MP INFORMATICA TELECOM",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Verizon Telecomunicacoes do Brasil Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Access Telecomunicacoes Ltda",
+          "accesses": 1,
+          "share": 0.0
+        },
+        {
+          "company": "Uversa Telecomunicacoes Eireli",
+          "accesses": 1,
+          "share": 0.0
+        }
+      ],
+      "monthly_total_accesses": [
+        {
+          "month": "2025-01",
+          "accesses": 132923
+        },
+        {
+          "month": "2025-02",
+          "accesses": 133203
+        },
+        {
+          "month": "2025-03",
+          "accesses": 133309
+        },
+        {
+          "month": "2025-04",
+          "accesses": 133727
+        },
+        {
+          "month": "2025-05",
+          "accesses": 134339
+        },
+        {
+          "month": "2025-06",
+          "accesses": 136947
+        },
+        {
+          "month": "2025-07",
+          "accesses": 138394
+        },
+        {
+          "month": "2025-08",
+          "accesses": 136920
+        },
+        {
+          "month": "2025-09",
+          "accesses": 134032
+        },
+        {
+          "month": "2025-10",
+          "accesses": 135279
+        },
+        {
+          "month": "2025-11",
+          "accesses": 137069
+        },
+        {
+          "month": "2025-12",
+          "accesses": 134236
+        },
+        {
+          "month": "2026-01",
+          "accesses": 141677
+        },
+        {
+          "month": "2026-02",
+          "accesses": 140406
+        },
+        {
+          "month": "2026-03",
+          "accesses": 143124
+        },
+        {
+          "month": "2026-04",
+          "accesses": 144409
+        },
+        {
+          "month": "2026-05",
+          "accesses": 144074
+        },
+        {
+          "month": "2026-06",
+          "accesses": 146177
+        },
+        {
+          "month": "2026-07",
+          "accesses": 146187
+        },
+        {
+          "month": "2026-08",
+          "accesses": 146578
+        },
+        {
+          "month": "2026-09",
+          "accesses": 143959
+        }
+      ]
+    }
+  ]
+}

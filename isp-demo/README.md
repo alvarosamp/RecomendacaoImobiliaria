@@ -34,6 +34,7 @@ python3 server.py
 - **Instalações:** cadastro pesquisável por identificação, rua e CTO; situação ativa/suspensa/cancelada, plano, data de instalação, cancelamento e vínculo histórico de porta.
 - **Oportunidades:** pedidos para vistoria, falta de porta, distância da rede e ocorrências para investigar. Toda recomendação descreve o critério e seus limites.
 - **Dados e premissas:** referências, proveniência e hipóteses visíveis no produto.
+- **Mercado real:** participação declarada à Anatel por prestadora, em seis cidades reais (três do cenário fictício e três de comparação). Ver seção própria abaixo.
 
 Cidade e setor filtram os indicadores, o histórico e o território. Setores Norte/Sul/Leste/Oeste são quadrantes artificiais em relação ao POP, **não bairros oficiais**. Busca e situação filtram apenas a lista e os pontos de instalações; os indicadores mantêm o recorte territorial. A exportação CSV usa o mesmo recorte da lista de instalações.
 
@@ -208,4 +209,21 @@ No planejador, o **Contexto regulatório do estudo** identifica implantação a�
 
 Cada alternativa mostra a contagem de endereços residenciais em células com centro no raio em linha reta da CTO e uma faixa geométrica aproximada pelas bordas das células. Essa faixa não é intervalo estatístico; o raio não equivale a percurso de cabo ou alcance técnico. As contagens não entram na ordenação nem aumentam os pedidos compatíveis ou as portas. O estudo JSON inclui esses dados, as premissas e suas fontes; a tela de dados permite exportar células GeoJSON.
 
-`data/regulations.json` é o catálogo curado de fontes, sem consultas externas durante o cálculo. O acompanhamento da revisão de postes fica separado das regras aplicadas; não se presume dispensa SCM por porte, preço de compartilhamento ou disponibilidade de rede de terceiros. Projetos históricos são referências documentais, não rede cadastrada. Números municipais da Anatel não foram importados. A rede operacional e os pedidos continuam fictícios.
+`data/regulations.json` é o catálogo curado de fontes, sem consultas externas durante o cálculo. O acompanhamento da revisão de postes fica separado das regras aplicadas; não se presume dispensa SCM por porte, preço de compartilhamento ou disponibilidade de rede de terceiros. Projetos históricos são referências documentais, não rede cadastrada. Números municipais da Anatel não foram importados até esta versão. A rede operacional e os pedidos continuam fictícios.
+
+## Mercado real — 02/11/2026
+
+O menu **Mercado real** mostra participação declarada por prestadora de banda larga fixa (SCM) à Anatel, em seis cidades reais: Pouso Alegre, Itajubá e Santa Rita do Sapucaí — as mesmas do cenário fictício da SerraLink — e Vila Velha, Vitória e Serra, no Espírito Santo, como comparação de mercado fora do cenário. Nenhuma prestadora listada aqui foi convertida em concorrente, CTO, cliente ou qualquer outro dado fictício do painel.
+
+Fonte: [Acessos - Banda Larga Fixa](https://dados.gov.br/dados/conjuntos-dados/acessos---banda-larga-fixa), Anatel/dados.gov.br, licença Creative Commons Attribution, atualização mensal. Arquivo nacional (`acessos_banda_larga_fixa.zip`, ~1,1 GB) baixado em 02/11/2026; `data/anatel-cache/PROVENANCE.json` registra URL e SHA-256 do ZIP original. Apenas as linhas dessas seis cidades foram mantidas em `data/anatel-cache/*.csv` (arquivos de 2025 e 2026 do dataset), cobrindo competências de janeiro/2025 até a mais recente disponível em cada coleta (setembro/2026 na publicação atual).
+
+`data/market.json` é gerado por `python3 collect_market.py` a partir desse cache, sem acesso à internet. Para atualizar o cache a partir da fonte pública (exige internet, baixa o ZIP nacional inteiro):
+
+```sh
+python3 collect_market.py --refresh
+python3 -m unittest -v test_market.py
+```
+
+Cada cidade traz o total de acessos declarados na competência mais recente, o número de prestadoras distintas, o ranking completo por empresa com participação percentual, e a série mensal de acessos totais desde janeiro/2025. O dado é autodeclarado pelas prestadoras à Anatel: nem todas enviam todo mês, o que pode subestimar provedores pequenos; "acesso em serviço" é contrato/linha ativa na prestadora, não é domicílio, pessoa ou participação de mercado validada em campo; o município é o de registro do acesso, sem endereço ou coordenada. "Grupo Econômico" e "Empresa" podem divergir para grupos com múltiplas prestadoras — o painel usa a razão social individual (`Empresa`) no ranking.
+
+Nove tabelas de testes (`test_market.py`) verificam: as seis cidades presentes com o escopo correto (rede fictícia vs. comparação), participações somando ~100% e ordenadas, série mensal sem meses duplicados ou fora de ordem, mês de referência igual ao último disponível, ausência de qualquer campo de endereço ou assinante individual, e que o arquivo publicado bate exatamente com a reconstrução a partir do cache.

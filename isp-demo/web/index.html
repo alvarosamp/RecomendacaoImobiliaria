@@ -4,8 +4,8 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#112a30"><title>Urbia Telecom · território conectado</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="/style.css?v=help-1"><link rel="stylesheet" href="/inspection.css"><link rel="stylesheet" href="/radar.css"><link rel="stylesheet" href="/planning.css"><link rel="stylesheet" href="/knowledge.css">
-  <script defer src="/vendor/leaflet.js"></script><script defer src="/inspection-engine.js"></script><script defer src="/inspection.js"></script><script defer src="/radar.js"></script><script defer src="/planning.js?v=20261020-1"></script><script defer src="/knowledge.js?v=20261020-1"></script><script defer src="/app.js?v=20261020-1"></script>
+  <link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="/style.css?v=help-1"><link rel="stylesheet" href="/inspection.css"><link rel="stylesheet" href="/radar.css"><link rel="stylesheet" href="/planning.css"><link rel="stylesheet" href="/knowledge.css"><link rel="stylesheet" href="/market.css?v=20261102-1">
+  <script defer src="/vendor/leaflet.js"></script><script defer src="/inspection-engine.js"></script><script defer src="/inspection.js"></script><script defer src="/radar.js"></script><script defer src="/planning.js?v=20261020-1"></script><script defer src="/knowledge.js?v=20261020-1"></script><script defer src="/market.js?v=20261102-1"></script><script defer src="/app.js?v=20261102-1"></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -21,6 +21,7 @@
       <button data-view="radar"><span data-icon="layers"></span>Radar de crescimento</button>
       <button data-view="inspection"><span data-icon="spark"></span>Inspeção ao vivo</button>
       <button data-view="knowledge"><span data-icon="layers"></span>Leis e dados reais</button>
+      <button data-view="market"><span data-icon="users"></span>Mercado real</button>
       <button data-view="help" aria-label="Como usar"><span data-icon="info"></span>Como usar</button>
       <button data-view="sources"><span data-icon="layers"></span>Dados e premissas</button>
     </nav>
@@ -102,7 +103,7 @@
           <article class="panel help-card"><span class="help-step">05 · SIMULAR UMA VISTORIA</span><h2>Como testar a inspeção ao vivo?</h2><ol><li>Abra <strong>Inspeção ao vivo</strong>, escolha uma CTO e o cenário: cadastro, operação normal, degradação óptica ou rompimento.</li><li>Clique em <strong>Iniciar inspeção</strong> e acompanhe sinal, latência, portas e eventos durante os 24 segundos simulados.</li><li>Pause ou encerre a sessão quando quiser. Exporte o relatório JSON para consultar as amostras e o resultado completo ou parcial.</li></ol><p class="help-tip">Ao sair da tela, a sessão em andamento é pausada. A inspeção gera telemetria fictícia no navegador e não acessa equipamentos reais.</p><button class="button" data-guide-view="inspection">Simular uma inspeção →</button></article>
           <article class="panel help-card"><span class="help-step">06 · INTERPRETAR O RESULTADO</span><h2>O que validar antes de instalar?</h2><p>As ruas e as imagens de satélite são reais; rede, contratos, pedidos e medições operacionais são simulados.</p><p>Uma rota pelas ruas é um estudo preliminar. Valide postes, autorização de passagem, travessias, emendas, capacidade óptica e condições de campo antes de executar.</p><p>Uma CTO próxima pode estar cheia ou indisponível. Investigue incidentes antes de considerar uma nova caixa como solução. Se não houver conexão entre ruas no cálculo, o painel não inventa um caminho em linha reta.</p><button class="button" data-guide-view="sources">Consultar dados e premissas →</button></article>
         </div>
-        <article class="panel help-card" style="margin-top:20px"><span class="help-step">DADOS REAIS E REGRAS</span><h2>Compare endereços do Censo e pendências do projeto</h2><p>Em <strong>Leis e dados reais</strong>, selecione a cidade para explorar células do IBGE, consultar fontes legais e projetos históricos. No planejador, abra <strong>Contexto regulatório do estudo</strong>, informe as condições conhecidas e recalcule. Confira o entorno em linha reta e as pendências de cada alternativa; exporte o estudo com suas fontes. As referências não certificam licença ou aprovação.</p><button class="button" data-guide-view="knowledge">Consultar leis e dados reais →</button></article><div class="panel help-glossary"><h2>Termos usados no painel</h2><dl><div><dt>CTO</dt><dd>Caixa de Terminação Óptica: ponto com portas para conectar assinantes.</dd></div><div><dt>POP</dt><dd>Ponto de presença: local de equipamentos que atendem uma região da rede.</dd></div><div><dt>Drop</dt><dd>Cabo de atendimento entre a caixa e o cliente.</dd></div><div><dt>Reserva de cabo</dt><dd>Metragem adicional prevista para acomodação e instalação; não altera o limite de percurso informado.</dd></div></dl></div>
+        <article class="panel help-card" style="margin-top:20px"><span class="help-step">DADOS REAIS E REGRAS</span><h2>Compare endereços do Censo e pendências do projeto</h2><p>Em <strong>Leis e dados reais</strong>, selecione a cidade para explorar células do IBGE, consultar fontes legais e projetos históricos. No planejador, abra <strong>Contexto regulatório do estudo</strong>, informe as condições conhecidas e recalcule. Confira o entorno em linha reta e as pendências de cada alternativa; exporte o estudo com suas fontes. As referências não certificam licença ou aprovação.</p><p>Em <strong>Mercado real</strong>, veja quais prestadoras já declaram acessos de banda larga fixa à Anatel em cada cidade — inclusive em Vila Velha, Vitória e Serra, fora do cenário fictício, como referência de mercado.</p><button class="button" data-guide-view="knowledge">Consultar leis e dados reais →</button></article><div class="panel help-glossary"><h2>Termos usados no painel</h2><dl><div><dt>CTO</dt><dd>Caixa de Terminação Óptica: ponto com portas para conectar assinantes.</dd></div><div><dt>POP</dt><dd>Ponto de presença: local de equipamentos que atendem uma região da rede.</dd></div><div><dt>Drop</dt><dd>Cabo de atendimento entre a caixa e o cliente.</dd></div><div><dt>Reserva de cabo</dt><dd>Metragem adicional prevista para acomodação e instalação; não altera o limite de percurso informado.</dd></div></dl></div>
       </section>
       <section id="knowledge-section" hidden aria-label="Leis e dados reais">
         <div class="knowledge-intro panel"><span class="eyebrow">FONTES PÚBLICAS · CONSULTA EM 20 OUT. 2026</span><h2>Território real, referências verificáveis.</h2><p>Os endereços agregados são do IBGE/Censo 2022. As referências legais têm links para as fontes. CTOs, fibra, contratos e pedidos operacionais continuam fictícios.</p></div>
@@ -118,6 +119,19 @@
           <div class="section-intro"><h2>Projetos reais documentados</h2><p>Referências históricas da cidade. Não foram convertidas em CTOs ou traçados de fibra disponíveis.</p></div><div id="knowledge-projects" class="knowledge-reference-grid"></div>
           <div id="knowledge-external" class="panel knowledge-method"></div>
           <p class="knowledge-footnote">Para localizar uma CTO real, verificar portas ou aprovar uma instalação, é necessário o inventário e os documentos do provedor. Imagens, endereços e atos de terceiros não substituem esse cadastro.</p>
+        </div>
+      </section>
+      <section id="market-section" hidden aria-label="Mercado real">
+        <div class="knowledge-intro panel"><span class="eyebrow">DADO REAL · ANATEL · SCM BANDA LARGA FIXA</span><h2>Quem já atua de verdade nestas cidades?</h2><p>Acessos declarados pelas prestadoras à Anatel, por município. Três cidades fazem parte do cenário fictício da SerraLink, no Sul de Minas; três são comparação de mercado na Grande Vitória (ES). Nenhuma empresa listada aqui foi convertida em concorrente, CTO ou cliente fictício.</p></div>
+        <div class="knowledge-controls"><div id="market-city-list" class="market-city-list" role="group" aria-label="Cidade do mercado real"></div><button class="button" id="market-export" disabled>Exportar JSON desta cidade</button></div>
+        <p id="market-status" role="status">Abra esta tela para carregar os dados da Anatel.</p><div id="market-error" class="planning-error" role="alert" hidden></div>
+        <div id="market-content" hidden>
+          <div id="market-kpis" class="kpis"></div>
+          <div class="bottom-grid">
+            <div class="panel"><div class="panel-heading"><div><h2>Participação por operadora</h2><p id="market-ranking-caption"></p></div></div><div id="market-ranking"></div></div>
+            <div class="panel"><div class="panel-heading"><div><h2>Acessos totais por mês</h2><p>Série declarada à Anatel, mês a mês, até a competência mais recente</p></div></div><div id="market-trend"></div></div>
+          </div>
+          <details class="panel knowledge-method"><summary>Fonte, metodologia e limites</summary><div id="market-provenance"></div></details>
         </div>
       </section>
       <section id="sources-section" hidden></section>

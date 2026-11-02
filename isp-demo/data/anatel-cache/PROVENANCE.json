@@ -1,0 +1,6 @@
+{
+  "source_url": "https://www.anatel.gov.br/dadosabertos/paineis_de_dados/acessos/acessos_banda_larga_fixa.zip",
+  "source_sha256": "2f0b427068d0b8ca74fbaf3014144540fd5f6337ed17e7628c602a6959862b68",
+  "retrieved_at": "2026-11-02",
+  "filter": "Linhas com Município em {Pouso Alegre, Itajubá, Santa Rita do Sapucaí, Vila Velha, Vitória, Serra}; arquivos de origem Acessos_Banda_Larga_Fixa_2025.csv e Acessos_Banda_Larga_Fixa_2026.csv do ZIP nacional."
+}

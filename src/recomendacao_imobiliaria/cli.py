@@ -148,6 +148,12 @@ def main() -> None:
     census_parser.add_argument("--ibge-code", default=None, help="Codigo IBGE de 7 digitos (padrao: CITY_IBGE_CODE).")
     census_parser.add_argument("--cache-dir", default=None, help="Pasta de cache dos arquivos do IBGE (padrao: data/cache/censo2022).")
     census_parser.add_argument("--refresh", action="store_true", help="Baixa os arquivos do IBGE de novo.")
+    places_parser = subparsers.add_parser(
+        "collect-place-names",
+        help="Descobre o bairro e as principais ruas de cada celula H3 (OpenStreetMap + Correios) e grava no banco.",
+    )
+    places_parser.add_argument("--cache-dir", default=None, help="Cache das ruas (padrao: data/cache/places).")
+    places_parser.add_argument("--refresh", action="store_true", help="Baixa as ruas de novo.")
     subparsers.add_parser("fetch-cnes", help="Busca estabelecimentos de saude (CNES/DataSUS) e insere em geo.osm_pois.")
 
     # --- normalizacao de listings ---
@@ -345,6 +351,11 @@ def main() -> None:
         from .census_population import collect_census_population
         print(json.dumps(collect_census_population(args.ibge_code, cache_dir=args.cache_dir, refresh=args.refresh),
                          ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "collect-place-names":
+        from .place_names import collect_place_names
+        print(json.dumps(collect_place_names(cache_dir=args.cache_dir, refresh=args.refresh), ensure_ascii=False, indent=2))
         return
 
     if args.command == "fetch-cnes":

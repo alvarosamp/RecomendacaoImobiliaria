@@ -103,6 +103,7 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
             f.dist_min_park_m,
             f.neighborhood,
             f.neighborhood_source,
+            __STREETS__ AS streets,
             r.susceptibility_score AS satellite_risk_score,
             r.alert_level AS satellite_risk_alert,
             r.confidence AS satellite_risk_confidence,
@@ -129,6 +130,7 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
         LEFT JOIN geo.land_cover_h3 lc ON lc.h3_id = s.h3_id
         LEFT JOIN geo.land_cover_h3_history old_lc ON old_lc.h3_id = s.h3_id AND old_lc.reference_year = 2019
         LEFT JOIN geo.grid_h3 g ON g.h3_id = s.h3_id
+        __PLACES_JOIN__
         LEFT JOIN LATERAL (
             SELECT source_name, source_uri, reference_date, collected_at,
                    details ->> 'reference_label' AS reference_label
@@ -143,7 +145,15 @@ def load_score_table(settings: Settings | None = None) -> pd.DataFrame:
         ) DESC
     """
     with db_engine(settings) as engine:
+        with engine.connect() as conn:
+            has_places = conn.execute(text("SELECT to_regclass('geo.cell_places')")).scalar() is not None
+        # Tabela de ruas por celula e opcional: sem ela o resto da tabela continua igual.
+        query = query.replace("__STREETS__", "pl.streets" if has_places else "NULL::jsonb")
+        query = query.replace("__PLACES_JOIN__", "LEFT JOIN geo.cell_places pl ON pl.h3_id = s.h3_id" if has_places else "")
         frame = pd.read_sql(text(query), engine)
+    from .place_names import street_label
+
+    frame["street_label"] = [street_label(value) if isinstance(value, list) else None for value in frame["streets"]]
     return _add_market_reference(_add_reference_neighborhoods(enrich_opportunities(frame)), settings)
 
 

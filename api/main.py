@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from urllib.parse import urlsplit
 import json
@@ -38,6 +39,8 @@ async def request_metrics(request: Request, call_next):
 if settings.app_env in {"production", "prod"} and settings.jwt_secret == "development-only-change-me":
     raise RuntimeError("JWT_SECRET deve ser configurado em producao.")
 
+# As camadas do mapa passam de 2 MB em JSON; comprimidas caem para cerca de um decimo.
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),

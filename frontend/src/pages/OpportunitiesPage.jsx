@@ -73,6 +73,7 @@ function OppCard({ row, onOpenConcept }) {
         <div>
           <div className="opp-zona">{bairroName}</div>
           <div className="opp-cell-id">Bairro de referência • Zona {row.zona || 'não identificada'}</div>
+          {row.street_label && <div className="opp-streets" title="Principais ruas da área (OpenStreetMap)">{row.street_label}</div>}
         </div>
         <div className="opp-badges">
           {row.priority && pCfg && (

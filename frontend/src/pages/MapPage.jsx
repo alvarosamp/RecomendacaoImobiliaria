@@ -44,6 +44,9 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   const [poiTypes, setPoiTypes]             = useState(['pharmacy', 'supermarket', 'school', 'clinic', 'hospital'])
   const [influenceRadius, setInfluenceRadius] = useState(900)
   const [labelMode, setLabelMode]           = useState('smart')
+  // loading | ready | error por camada, para o mapa nao mostrar "0" enquanto ainda baixa.
+  const [layerStatus, setLayerStatus]       = useState({ zoning: 'loading', pois: 'loading', neighborhoods: 'loading', officialRisk: 'loading' })
+  const markLayer = (layer, status) => setLayerStatus(current => ({ ...current, [layer]: status }))
   const cityConfig = CITY_CONFIGS.find(city => city.id === cityId) || CITY_CONFIGS[0]
   const objectiveConfig = ANALYSIS_OBJECTIVES.find(item => item.id === objectiveId) || ANALYSIS_OBJECTIVES[0]
 
@@ -116,10 +119,10 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
     let active = true
     fetchZoningGeojson()
       .then(data => {
-        if (active) setZoning(data)
+        if (active) { setZoning(data); markLayer('zoning', 'ready') }
       })
       .catch(() => {
-        if (active) setZoning({ type: 'FeatureCollection', features: [] })
+        if (active) { setZoning({ type: 'FeatureCollection', features: [] }); markLayer('zoning', 'error') }
       })
     return () => { active = false }
   }, [])
@@ -127,16 +130,16 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
   useEffect(() => {
     let active = true
     fetchOfficialSusceptibilityGeojson()
-      .then(data => { if (active) setOfficialRisk(data) })
-      .catch(() => { if (active) setOfficialRisk({ type: 'FeatureCollection', features: [] }) })
+      .then(data => { if (active) { setOfficialRisk(data); markLayer('officialRisk', 'ready') } })
+      .catch(() => { if (active) { setOfficialRisk({ type: 'FeatureCollection', features: [] }); markLayer('officialRisk', 'error') } })
     return () => { active = false }
   }, [])
 
   useEffect(() => {
     let active = true
     fetchNeighborhoodsGeojson()
-      .then(data => { if (active) setNeighborhoods(data) })
-      .catch(() => { if (active) setNeighborhoods({ type: 'FeatureCollection', features: [] }) })
+      .then(data => { if (active) { setNeighborhoods(data); markLayer('neighborhoods', 'ready') } })
+      .catch(() => { if (active) { setNeighborhoods({ type: 'FeatureCollection', features: [] }); markLayer('neighborhoods', 'error') } })
     return () => { active = false }
   }, [])
 
@@ -144,10 +147,10 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
     let active = true
     fetchPoisGeojson()
       .then(data => {
-        if (active) setPois(data)
+        if (active) { setPois(data); markLayer('pois', 'ready') }
       })
       .catch(() => {
-        if (active) setPois({ type: 'FeatureCollection', features: [] })
+        if (active) { setPois({ type: 'FeatureCollection', features: [] }); markLayer('pois', 'error') }
       })
     return () => { active = false }
   }, [])
@@ -181,6 +184,7 @@ export default function MapPage({ scores, timeDates, timeRecords, selectedDate, 
         pois={pois}
         officialRisk={officialRisk}
         neighborhoods={neighborhoods}
+        layerStatus={layerStatus}
         basemap={basemap}
         onBasemapChange={setBasemap}
         visibleLayers={visibleLayers}

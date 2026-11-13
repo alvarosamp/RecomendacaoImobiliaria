@@ -11,6 +11,7 @@ from .config import Settings, load_settings
 from .db import db_engine
 from .plan_director import evaluate_plan_compatibility
 from .scoring import AreaFeatures, score_area
+from .scoring_config import load_scoring_config
 
 
 POI_TAGS = {
@@ -137,10 +138,21 @@ def fetch_osm_pois(settings: Settings | None = None) -> int:
         from shapely import wkt
 
         geom = wkt.loads(boundary.loc[0, "wkt"])
-        pois = ox.features_from_polygon(geom, tags=POI_TAGS)
+        # O limite municipal tem milhares de vertices e estoura o tamanho de
+        # requisicao do Overpass (HTTP 413). A consulta usa o retangulo
+        # envolvente (left, bottom, right, top); o recorte exato e feito abaixo.
+        import os
+
+        # Permite apontar para um espelho quando o servidor publico esta sem capacidade.
+        if os.getenv("OVERPASS_URL"):
+            ox.settings.overpass_url = os.environ["OVERPASS_URL"]
+        pois = ox.features_from_bbox(geom.bounds, tags=POI_TAGS)
         if pois.empty:
             return 0
 
+        from shapely.prepared import prep
+
+        inside = prep(geom)
         pois = pois.reset_index()
         rows = []
         for _, row in pois.iterrows():
@@ -149,6 +161,8 @@ def fetch_osm_pois(settings: Settings | None = None) -> int:
                 continue
             if point.geom_type != "Point":
                 point = point.representative_point()
+            if not inside.covers(point):
+                continue
 
             category, subcategory = _normalize_poi(row)
             if subcategory is None:
@@ -225,13 +239,13 @@ def build_features(settings: Settings | None = None) -> int:
                     SELECT
                         g.h3_id,
                         COUNT(*) FILTER (
-                            WHERE p.subcategory = 'supermarket'
+                            WHERE ST_DWithin(g.geom::geography, p.geom::geography, :count_radius_m) AND p.subcategory = 'supermarket'
                         )::INT,
                         COUNT(*) FILTER (
-                            WHERE p.subcategory = 'pharmacy'
+                            WHERE ST_DWithin(g.geom::geography, p.geom::geography, :count_radius_m) AND p.subcategory = 'pharmacy'
                         )::INT,
                         COUNT(*) FILTER (
-                            WHERE p.subcategory IN ('school', 'kindergarten')
+                            WHERE ST_DWithin(g.geom::geography, p.geom::geography, :count_radius_m) AND p.subcategory IN ('school', 'kindergarten')
                         )::INT,
                         COUNT(*) FILTER (
                             WHERE p.subcategory = 'hospital'
@@ -279,7 +293,10 @@ def build_features(settings: Settings | None = None) -> int:
                         dist_min_bus_stop_m   = EXCLUDED.dist_min_bus_stop_m,
                         updated_at = now()
                     """
-                )
+                ),
+                # Mercado, farmacia e escola (usados no score) sao contados no entorno
+                # caminhavel. Demais contagens e as distancias minimas seguem em 5 km.
+                {"count_radius_m": load_scoring_config().poi_count_radius_m},
             )
 
             result = conn.execute(text("SELECT COUNT(*) FROM geo.features"))
@@ -349,6 +366,11 @@ def run_mvp_pipeline(settings: Settings | None = None) -> dict[str, object]:
 
 
 def _load_area_features(engine: Engine) -> list[AreaFeatures]:
+    with engine.begin() as conn:
+        # Camada opcional (mapbox_access.compute_travel_access); colunas podem
+        # nao existir ainda em bancos que nunca rodaram essa coleta.
+        for column in ("travel_min_supermarket", "travel_min_pharmacy", "travel_min_school"):
+            conn.execute(text(f"ALTER TABLE geo.features ADD COLUMN IF NOT EXISTS {column} INT"))
     query = """
         SELECT
             f.h3_id,
@@ -363,15 +385,31 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
             f.dist_min_supermarket_m,
             f.dist_min_pharmacy_m,
             f.dist_min_school_m,
+            f.travel_min_supermarket,
+            f.travel_min_pharmacy,
+            f.travel_min_school,
             COALESCE(NOT ('residencial' = ANY(z.usos_vetados)), true) AS residential_allowed,
             COALESCE(NOT ('comercial' = ANY(z.usos_vetados)), true) AS commercial_allowed
         FROM geo.features f
         LEFT JOIN geo.zoning z ON z.zona = f.zona
     """
     frame = pd.read_sql(query, engine)
+    frame = frame.merge(_latest_change(engine), on="h3_id", how="left")
+    catchment, service_rates = _population_demand(engine, load_scoring_config().poi_count_radius_m)
+    frame = frame.merge(catchment, on="h3_id", how="left")
+    # Com zoneamento carregado, a tendencia de satelite so e interpretada dentro do
+    # perimetro zoneado, e a linha de base sazonal vem dessas mesmas celulas.
+    zoned = frame[frame["zona"].notna()]
+    has_zoning = not zoned.empty
+    baselines = slope_baselines(zoned if has_zoning else frame)
+    zoning_official = _zoning_layer_is_official(engine)
     areas = []
     for row in frame.to_dict(orient="records"):
         clean = _clean_feature_row(row)
+        clean.update(baselines)
+        clean["service_rates"] = service_rates if service_rates and clean.get("population_catchment") is not None else None
+        clean["growth_trend_reliable"] = bool(clean.get("zona")) or not has_zoning
+        clean["zoning_official"] = zoning_official and bool(clean.get("zona"))
         residential = evaluate_plan_compatibility(clean.get("zona"), "residencial")
         commercial = evaluate_plan_compatibility(clean.get("zona"), "comercial")
         clean["residential_allowed"] = bool(clean["residential_allowed"]) and residential.allowed
@@ -390,6 +428,86 @@ def _load_area_features(engine: Engine) -> list[AreaFeatures]:
         clean["legal_sources"] = tuple(commercial.sources or residential.sources)
         areas.append(AreaFeatures(**clean))
     return areas
+
+
+def _population_demand(engine: Engine, radius_m: float) -> tuple[pd.DataFrame, dict[str, float] | None]:
+    """Populacao (Censo 2022) no raio de cada celula e estabelecimentos por habitante da cidade.
+
+    Retorna (tabela vazia, None) quando o Censo ainda nao foi carregado; o score cai
+    entao nas metas fixas por celula.
+    """
+    empty = pd.DataFrame(columns=["h3_id", "population_catchment"])
+    with engine.connect() as conn:
+        if conn.execute(text("SELECT to_regclass('geo.census_h3')")).scalar() is None:
+            return empty, None
+        total = float(conn.execute(text("SELECT COALESCE(SUM(population_2022), 0) FROM geo.census_h3")).scalar() or 0)
+        if total <= 0:
+            return empty, None
+        catchment = pd.read_sql(text("""
+            SELECT g1.h3_id, COALESCE(SUM(c.population_2022), 0) AS population_catchment
+              FROM geo.grid_h3 g1
+              LEFT JOIN geo.grid_h3 g2
+                ON ST_DWithin(ST_Centroid(g1.geom)::geography, ST_Centroid(g2.geom)::geography, :radius)
+              LEFT JOIN geo.census_h3 c ON c.h3_id = g2.h3_id
+             GROUP BY g1.h3_id
+        """), conn, params={"radius": float(radius_m)})
+        counts = dict(conn.execute(text("""
+            SELECT CASE WHEN subcategory IN ('school', 'kindergarten') THEN 'school' ELSE subcategory END, COUNT(*)
+              FROM geo.osm_pois WHERE subcategory IN ('supermarket', 'pharmacy', 'school', 'kindergarten')
+             GROUP BY 1
+        """)).all())
+    rates = {key: float(counts.get(key, 0)) / total for key in ("supermarket", "pharmacy", "school")}
+    if not any(rates.values()):
+        return empty, None
+    return catchment, rates
+
+
+def _latest_change(engine: Engine) -> pd.DataFrame:
+    """Deteccao anual mais recente por celula; vazia se ainda nao foi rodada.
+
+    Usa o nivel "provavel" (classificador) quando existe e, senao, o de alta
+    confianca (regra).
+    """
+    empty = pd.DataFrame(columns=["h3_id", "change_fraction", "change_valid_fraction"])
+    with engine.connect() as conn:
+        if conn.execute(text("SELECT to_regclass('geo.urban_change_h3')")).scalar() is None:
+            return empty
+    with engine.begin() as conn:  # migracao idempotente de tabelas criadas antes do classificador
+        conn.execute(text("ALTER TABLE geo.urban_change_h3 ADD COLUMN IF NOT EXISTS probable_area_ha DOUBLE PRECISION"))
+        conn.execute(text("ALTER TABLE geo.urban_change_h3 ADD COLUMN IF NOT EXISTS probable_fraction DOUBLE PRECISION"))
+    with engine.connect() as conn:
+        return pd.read_sql(text("""
+            SELECT h3_id, COALESCE(probable_fraction, changed_fraction) AS change_fraction,
+                   valid_fraction AS change_valid_fraction
+              FROM geo.urban_change_h3
+             WHERE (year_after, year_before) = (
+                   SELECT year_after, year_before FROM geo.urban_change_h3
+                    ORDER BY year_after DESC, year_before DESC LIMIT 1)
+        """), conn)
+
+
+def slope_baselines(frame: pd.DataFrame) -> dict[str, float]:
+    """Tendencia tipica da cidade (mediana) para descontar sazonalidade dos slopes."""
+    result = {}
+    for column, key in (("ndvi_slope_180", "ndvi_slope_baseline"), ("ndbi_slope_180", "ndbi_slope_baseline")):
+        values = pd.to_numeric(frame[column], errors="coerce").dropna() if column in frame.columns else pd.Series(dtype=float)
+        result[key] = float(values.median()) if len(values) else 0.0
+    return result
+
+
+def _zoning_layer_is_official(engine: Engine) -> bool:
+    """Consulta a ultima carga de zoneamento registrada em ops.data_sources."""
+    try:
+        with engine.connect() as conn:
+            value = conn.execute(text("""
+                SELECT details ->> 'official' FROM ops.data_sources
+                 WHERE dataset = 'zoning' AND status = 'ok'
+                 ORDER BY collected_at DESC, id DESC LIMIT 1
+            """)).scalar()
+        return str(value).lower() == "true"
+    except Exception:
+        # Sem registro de proveniencia nao ha como afirmar que a camada e oficial.
+        return False
 
 
 def _clean_feature_row(row: dict[str, object]) -> dict[str, object]:

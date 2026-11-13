@@ -16,6 +16,8 @@ class Settings:
     city_name: str = "Pouso Alegre, Minas Gerais, Brazil"
     city_lat: float = -22.230278
     city_lon: float = -45.948889
+    # Codigo IBGE de 7 digitos do municipio analisado (3152501 = Pouso Alegre/MG).
+    city_ibge_code: str = "3152501"
     h3_res: int = 8
     app_env: str = "development"
     jwt_secret: str = "development-only-change-me"
@@ -24,6 +26,9 @@ class Settings:
     admin_emails: tuple[str, ...] = ()
     demo_registration_code: str = field(default='', repr=False)
     demo_allowed_emails: tuple[str, ...] = ()
+    # Camada adicional de tempo real de deslocamento (ver mapbox_access.py);
+    # nao e usado pelo score calibrado.
+    mapbox_token: str = field(default='', repr=False)
 
     @property
     def database_url(self) -> str:
@@ -54,6 +59,7 @@ def load_settings(env_file: str | None = None) -> Settings:
         city_name=os.getenv("CITY_NAME", Settings.city_name),
         city_lat=float(os.getenv("CITY_LAT", Settings.city_lat)),
         city_lon=float(os.getenv("CITY_LON", Settings.city_lon)),
+        city_ibge_code=os.getenv("CITY_IBGE_CODE", Settings.city_ibge_code).strip(),
         h3_res=int(os.getenv("H3_RES", Settings.h3_res)),
         app_env=os.getenv("APP_ENV", Settings.app_env).lower(),
         jwt_secret=os.getenv("JWT_SECRET", Settings.jwt_secret),
@@ -63,4 +69,5 @@ def load_settings(env_file: str | None = None) -> Settings:
         ),
         demo_registration_code=os.getenv('DEMO_REGISTRATION_CODE',''),
         demo_allowed_emails=tuple(email.strip().lower() for email in os.getenv('DEMO_ALLOWED_EMAILS','').split(',') if email.strip()),
+        mapbox_token=os.getenv('MAPBOX_TOKEN', ''),
     )

@@ -1,6 +1,7 @@
-indicador,codigo_ibge,valor
-nome_municipio,3152501,Pouso Alegre
-uf,3152501,MG
-mesorregiao,3152501,Sul/Sudoeste de Minas
-populacao_estimada,3152501,162133
-pib_per_capita_reais,3152501,14201206
+indicador,codigo_ibge,valor,referencia
+nome_municipio,3152501,Pouso Alegre,
+uf,3152501,MG,
+mesorregiao,3152501,Sul/Sudoeste de Minas,
+populacao_estimada,3152501,163439,
+pib_precos_correntes_mil_reais,3152501,14201206.0,2023
+pib_per_capita_reais,3152501,93295.79,PIB 2023 / populacao Censo 2022

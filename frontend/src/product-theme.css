@@ -401,3 +401,33 @@ button:disabled { cursor:not-allowed; }
 .help-return-note {font-size:12px;line-height:1.8;color:#6b7c5f;margin-top:23px;}
 @media(max-width:760px){.help-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px);border-radius:12px;}.help-dialog-heading{padding:22px 20px 19px;}.help-dialog h1{font-size:26px;}.help-dialog-body{padding:20px;}.help-dialog h2{font-size:18px;}.help-steps > li{gap:11px;}.help-step-number{width:27px;height:27px;font-size:12px;}.help-current-workspace{padding:14px;}.help-reading li{display:block;}.help-reading span{display:block;margin-top:3px;}}
 .help-dialog-heading {position:sticky;top:0;z-index:2;}
+/* Each audience gets its own worked guide; selecting a guide changes no account settings. */
+.help-activity-options {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:27px;}
+.help-activity-options button {display:flex;align-items:center;gap:9px;font:inherit;font-size:13px;color:#536f42;background:#fff;border:1px solid #d6e2c9;border-radius:8px;padding:12px 11px;cursor:pointer;}
+.help-activity-options button[aria-pressed="true"] {background:#234d35;color:#fff;border-color:#234d35;}
+.help-activity-options svg {flex-shrink:0;}
+.help-activity-intro {border:1px solid #d6e3c8;border-radius:12px;background:#edf5e4;padding:24px;}
+.help-activity-intro .product-eyebrow {color:#648047;}
+.help-activity-intro h2 {font-size:25px;font-weight:550;letter-spacing:-.7px;margin:10px 0;}
+.help-activity-intro h2:focus {outline:none;}
+.help-activity-intro > p {font-size:15px;line-height:1.8;color:#536d43;}
+.help-activity-intro button {margin:20px 0 10px;}
+.help-activity-intro > small {display:block;font-size:11px;line-height:1.7;color:#627a51;}
+.help-prepare {padding:24px 0 0;}
+.help-by-activity h3 {font-size:18px;line-height:1.5;font-weight:550;letter-spacing:-.2px;}
+.help-prepare ul,.help-role-result ul {padding-left:20px;margin-top:12px;}
+.help-prepare li,.help-role-result li {font-size:14px;line-height:1.9;color:#5b714d;margin:7px 0;}
+.help-role-result {padding:21px;border:1px solid #dce7d1;border-radius:10px;background:#fff;}
+.help-role-limit {font-size:13px;line-height:1.8;color:#7a693e;padding:13px 15px;background:#f7f2e4;border-radius:7px;margin-top:17px;}
+.help-worked-example,.help-field-glossary,.help-extra-functions {padding:19px 0;border-bottom:1px solid #dfe7d5;}
+.help-activity-content summary {font-size:14px;font-weight:550;line-height:1.7;cursor:pointer;}
+.help-activity-content details p {font-size:14px;line-height:1.85;color:#5b734d;margin-top:12px;}
+.help-activity-content .help-simulation-label {font-size:11px;letter-spacing:.02em;color:#84703c;}
+.help-activity-content dl {margin-top:18px;}
+.help-activity-content dl > div {margin:14px 0;}
+.help-activity-content dt {font-size:14px;font-weight:550;color:#3d6032;}
+.help-activity-content dd {font-size:14px;line-height:1.85;color:#617653;margin:5px 0 0;}
+.help-role-start {padding:24px 0 4px;}
+.help-role-start > p {font-size:14px;color:#5b714d;margin-bottom:13px;}
+.context-help-link,.decision-case .context-help-link {display:inline-flex;background:none;border:0;color:#4d7036;padding:7px 0;margin:11px 0 0;font:inherit;font-size:13px;font-weight:550;text-decoration:underline;text-underline-offset:4px;cursor:pointer;}
+@media(max-width:760px){.help-activity-options{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}.help-activity-options button{font-size:12px;padding:11px 9px;}.help-activity-intro{padding:19px;}.help-activity-intro h2{font-size:23px;}.help-role-result{padding:18px;}}

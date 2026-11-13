@@ -195,3 +195,11 @@ Os três serviços locais estavam parados e foram reiniciados, preservando os vo
 “Como usar” fica no menu principal de todos os ambientes. O guia abre sobre a tela atual, com fechamento por botão ou Escape, sem apagar o rascunho. Quatro passos explicam exemplo preenchido, criação com dados próprios, leitura da síntese e salvamento/reabertura/PDF. O preparo sugerido acompanha o ambiente atual e as dúvidas comuns explicam campos ausentes, escolha entre as seis jornadas e falta de dados no mapa.
 
 Os atalhos abrem um exemplo isolado, uma análise nova do ambiente atual ou a biblioteca. A abertura de outro trabalho mantém a confirmação de descarte; cancelar mantém o guia aberto. Um clique no exemplo cria uma única demonstração. Testes de navegador em `frontend/tests/help.cjs` verificam esses fluxos com API real, leitura sem perder rascunho, Escape, celular e conteúdo por ambiente. As contas e os estudos existentes são preservados.
+
+## Guias por atividade — 20/10/2026
+
+O Como usar oferece seis guias separados: Investidor, Corretor, Incorporadora, Construtora, Empreendedor e Governo. Cada guia tem finalidade, lista de informações a preparar, quatro passos específicos, orientação de leitura do resultado, exemplo fictício explicado, glossário e funções complementares do ambiente. Os exemplos explicados seguem os dados das demonstrações; referências simuladas de Mercado permanecem sem valor de avaliação real.
+
+A seleção de um guia não altera o perfil da conta. Os atalhos abrem o exemplo ou uma análise nova do tipo escolhido, mesmo quando a conta está em outro modo de trabalho. O início de cada ambiente oferece “Como usar este ambiente”, e o editor oferece “Como usar esta análise”, selecionando a ajuda pelo tipo do caso aberto. A proteção dos rascunhos e o fechamento por Escape continuam disponíveis.
+
+`frontend/tests/help-activities.cjs` confere os seis guias, seus glossários e exemplos, os atalhos para a jornada correta, o contexto de uma análise aberta, ausência de alteração do perfil e apresentação móvel com API real. `frontend/tests/help.cjs` mantém a cobertura de leitura da ajuda sem perda do rascunho, confirmação de descarte e navegação pelo modal.

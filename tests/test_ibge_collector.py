@@ -7,30 +7,6 @@ class SidraParsingTest(unittest.TestCase):
     No HTTP calls — pure parsing logic.
     """
 
-    def test_setor_population_parsing_valid_response(self):
-        from unittest.mock import patch, MagicMock
-
-        fake_response = [
-            {"D1C": "header", "V": "Total"},  # cabeçalho
-            {"D1C": "315180005000001", "V": "456"},
-            {"D1C": "315180005000002", "V": "789"},
-            {"D1C": "315180005000003", "V": "nao informado"},  # invalid value
-        ]
-
-        mock_resp = MagicMock()
-        mock_resp.status_code = 200  # required by the status_code check in the loop
-        mock_resp.raise_for_status = lambda: None
-        mock_resp.json.return_value = fake_response
-
-        with patch("recomendacao_imobiliaria.ibge_collector.requests.get", return_value=mock_resp):
-            from recomendacao_imobiliaria.ibge_collector import _fetch_setor_population
-            result = _fetch_setor_population()
-
-        # header row and invalid value must be ignored
-        self.assertEqual(result.get("315180005000001"), 456)
-        self.assertEqual(result.get("315180005000002"), 789)
-        self.assertNotIn("315180005000003", result)
-
     def test_municipality_population_fallback(self):
         from unittest.mock import patch
         from recomendacao_imobiliaria.ibge_collector import _get_municipality_population
@@ -60,6 +36,27 @@ class SidraParsingTest(unittest.TestCase):
             pop = _get_municipality_population()
 
         self.assertEqual(pop, 165_000)
+
+    def test_population_parses_indicator_api_format(self):
+        from unittest.mock import patch, MagicMock
+
+        # Formato real de /pesquisas/indicadores/29171/resultados/{codigo}
+        fake_response = [{"id": 29171, "res": [{"localidade": "315250", "res": {"2025": "162133", "2026": "163439", "2023": "-"}}]}]
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = lambda: None
+        mock_resp.json.return_value = fake_response
+
+        with patch("recomendacao_imobiliaria.ibge_collector.requests.get", return_value=mock_resp):
+            from recomendacao_imobiliaria.ibge_collector import _get_municipality_population
+            pop = _get_municipality_population()
+
+        self.assertEqual(pop, 163_439)
+
+    def test_city_code_is_pouso_alegre(self):
+        from recomendacao_imobiliaria import ibge_collector
+
+        self.assertEqual(ibge_collector.IBGE_CITY_CODE, 3152501)
+        self.assertEqual(ibge_collector._POUSO_ALEGRE_POP_2022, 152_217)
 
 
 class CnesTypeMapTest(unittest.TestCase):

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 from .demo_data import sample_areas
 from .scoring import score_area
@@ -31,6 +32,7 @@ def main() -> None:
     subparsers.add_parser("build-grid", help="Gera grid H3 a partir do limite municipal.")
     subparsers.add_parser("fetch-pois", help="Busca POIs no OSM e salva no PostGIS.")
     subparsers.add_parser("build-features", help="Calcula features basicas de acessibilidade.")
+    subparsers.add_parser("compute-travel-access", help="Camada adicional: tempo real a pe (Mapbox Isochrone) ate o POI mais proximo. Exige MAPBOX_TOKEN; nao afeta o score calibrado.")
     subparsers.add_parser("update-index-features", help="Atualiza features NDVI/NDBI a partir de geo.indices.")
     subparsers.add_parser("score-db", help="Calcula scores para as features do PostGIS.")
     subparsers.add_parser("run-mvp", help="Executa boundary, grid, POIs, features e scores.")
@@ -99,6 +101,31 @@ def main() -> None:
     sar_parser.add_argument("--output", default="data/risk_sentinel1_inputs.csv")
     subparsers.add_parser("sync-hydrology", help="Busca hidrografia OSM e calcula distancia de drenagem por H3.")
     subparsers.add_parser("sync-official-susceptibility", help="Importa cartas oficiais de suscetibilidade do SGB/CPRM.")
+    change_parser = subparsers.add_parser(
+        "detect-change",
+        help="Detecta mudanca ano-contra-ano em Sentinel-2 (10 m) no municipio inteiro e agrega por H3.",
+    )
+    change_parser.add_argument("--before", type=int, required=True, help="Ano de referencia.")
+    change_parser.add_argument("--after", type=int, required=True, help="Ano posterior.")
+    change_parser.add_argument("--validate", action="store_true", help="Compara com mapa anual de cobertura independente (ate 2023).")
+    change_parser.add_argument("--output-dir", default=None, help="Pasta para a mascara em GeoTIFF e o cache das composicoes.")
+    train_change_parser = subparsers.add_parser(
+        "train-change-model",
+        help="Treina o classificador de mudanca (nivel 'provavel') contra o mapa de referencia e grava em config/change_model.",
+    )
+    train_change_parser.add_argument("--bbox", nargs=4, type=float, required=True, metavar=("OESTE", "SUL", "LESTE", "NORTE"))
+    train_change_parser.add_argument("--before", type=int, required=True)
+    train_change_parser.add_argument("--after", type=int, required=True)
+    train_change_parser.add_argument("--cache-dir", default=None)
+    train_change_parser.add_argument("--output-dir", default=None, help="Padrao: config/change_model.")
+    validate_change_parser = subparsers.add_parser(
+        "validate-change",
+        help="Mede a taxa de acerto da deteccao em um retangulo (sem usar o banco).",
+    )
+    validate_change_parser.add_argument("--bbox", nargs=4, type=float, required=True, metavar=("OESTE", "SUL", "LESTE", "NORTE"))
+    validate_change_parser.add_argument("--before", type=int, required=True)
+    validate_change_parser.add_argument("--after", type=int, required=True)
+    validate_change_parser.add_argument("--cache-dir", default=None)
     land_cover_parser = subparsers.add_parser("collect-land-cover", help="Amostra cobertura do solo MapBiomas por celula H3.")
     land_cover_parser.add_argument("--year", type=int, default=2024)
 
@@ -114,6 +141,13 @@ def main() -> None:
 
     subparsers.add_parser("fetch-ibge", help="Busca indicadores habitacionais do IBGE para Pouso Alegre.")
     subparsers.add_parser("estimate-population", help="Estima populacao por celula H3 via IBGE (setores censitarios + SIDRA).")
+    census_parser = subparsers.add_parser(
+        "collect-census-population",
+        help="Distribui a populacao do Censo 2022 (por setor censitario) nas celulas H3 e grava em geo.census_h3.",
+    )
+    census_parser.add_argument("--ibge-code", default=None, help="Codigo IBGE de 7 digitos (padrao: CITY_IBGE_CODE).")
+    census_parser.add_argument("--cache-dir", default=None, help="Pasta de cache dos arquivos do IBGE (padrao: data/cache/censo2022).")
+    census_parser.add_argument("--refresh", action="store_true", help="Baixa os arquivos do IBGE de novo.")
     subparsers.add_parser("fetch-cnes", help="Busca estabelecimentos de saude (CNES/DataSUS) e insere em geo.osm_pois.")
 
     # --- normalizacao de listings ---
@@ -307,6 +341,12 @@ def main() -> None:
             print(f"AVISO: estimate-population falhou ({exc}). Continuando sem dados populacionais.")
         return
 
+    if args.command == "collect-census-population":
+        from .census_population import collect_census_population
+        print(json.dumps(collect_census_population(args.ibge_code, cache_dir=args.cache_dir, refresh=args.refresh),
+                         ensure_ascii=False, indent=2))
+        return
+
     if args.command == "fetch-cnes":
         try:
             from .cnes_collector import fetch_cnes_establishments
@@ -426,6 +466,25 @@ def main() -> None:
         print(f"Feicoes oficiais de suscetibilidade importadas: {count}.")
         return
 
+    if args.command == "detect-change":
+        from .change_detection import run_change_detection
+        result = run_change_detection(args.before, args.after, validate=args.validate, output_dir=args.output_dir)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "train-change-model":
+        from .change_detection import train_change_model
+        meta = train_change_model(args.bbox, args.before, args.after, args.output_dir,
+                                  cache_dir=Path(args.cache_dir) if args.cache_dir else None)
+        print(json.dumps(meta, ensure_ascii=False, indent=2))
+        return
+
+    if args.command == "validate-change":
+        from .change_detection import validate_bounds
+        result = validate_bounds(args.bbox, args.before, args.after, cache_dir=args.cache_dir)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
     if args.command == "collect-land-cover":
         from .land_cover import collect_mapbiomas_land_cover
         print(f"Cobertura do solo atualizada para {collect_mapbiomas_land_cover(args.year)} celulas H3.")
@@ -514,6 +573,14 @@ def main() -> None:
     elif args.command == "build-features":
         count = build_features()
         print(f"Features atualizadas: {count}.")
+    elif args.command == "compute-travel-access":
+        from .mapbox_access import MapboxConfigError, compute_travel_access
+        try:
+            count = compute_travel_access()
+        except MapboxConfigError as exc:
+            print(f"Erro: {exc}")
+            return
+        print(f"Tempo real de deslocamento gravado para {count} celulas (camada informativa; score calibrado inalterado).")
     elif args.command == "update-index-features":
         result = update_remote_sensing_features()
         print(json.dumps(result.__dict__, ensure_ascii=False, indent=2))

@@ -14,7 +14,7 @@ const BASE=process.env.URBIA_PRESENTATION_URL||'http://127.0.0.1:18088'
   await page.goto(BASE+'/app');await page.getByRole('button',{name:'Como usar',exact:true}).click()
   const guide=page.getByRole('dialog',{name:'Como usar a Urbia',exact:true})
   await guide.waitFor();assert.equal(await guide.locator('.help-steps > li').count(),4)
-  await guide.getByText('Seu ambiente: Urbia Incorpora',{exact:true}).waitFor()
+  await guide.getByText('Como usar: Incorporadora',{exact:true}).waitFor()
   await guide.getByText('Preciso preencher tudo de uma vez?',{exact:true}).click();await guide.getByText(/Use zero apenas quando/).waitFor()
   fs.mkdirSync('/private/tmp/urbia-help',{recursive:true})
   await page.screenshot({path:'/private/tmp/urbia-help/desktop.png'})
@@ -45,7 +45,7 @@ const BASE=process.env.URBIA_PRESENTATION_URL||'http://127.0.0.1:18088'
   await page.setViewportSize({width:1440,height:1000})
   await page.getByLabel('Modo de trabalho').selectOption('governo')
   await page.getByRole('button',{name:'Priorizar visitas',exact:true}).waitFor();await page.getByRole('button',{name:'Como usar',exact:true}).click()
-  await guide.getByText('Seu ambiente: Urbia Governo',{exact:true}).waitFor()
+  await guide.getByText('Como usar: Governo',{exact:true}).waitFor()
   assert.deepEqual(errors,[])
   console.log('PASS: mobile modal/menu, workspace-specific guidance and no JavaScript errors')
  }finally{await browser.close()}

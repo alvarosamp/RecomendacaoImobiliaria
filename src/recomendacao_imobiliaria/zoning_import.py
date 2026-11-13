@@ -59,6 +59,14 @@ def default_zoning_file() -> Path:
     raise FileNotFoundError("Nenhum arquivo de zoneamento encontrado em data/official ou data/sample_zoning.geojson.")
 
 
+def is_official_zoning_path(path: str | Path) -> bool:
+    """True apenas para arquivos sob data/official (ou extraidos de um KMZ de la)."""
+    parts = Path(path).as_posix().lower()
+    if "sample_zoning" in parts or "/fixtures/" in f"/{parts}":
+        return False
+    return "data/official/" in parts or "data/processed/kmz_extract/zoneamento_" in parts
+
+
 def inspect_zoning_file(filepath: str | Path) -> ZoningInspectionResult:
     path = _prepare_zoning_path(Path(filepath))
     if path.suffix.lower() == ".kml":
@@ -195,21 +203,24 @@ def import_zoning_file(filepath: str | Path, settings=None) -> ZoningImportResul
     eng.dispose()
 
     checksum = hashlib.sha256(path.read_bytes()).hexdigest()
+    # So a camada do PDPA em data/official/pdpa e a fonte oficial conhecida; exemplos,
+    # fixtures e arquivos avulsos nao podem ser registrados como oficiais.
+    official = is_official_zoning_path(path)
     record_data_source(
         "zoning",
-        "Prefeitura de Pouso Alegre - KML oficial",
+        "Prefeitura de Pouso Alegre - KML oficial" if official else "Arquivo de zoneamento nao oficial",
         source_uri=str(path),
         row_count=len(gdf),
         details={
             "cells_assigned": cells_assigned,
             "unmatched_cells": int(unmatched or 0),
-            "official": True,
-            "reference_label": "Zoneamento urbano vigente 2024",
+            "official": official,
+            "reference_label": "Zoneamento urbano vigente 2024" if official else "Camada de exemplo ou sem proveniencia",
             "zone_codes": sorted(gdf["zona"].astype(str).unique().tolist()),
         },
         checksum_sha256=checksum,
-        schema_version="pdpa-kml-v1",
-        legal_basis="Lei Ordinaria 6.476/2021 e anexos do Plano Diretor de Pouso Alegre",
+        schema_version="pdpa-kml-v1" if official else None,
+        legal_basis="Lei Ordinaria 6.476/2021 e anexos do Plano Diretor de Pouso Alegre" if official else None,
         settings=settings,
     )
 

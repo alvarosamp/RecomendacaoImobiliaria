@@ -18,9 +18,15 @@ def calibrate_priorities(config_path: str = "config/scoring_weights.json", *, ap
     engine = make_engine(active_settings)
     try:
         with engine.connect() as conn:
+            # So entram celulas que podem receber prioridade: com zona atribuida e nao
+            # bloqueadas. A massa rural sem zona e os zeros de areas vetadas
+            # achatavam os quantis e empatavam "media" com o score-base.
             frame = pd.read_sql(text("""
-                SELECT GREATEST(score_residencial, score_comercial) AS score
-                FROM geo.scores WHERE score_residencial IS NOT NULL OR score_comercial IS NOT NULL
+                SELECT GREATEST(s.score_residencial, s.score_comercial) AS score
+                FROM geo.scores s
+                JOIN geo.features f USING (h3_id)
+                WHERE f.zona IS NOT NULL
+                  AND GREATEST(COALESCE(s.score_residencial, 0), COALESCE(s.score_comercial, 0)) > 0
             """), conn)
     finally:
         engine.dispose()

@@ -120,7 +120,11 @@ Gera relatorio executivo em Markdown e CSV com ranking de oportunidades, resumo 
 Regras atuais:
 
 - se o zoneamento veta o uso, o score daquele uso vira zero;
-- carencia comercial aumenta quando ha poucos mercados/farmacias/escolas;
+- carencia comercial = estabelecimentos que **faltam** para a populacao do entorno (Censo 2022, raio de
+  `poi_count_radius_m`) em relacao a media da propria cidade de estabelecimentos por habitante; satura em
+  `unmet_full_establishments` (1,0). Celula sem moradores nao tem demanda. Sem o Censo carregado
+  (`collect-census-population`), volta as metas fixas por celula de `demand_targets`. A memoria de calculo
+  fica em `explain_json.demand` (populacao do entorno, esperado e faltante por servico);
 - crescimento urbano aumenta com NDBI subindo e NDVI caindo;
 - residencial valoriza qualidade ambiental, acesso e crescimento moderado.
 

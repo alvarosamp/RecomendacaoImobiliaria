@@ -19,22 +19,29 @@
     "pharmacy": 1800,
     "school": 2200
   },
+  "poi_count_radius_m": 2000,
+  "unmet_full_establishments": 1.0,
+  "growth_index_change_180d": 0.1,
+  "growth_change_fraction_full": 0.15,
+  "growth_change_min_valid_fraction": 0.5,
   "recommendation_threshold": 0.35,
   "priority_thresholds": {
-    "high": 35.9,
-    "medium": 29.25
+    "high": 41.3,
+    "medium": 27.97
   },
   "calibration": {
     "method": "quantis_90_70",
-    "sample_size": 711,
-    "score_spread_p90_p10": 35.9,
-    "calibrated_at": "2026-08-21"
+    "sample_size": 273,
+    "score_spread_p90_p10": 23.35,
+    "calibrated_at": "2026-11-13",
+    "population": "celulas com zona e score > 0"
   },
   "confidence": {
-    "base": 0.3,
+    "base": 0.25,
     "has_remote_sensing": 0.2,
     "has_accessibility": 0.2,
     "has_zoning": 0.2,
-    "allowed_by_plan": 0.1
+    "allowed_by_plan": 0.1,
+    "has_population": 0.05
   }
 }

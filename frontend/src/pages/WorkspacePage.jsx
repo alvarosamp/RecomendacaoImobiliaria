@@ -17,12 +17,12 @@ const PRESENTATION = {
  empreendedor: { icon:'shop', tone:'lavender', title:'Seu negócio começa pela localização.', output:'Comparação de pontos', items:['Até três endereços para comparar','Custos e condições observadas','Roteiro para a próxima visita'] },
  governo: { icon:'civic', tone:'mint', title:'Um olhar mais atento para a cidade.', output:'Agenda de investigação', items:['Regiões escolhidas com justificativa','Evidências e limitações dos dados','Visitas com responsáveis definidos'] },
 }
-export default function WorkspacePage({ profile, onStart, onPrimary, disabled = false }) {
+export default function WorkspacePage({ profile, onStart, onPrimary, onHelp, disabled = false }) {
   const workspace = WORKSPACES[profile], presentation = PRESENTATION[profile]
   return (
     <section className={`workspace-page workspace-refresh tone-${presentation.tone}`}>
       <div className="workspace-topline"><span>Seu espaço de decisão</span><span><ProductIcon name="pin" size={15} /> Pouso Alegre · MG <small>Cobertura parcial</small></span></div>
-      <header className="workspace-intro"><span className="workspace-product"><ProductIcon name={presentation.icon} size={19} />{workspace.name}</span><h1>{presentation.title}</h1><p>{PRIMARY[profile][1]}</p></header>
+      <header className="workspace-intro"><span className="workspace-product"><ProductIcon name={presentation.icon} size={19} />{workspace.name}</span><h1>{presentation.title}</h1><p>{PRIMARY[profile][1]}</p>{onHelp&&<button className="context-help-link" onClick={onHelp}>Como usar este ambiente</button>}</header>
       <div className="workspace-main-grid">
         <section className="workspace-launch"><span className="product-eyebrow">Sua próxima análise</span><h2>{PRIMARY[profile][0]}</h2><p>Um caminho guiado para transformar as informações que você tem em uma decisão mais clara.</p><ol className="workspace-mini-steps">{['Objetivo','Informações','Conferência','Sua análise'].map((step,i)=><li key={step}><span>{i+1}</span>{step}</li>)}</ol><button className="product-button ink" disabled={disabled} onClick={onPrimary}>{PRIMARY[profile][0]}<ProductIcon name="arrow" size={19}/></button><small>Você pode começar com um exemplo demonstrativo.</small></section>
         <aside className="workspace-delivery"><div className="delivery-visual"><TerritoryVisual compact/><span><ProductIcon name="document" size={23}/></span></div><div className="delivery-copy"><span className="product-eyebrow">O que você vai levar</span><h2>{presentation.output}</h2><ul>{presentation.items.map(item=><li key={item}><ProductIcon name="check" size={17}/>{item}</li>)}</ul><div className="delivery-format"><ProductIcon name="document" size={16}/> Síntese na tela + relatório para PDF</div></div></aside>

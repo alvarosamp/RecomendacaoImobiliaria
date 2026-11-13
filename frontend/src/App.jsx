@@ -5,6 +5,7 @@ import WorkspacePage, { JourneyNavigation } from './pages/WorkspacePage'
 import { clearMapDataCache, fetchNeighborhoodsGeojson, fetchScores, fetchTimeseries, getPipelineStatus, refreshPipeline } from './api'
 import { withNeighborhoods } from './utils/neighborhoods'
 import { AuthContext } from './contexts/AuthContext'
+import { DECISION_JOURNEYS } from './config/decisionJourneys'
 
 const MapPage           = lazy(() => import('./pages/MapPage'))
 const OpportunitiesPage = lazy(() => import('./pages/OpportunitiesPage'))
@@ -287,6 +288,8 @@ export default function App() {
   const profile = getProfile(user?.role)
   const [page, setPage]     = useState(PROFILE_CONFIG[profile].defaultPage)
   const [helpOpen,setHelpOpen] = useState(false)
+  const [helpProfile,setHelpProfile] = useState(null)
+  const [casesKind,setCasesKind] = useState(null)
   const [casesEntry,setCasesEntry] = useState('library')
   const [casesNavigation,setCasesNavigation] = useState(0)
   const [scores, setScores] = useState([])
@@ -311,12 +314,13 @@ export default function App() {
     if(profileBusy)return false
     if(next===page&&next!=='cases')return true
     if(!canLeaveStudy())return false
-    if(next==='cases'){setCasesEntry('library');setCasesNavigation(current=>current+1)}
+    if(next==='cases'){setCasesKind(null);setCasesEntry('library');setCasesNavigation(current=>current+1)}
     setJourney(null);setPage(next);return true
   }
-  const openFromHelp = mode => {
+  const openGuide = kind => {setHelpProfile(Object.keys(DECISION_JOURNEYS).find(role=>DECISION_JOURNEYS[role].kind===kind)||profile);setHelpOpen(true)}
+  const openFromHelp = (mode,guideProfile=profile) => {
     if(profileBusy||!canLeaveStudy())return
-    setCasesEntry(mode);setCasesNavigation(current=>current+1);setJourney(null);setPage('cases');setSidebarOpen(false);setHelpOpen(false)
+    setCasesKind(DECISION_JOURNEYS[guideProfile].kind);setCasesEntry(mode);setCasesNavigation(current=>current+1);setJourney(null);setPage('cases');setSidebarOpen(false);setHelpOpen(false)
   }
   const handleLogout = () => { if (canLeaveStudy()) logout() }
 
@@ -404,7 +408,7 @@ export default function App() {
     setProfileBusy(true);setProfileError('')
     try {
       await updateProfile(nextProfile)
-      setCasesEntry('library')
+      setCasesKind(null);setCasesEntry('library')
       setPage(PROFILE_CONFIG[nextProfile].defaultPage)
     } catch {
       setProfileError('Não foi possível alterar o modo de trabalho. Tente novamente.')
@@ -439,12 +443,12 @@ export default function App() {
         onLogout={handleLogout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        onHelp={()=>setHelpOpen(true)}
+        onHelp={()=>openGuide()}
       />
 
-      {helpOpen&&<Suspense fallback={null}><HelpDialog profile={profile} onClose={()=>setHelpOpen(false)} onNavigate={openFromHelp}/></Suspense>}
+      {helpOpen&&<Suspense fallback={null}><HelpDialog profile={helpProfile||profile} onClose={()=>setHelpOpen(false)} onNavigate={openFromHelp}/></Suspense>}
       <main className="main" inert={profileBusy ? '' : undefined}>
-        {page === 'home' && <WorkspacePage disabled={profileBusy} profile={profile} onPrimary={()=>{setJourney(null);setCasesEntry('new');setPage('cases')}} onStart={selected => { if (selected.steps[0][0] === 'government') { setJourney(null); setPage('government') } else if (selected.steps[0][0] === 'study') { setJourney(null); setPage('study') } else { setJourney(selected); setPage(selected.steps[0][0]) } }} />}
+        {page === 'home' && <WorkspacePage disabled={profileBusy} profile={profile} onHelp={()=>openGuide()} onPrimary={()=>{setJourney(null);setCasesKind(null);setCasesEntry('new');setPage('cases')}} onStart={selected => { if (selected.steps[0][0] === 'government') { setJourney(null); setPage('government') } else if (selected.steps[0][0] === 'study') { setJourney(null); setPage('study') } else { setJourney(selected); setPage(selected.steps[0][0]) } }} />}
         {page !== 'home' && journey && <JourneyNavigation journey={journey} page={page} onNavigate={setPage} onClose={() => { setJourney(null); setPage('home') }} />}
         {loading && page !== 'home' && (
           <div className="loading">
@@ -484,7 +488,7 @@ export default function App() {
             {page === 'legal'         && <LegalAuditPage scores={scores} />}
             {page === 'project-compare' && <ProjectComparePage />}
             {page === 'teams' && <TeamsPage />}
-            {page === 'cases' && <DecisionCasePage key={profile+casesEntry+casesNavigation} initialView={casesEntry} profile={profile} scores={scores} onStudyStateChange={onStudyStateChange} onOpenProjects={()=>navigatePage('study')} />}
+            {page === 'cases' && <DecisionCasePage key={profile+casesEntry+casesNavigation} initialView={casesEntry} initialKind={casesKind} onHelp={openGuide} profile={profile} scores={scores} onStudyStateChange={onStudyStateChange} onOpenProjects={()=>navigatePage('study')} />}
             {page === 'government' && <PublicDiagnosisPage scores={scores} timeDates={timeDates} timeRecords={timeRecords} selectedDate={selectedDate} onDateChange={setSelectedDate} />}
             {page === 'study' && <LandStudyPage workspaceProfile={profile} onStudyStateChange={onStudyStateChange} scores={scores} timeDates={timeDates} timeRecords={timeRecords} selectedDate={selectedDate} onDateChange={setSelectedDate} />}
             {page === 'leads' && <LeadsPage />}

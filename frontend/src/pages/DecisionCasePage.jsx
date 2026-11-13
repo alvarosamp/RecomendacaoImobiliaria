@@ -7,8 +7,8 @@ const initialInputs=kind=>({incorpora:{proposals:[]},obras:{investigation_note:'
 const STEPS=['Seu objetivo','Informações essenciais','Confira os dados','Sua análise']
 const taskStates={pending:'Pendente',in_progress:'Em andamento',done:'Concluída'}
 function Tables({tables}){return tables.map((table,index)=><section key={index} className="case-table"><h3>{table.title}</h3><p className="case-table-hint">Em telas pequenas, deslize a tabela para conferir os valores.</p><div className="comparison-table-wrap"><table className="comparison-table"><thead><tr>{table.columns.map(column=><th key={column} scope="col">{column}</th>)}</tr></thead><tbody>{table.rows.map((row,i)=><tr key={i}>{row.map((item,j)=><td key={j}>{item}</td>)}</tr>)}</tbody></table></div>{!table.rows.length&&<p>Informações pendentes nesta captura.</p>}</section>)}
-export default function DecisionCasePage({profile,scores=[],onStudyStateChange,onOpenProjects,initialView='library'}){
- const [kind,setKind]=useState(CONFIG[profile].kind),[showLibrary,setShowLibrary]=useState(initialView!=='new')
+export default function DecisionCasePage({profile,scores=[],onStudyStateChange,onOpenProjects,initialView='library',initialKind=null,onHelp}){
+ const [kind,setKind]=useState(initialKind||CONFIG[profile].kind),[showLibrary,setShowLibrary]=useState(initialView!=='new')
  const config=journeyForKind(kind)
  const fresh=(selectedKind=kind)=>({title:'',kind:selectedKind,city_ibge:'3152501',project_id:null,organization_id:null,demonstration:false,inputs:initialInputs(selectedKind)})
  const [draft,setDraft]=useState(()=>fresh()),[saved,setSaved]=useState(null),[items,setItems]=useState([]),[projects,setProjects]=useState([]),[teams,setTeams]=useState([]),[cities,setCities]=useState([])
@@ -42,7 +42,7 @@ export default function DecisionCasePage({profile,scores=[],onStudyStateChange,o
  useEffect(()=>{if(initialView==='example'&&!helpExampleStarted.current){helpExampleStarted.current=true;createDemo()}},[initialView])
  if(showLibrary)return <CaseLibrary profile={profile} items={items} demonstration={demo} onFilter={setDemo} onNew={startNew} onDemo={()=>createDemo(CONFIG[profile].kind)} onOpen={open} loading={loading} busy={busy} error={error}/>
  return <section className="page decision-case" data-case-id={saved?.id||'new'} data-kind={kind}>
-  <header className="page-header"><div className="page-eyebrow">{config.name}</div><h2 tabIndex={-1}>{config.question}</h2><p>Defina o objetivo, confira as informações e receba uma síntese com motivos e próximos passos.</p></header>
+  <header className="page-header"><div className="page-eyebrow">{config.name}</div><h2 tabIndex={-1}>{config.question}</h2><p>Defina o objetivo, confira as informações e receba uma síntese com motivos e próximos passos.</p>{onHelp&&<button className="context-help-link" onClick={()=>onHelp(kind)}>Como usar esta análise</button>}</header>
   <div className="case-editor-navigation"><button disabled={busy} onClick={returnToLibrary}>← Minhas análises</button><span>{saved?(dirty?'Alterações não salvas':'Salvo na sua conta'):'Nova análise · ainda não salvo'}</span><details><summary>Outras opções</summary><button disabled={busy} onClick={()=>open('')}>Nova análise</button></details></div>
   {loading&&<p role="status">Carregando casos…</p>}{error&&<p className="error-msg" role="alert">{error}</p>}{status&&<p role="status">{status}</p>}
   {draft.demonstration&&<p className="case-provenance simulation">SIMULAÇÃO DEMONSTRATIVA: valores e observações fictícios. Fontes reais do município não foram usadas para validar este exemplo.</p>}

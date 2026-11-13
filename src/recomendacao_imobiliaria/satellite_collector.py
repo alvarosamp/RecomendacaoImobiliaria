@@ -63,6 +63,20 @@ def _h3_to_bbox(h3_id: str, buffer: float = 0.001) -> list[float]:
     return _cells_bbox([h3_id], buffer=buffer)
 
 
+def _hexagon_mask(h3_id: str, lons: np.ndarray, lats: np.ndarray) -> np.ndarray | None:
+    """Mascara (lat x lon) dos pixels cujo centro cai dentro da celula H3."""
+    try:
+        import h3
+        import shapely
+        from shapely.geometry import Polygon
+
+        polygon = Polygon([(lng, lat) for lat, lng in h3.cell_to_boundary(h3_id)])
+        grid_lon, grid_lat = np.meshgrid(lons, lats)
+        return shapely.contains_xy(polygon, grid_lon, grid_lat)
+    except Exception:
+        return None
+
+
 def _search_items_with_retry(
     catalog,
     label: str,
@@ -247,6 +261,12 @@ def collect_sentinel2_indices(
 
                 ndvi_sub = ndvi_raster[np.ix_(lat_idx, lon_idx)]
                 ndbi_sub = ndbi_raster[np.ix_(lat_idx, lon_idx)]
+                # O retangulo envolvente inclui pixels das celulas vizinhas; a
+                # estatistica usa apenas os pixels dentro do hexagono.
+                inside = _hexagon_mask(h3_id, lons[lon_idx], lats[lat_idx])
+                if inside is not None and inside.any():
+                    ndvi_sub = np.where(inside, ndvi_sub, np.nan)
+                    ndbi_sub = np.where(inside, ndbi_sub, np.nan)
 
                 ndvi_val = float(np.nanmedian(ndvi_sub))
                 ndbi_val = float(np.nanmedian(ndbi_sub))

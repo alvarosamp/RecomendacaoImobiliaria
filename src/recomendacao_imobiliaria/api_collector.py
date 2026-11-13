@@ -265,7 +265,9 @@ def fetch_ibge_housing_indicators(
             errors.append(f"sidra/{tabela}/{variavel}: {exc}")
             log.debug("IBGE SIDRA %s: %s", tabela, exc)
 
-    # --- PIB per capita (tabela 5938, variavel 37) ---
+    # --- PIB (tabela 5938, variavel 37 = PIB a precos correntes, em MIL REAIS) ---
+    # A tabela nao traz PIB per capita: ele e derivado dividindo pelo total de
+    # habitantes estimado para o mesmo ano (tabela 6579, variavel 9324).
     try:
         url = (
             "https://servicodados.ibge.gov.br/api/v3/agregados/5938"
@@ -274,13 +276,38 @@ def fetch_ibge_housing_indicators(
         )
         resp = requests.get(url, timeout=15)
         resp.raise_for_status()
-        data = resp.json()
-        if data and data[0].get("resultados"):
-            serie = data[0]["resultados"][0]["series"][0]["serie"]
-            valor_pib = list(serie.values())[-1] if isinstance(serie, dict) else None
-            rows.append({"indicador": "pib_per_capita_reais", "codigo_ibge": ibge_code, "valor": valor_pib})
+        pib_year, pib_mil = _last_series_value(resp.json())
+        if pib_mil is not None:
+            rows.append({"indicador": "pib_precos_correntes_mil_reais", "codigo_ibge": ibge_code,
+                         "valor": pib_mil, "referencia": pib_year})
+            try:
+                # Populacao do mesmo ano; em anos sem estimativa (2022/2023) usa o Censo 2022.
+                population, pop_ref = None, None
+                for table, variable, period, label in (
+                    ("6579", "9324", pib_year, f"estimativa {pib_year}"),
+                    ("4709", "93", "2022", "Censo 2022"),
+                ):
+                    pop_resp = requests.get(
+                        f"https://servicodados.ibge.gov.br/api/v3/agregados/{table}"
+                        f"/periodos/{period}/variaveis/{variable}?localidades=N6[{ibge_code}]",
+                        timeout=15,
+                    )
+                    if pop_resp.status_code != 200:
+                        continue
+                    _, population = _last_series_value(pop_resp.json())
+                    if population:
+                        pop_ref = label
+                        break
+                if population:
+                    rows.append({"indicador": "pib_per_capita_reais", "codigo_ibge": ibge_code,
+                                 "valor": round(pib_mil * 1000 / population, 2),
+                                 "referencia": f"PIB {pib_year} / populacao {pop_ref}"})
+                else:
+                    errors.append("pib_per_capita: populacao de referencia indisponivel")
+            except Exception as exc:
+                errors.append(f"pib_per_capita: {exc}")
     except Exception as exc:
-        errors.append(f"pib_per_capita: {exc}")
+        errors.append(f"pib: {exc}")
 
     df = pd.DataFrame(rows)
     Path(output_csv).parent.mkdir(parents=True, exist_ok=True)
@@ -292,6 +319,16 @@ def fetch_ibge_housing_indicators(
         output_path=output_csv,
         errors=errors,
     )
+
+
+def _last_series_value(data) -> tuple[str | None, float | None]:
+    """(periodo, valor) mais recente de uma resposta da API de agregados do IBGE."""
+    try:
+        serie = data[0]["resultados"][0]["series"][0]["serie"]
+        period = max(serie.keys())
+        return period, float(serie[period])
+    except (IndexError, KeyError, TypeError, ValueError):
+        return None, None
 
 
 # ---------------------------------------------------------------------------

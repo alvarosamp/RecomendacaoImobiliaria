@@ -245,6 +245,9 @@ def cell_typology():
         return {"error": str(exc)}
 
 
+ZONING_DISPLAY_TOLERANCE_DEG = 0.00005  # ~5 m
+
+
 @router.get("/analytics/zoning-geojson")
 def zoning_geojson():
     from sqlalchemy import text
@@ -261,12 +264,15 @@ def zoning_geojson():
                     SELECT
                         zona,
                         observacoes,
-                        ST_AsGeoJSON(ST_Transform(geom, 4326))::json AS geometry
+                        -- So para desenhar: ~5 m de tolerancia reduz os vertices em mais da metade.
+                        -- A analise legal usa a geometria completa de geo.zoning.
+                        ST_AsGeoJSON(ST_SimplifyPreserveTopology(ST_Transform(geom, 4326), :tolerance), 6)::json AS geometry
                     FROM geo.zoning
                     WHERE geom IS NOT NULL
                     ORDER BY zona
                     """
-                )
+                ),
+                {"tolerance": ZONING_DISPLAY_TOLERANCE_DEG},
             ).mappings().all()
     finally:
         engine.dispose()
@@ -283,7 +289,8 @@ def zoning_geojson():
         for row in rows
         if row["geometry"]
     ]
-    return JSONResponse({"type": "FeatureCollection", "features": features})
+    # Zoneamento muda raramente: o navegador pode reaproveitar por alguns minutos.
+    return JSONResponse({"type": "FeatureCollection", "features": features}, headers={"Cache-Control": "private, max-age=600"})
 
 
 @router.get("/analytics/neighborhoods-geojson")

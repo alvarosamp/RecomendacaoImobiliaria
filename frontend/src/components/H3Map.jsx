@@ -259,6 +259,7 @@ export default function H3Map({
   pois = null,
   officialRisk = null,
   neighborhoods = null,
+  layerStatus = {},
   basemap = 'streets',
   onBasemapChange = () => {},
   visibleLayers = { cells: true, zoning: true, pois: true, neighborhoods: true },
@@ -401,9 +402,11 @@ export default function H3Map({
     stroked: true,
     filled: mode === 'zoning' || mode === 'kernel' || mode === 'validation',
     getFillColor: f => mode === 'kernel' || mode === 'validation' ? zoneColor(f.properties?.zona, 30) : zoneColor(f.properties?.zona, 92),
-    getLineColor: f => mode === 'zoning' ? [...zoneColor(f.properties?.zona, 224).slice(0, 3), 224] : [15, 23, 42, 118],
-    getLineWidth: mode === 'zoning' ? 80 : mode === 'kernel' || mode === 'validation' ? 54 : 30,
-    lineWidthMinPixels: mode === 'zoning' ? 1.6 : mode === 'kernel' || mode === 'validation' ? 1.15 : 0.6,
+    getLineColor: f => mode === 'zoning' ? [...zoneColor(f.properties?.zona, 224).slice(0, 3), 224] : [71, 85, 105, 96],
+    // Largura em pixels: em metros, a linha de 30 m virava uma faixa de ~13 px em zoom de bairro
+    // e escondia as ruas do mapa base.
+    lineWidthUnits: 'pixels',
+    getLineWidth: mode === 'zoning' ? 2 : mode === 'kernel' || mode === 'validation' ? 1.3 : 0.9,
     autoHighlight: mode === 'zoning' || mode === 'kernel' || mode === 'validation',
     highlightColor: [255, 255, 255, 70],
     updateTriggers: {
@@ -450,6 +453,8 @@ export default function H3Map({
     })), [neighborhoods])
 
   const showQuadrants = viewState.zoom < NEIGHBORHOOD_MIN_ZOOM
+  // Perto, a celula (cerca de 1 km) fica mais transparente para deixar ver ruas e nomes.
+  const detailZoom = viewState.zoom >= 14.5
   const darkBase = basemapTheme === 'dark'
 
   const neighborhoodLayer = useMemo(() => new GeoJsonLayer({
@@ -545,7 +550,7 @@ export default function H3Map({
       }
       if (mode === 'kernel') return scoreToRgba(objectiveScore(d, objectiveConfig), 42)
       if (mode === 'validation') return validationColor(d, objectiveConfig, 76)
-      return scoreToRgba(objectiveScore(d, objectiveConfig), 150)
+      return scoreToRgba(objectiveScore(d, objectiveConfig), detailZoom ? 95 : 150)
     },
     getLineColor: d => selected?.h3_id === d.h3_id ? [15, 23, 42, 255] : [255, 255, 255, 82],
     lineWidthMinPixels: d => selected?.h3_id === d.h3_id ? 2 : 0.25,
@@ -557,14 +562,14 @@ export default function H3Map({
     autoHighlight: true,
     highlightColor: [15, 23, 42, 48],
     updateTriggers: {
-      getFillColor: [mode, selectedDate, ndviByCell, objectiveConfig],
+      getFillColor: [mode, selectedDate, ndviByCell, objectiveConfig, detailZoom],
       getLineColor: [selected],
       lineWidthMinPixels: [selected],
       coverage: [mode],
     },
     onHover: info => setTooltip(info.object ? { kind: 'cell', object: info.object, x: info.x, y: info.y } : null),
     onClick: info => selectCell(info.object || null),
-  }), [data, mode, selectedDate, ndviByCell, selected, objectiveConfig, onSelectArea])
+  }), [data, mode, selectedDate, ndviByCell, selected, objectiveConfig, onSelectArea, detailZoom])
 
   const validationLayer = useMemo(() => new ColumnLayer({
     id: 'validation-columns',
@@ -686,7 +691,7 @@ export default function H3Map({
   })
 
   const legend = legendFor(mode, selectedDate)
-  const zoningCount = zoning?.features?.length || 0
+  const zoningCount = zoning ? zoning.features.length : null
   const layers = [
     influenceLayer,
     visibleLayers.zoning ? zoningLayer : null,
@@ -714,6 +719,7 @@ export default function H3Map({
         getCursor={({ isDragging, isHovering }) => isDragging ? 'grabbing' : isHovering ? 'pointer' : 'grab'}
       />
       <VectorBasemap viewState={viewState} basemap={basemap} part="labels" />
+      <LayerStatusBanner status={layerStatus} />
 
       <AddressSearch
         viewbox={cityConfig?.searchViewbox}
@@ -736,7 +742,8 @@ export default function H3Map({
         onToggle={() => setRankingOpen(o => !o)}
         cellCount={data.length}
         zoningCount={zoningCount}
-        poiCount={filteredPois.length}
+        poiCount={pois ? filteredPois.length : null}
+        layerStatus={layerStatus}
         rankedZones={rankedZones}
         cityConfig={cityConfig}
         objectiveConfig={objectiveConfig}
@@ -767,8 +774,9 @@ export default function H3Map({
           onToggleLayer={onToggleLayer}
           cellCount={data.length}
           zoningCount={zoningCount}
-          poiCount={filteredPois.length}
-          officialRiskCount={officialRisk?.features?.length || 0}
+          poiCount={pois ? filteredPois.length : null}
+          officialRiskCount={officialRisk ? officialRisk.features.length : null}
+          layerStatus={layerStatus}
           neighborhoodCount={neighborhoodLabels.filter(d => d.kind !== 'quadrante').length}
           poiFilterDefs={poiFilterDefs}
           poiTypes={poiTypes}
@@ -878,7 +886,7 @@ function Chevron({ open }) {
 
 function LayersPanel({
   open, onToggle, rawMode, onModeChange, dateActive,
-  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount, officialRiskCount, neighborhoodCount,
+  visibleLayers, onToggleLayer, cellCount, zoningCount, poiCount, officialRiskCount, neighborhoodCount, layerStatus = {},
   poiFilterDefs, poiTypes, onTogglePoiType,
   influenceRadius, onRadiusChange, labelMode, onLabelModeChange,
   priorityFilter, onPriorityChange, riskFilter, onRiskChange,
@@ -935,19 +943,19 @@ function LayersPanel({
           </label>
           <label className="atlas-layer-row">
             <input type="checkbox" checked={!!visibleLayers.neighborhoods} onChange={() => onToggleLayer('neighborhoods')} />
-            Bairros <span>{neighborhoodCount}</span>
+            Bairros <span>{countLabel(neighborhoodCount, layerStatus.neighborhoods)}</span>
           </label>
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.zoning} onChange={() => onToggleLayer('zoning')} />
-            Zonas <span>{zoningCount}</span>
+            Zonas <span>{countLabel(zoningCount, layerStatus.zoning)}</span>
           </label>
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.pois} onChange={() => onToggleLayer('pois')} />
-            Pontos <span>{poiCount}</span>
+            Pontos <span>{countLabel(poiCount, layerStatus.pois)}</span>
           </label>
           <label className="atlas-layer-row">
             <input type="checkbox" checked={visibleLayers.officialRisk} onChange={() => onToggleLayer('officialRisk')} />
-            Carta oficial SGB <span>{officialRiskCount}</span>
+            Carta oficial SGB <span>{countLabel(officialRiskCount, layerStatus.officialRisk)}</span>
           </label>
 
           {visibleLayers.pois && poiFilterDefs.length > 0 && (
@@ -999,7 +1007,7 @@ function LayersPanel({
   )
 }
 
-function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, rankedZones, cityConfig, objectiveConfig, cockpit, onSelectCell }) {
+function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, layerStatus = {}, rankedZones, cityConfig, objectiveConfig, cockpit, onSelectCell }) {
   return (
     <div className={`atlas-floating-panel atlas-ranking-panel${open ? '' : ' collapsed'}`}>
       <button className="atlas-panel-header" onClick={onToggle}>
@@ -1014,8 +1022,8 @@ function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, ranked
           </div>
           <div className="atlas-ranking-stats">
             <div><strong>{cellCount}</strong><span>celulas</span></div>
-            <div><strong>{zoningCount}</strong><span>zonas</span></div>
-            <div><strong>{poiCount}</strong><span>pontos</span></div>
+            <div><strong>{countLabel(zoningCount, layerStatus.zoning)}</strong><span>zonas</span></div>
+            <div><strong>{countLabel(poiCount, layerStatus.pois)}</strong><span>pontos</span></div>
           </div>
           {cockpit && (
             <div className="atlas-cockpit-grid">
@@ -1033,7 +1041,7 @@ function RankingPanel({ open, onToggle, cellCount, zoningCount, poiCount, ranked
             <div className="atlas-best-cells">
             <span>Melhores regiões para investigar</span>
             {cockpit.best.map((cell, index) => (
-              <button key={cell.h3_id || index} type="button" title={cell.h3_id} onClick={() => onSelectCell(cell)}>
+              <button key={cell.h3_id || index} type="button" title={cell.street_label || cell.h3_id} onClick={() => onSelectCell(cell)}>
                 <strong>#{index + 1}</strong>
                   <span>{cell.neighborhood || cell.zona || cell.primary_use || 'Região em análise'}</span>
                   <b>{formatNumber(objectiveScore(cell, objectiveConfig), 0)}</b>
@@ -1142,6 +1150,7 @@ function SelectedPanel({ cell, objectiveConfig, onClose, onOpenConcept }) {
         <span>{decision.label}</span>
       </div>
       <p className="atlas-decision-copy">{decision.summary}</p>
+      {cell.street_label && <Metric label="Ruas principais" value={cell.street_label} />}
       {cell.neighborhood && (
         <Metric
           label={cell.neighborhood_source === 'cep' ? 'Bairro (Correios)' : 'Bairro'}
@@ -1341,6 +1350,7 @@ function Tooltip({ tooltip }) {
     return (
       <div className="atlas-tooltip" style={style}>
         <strong>{object.neighborhood || object.zona || 'Área em análise'}</strong>
+        {object.street_label && <span>{object.street_label}</span>}
         {object.neighborhood && object.zona && <span>Zona {object.zona}</span>}
         <span>{label}</span>
         <span>Score: {formatNumber(Math.max(Number(object.score_residencial || 0), Number(object.score_comercial || 0)))}</span>
@@ -1350,9 +1360,32 @@ function Tooltip({ tooltip }) {
   return (
     <div className="atlas-tooltip" style={style}>
       <strong>{object.neighborhood || object.zona || 'Área em análise'}</strong>
+      {object.street_label && <span>{object.street_label}</span>}
       {object.neighborhood && object.zona && <span>Zona {object.zona}</span>}
       <span>Residencial: {formatNumber(object.score_residencial)}</span>
       <span>Comercial: {formatNumber(object.score_comercial)}</span>
+    </div>
+  )
+}
+
+// "0" so aparece quando a camada carregou e esta vazia; antes disso mostra que ainda carrega ou falhou.
+function countLabel(count, status) {
+  if (status === 'error') return 'erro'
+  if (status === 'loading' || count == null) return '…'
+  return count
+}
+
+const LAYER_NAMES = { zoning: 'Zoneamento', pois: 'Pontos', neighborhoods: 'Bairros', officialRisk: 'Carta SGB' }
+
+function LayerStatusBanner({ status = {} }) {
+  const loading = Object.keys(status).filter(key => status[key] === 'loading').map(key => LAYER_NAMES[key])
+  const failed = Object.keys(status).filter(key => status[key] === 'error').map(key => LAYER_NAMES[key])
+  if (!loading.length && !failed.length) return null
+  return (
+    <div className={`atlas-layer-status ${failed.length ? 'is-error' : ''}`} role="status" aria-live="polite">
+      {failed.length > 0
+        ? `Não foi possível carregar: ${failed.join(', ')}. Recarregue a página para tentar de novo.`
+        : `Carregando camadas do mapa: ${loading.join(', ')}…`}
     </div>
   )
 }
